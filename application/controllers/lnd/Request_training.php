@@ -603,77 +603,90 @@ class Request_training extends CI_Controller {
 		$query = $this->db->query($sql);
 		$result = $query->row();
 
+    // Ambil data approval history training
     $this->db->select('*, DATE_FORMAT(approved_date, "%Y-%m-%d") as approved_date_convert');
-		$this->db->from('lnd_request_training_approvals_history');
-		$this->db->where('trainingRequestId', $result->requestTrainingId);
-		$historyApprovalTraining = $this->db->get()->result_array();
+    $this->db->from('lnd_request_training_approvals_history');
+    $this->db->where('trainingRequestId', $result->requestTrainingId);
+    $historyApprovalTraining = $this->db->get()->result_array();
 
-		$approvedDateBod = '';
-		$approvedDateDivHead = '';
-		$approvedNameBod = '';
-		$approvedNameDivHead = '';
-		$approvedNamePIC = '';
-		$approvedDatePIC = '';
+    // Inisialisasi variabel approval
+    $approvedDateBod = '';
+    $approvedDateDivHead = '';
+    $approvedNameBod = '';
+    $approvedNameDivHead = '';
+    $approvedNamePIC = '';
+    $approvedDatePIC = '';
 
+    // Loop untuk mendapatkan data approval terakhir berdasarkan status
+    foreach ($historyApprovalTraining as $approval) {
+        switch ($approval['approved']) {
+            case '1': // PIC
+                $approvedDatePIC = $approval['approved_date_convert'];
+                $approvedNamePIC = $approval['approved_by'];
+                break;
+            case '3': // Div Head
+                $approvedDateDivHead = $approval['approved_date_convert'];
+                $approvedNameDivHead = $approval['approved_by'];
+                break;
+            case '4': // BOD
+                $approvedDateBod = $approval['approved_date_convert'];
+                $approvedNameBod = $approval['approved_by'];
+                break;
+        }
+    }
 
-		foreach ($historyApprovalTraining as $approval) {
-			if($approval['approved'] == '1') {
-				$approvedDatePIC = $approval['approved_date_convert'];
-				$approvedNamePIC = $approval['approved_by'];
-
-      } else if($approval['approved'] == '3') {
-				$approvedDateDivHead = $approval['approved_date_convert'];
-				$approvedNameDivHead = $approval['approved_by'];
-      } else if($approval['approved'] == '4') {
-				$approvedDateBod = $approval['approved_date_convert'];
-				$approvedNameBod = $approval['approved_by'];
-			}
-		}
-
+    // Inisialisasi url QR code
     $qrUrlBOD = '';
-		$qrUrlDivHead = '';
-		$qrUrlPIC = '';
-//START BOD QR CODE
-		$qrTextBOD = $approvedNameBod;
-		if($approvedNameBod != '') {
-			$filenameBOD = 'qr_' . strtolower(str_replace(' ', '_', $qrTextBOD)) . '.png';
-			$pathBOD = 'assets/image/qrcode/';
-			$savePathBOD = FCPATH . $pathBOD . $filenameBOD; // Full physical path to save
-			$paramsBOD['data'] = $qrTextBOD;
-			$paramsBOD['level'] = 'H'; // High error correction
-			$paramsBOD['size'] = 2;
-			$paramsBOD['savename'] = $savePathBOD;
-			$this->ciqrcode->generate($paramsBOD);
-			$qrUrlBOD = base_url($pathBOD . $filenameBOD);
-		}
-//END BOD QR CODE
+    $qrUrlDivHead = '';
+    $qrUrlPIC = '';
 
-//START DIV HEAD QR CODE
-		$qrText = $approvedNameDivHead;
-		if($approvedNameDivHead != '') {
-			$filename = 'qr_' . strtolower(str_replace(' ', '_', $qrText)) . '.png';
-			$path = 'assets/image/qrcode/';
-			$savePath = FCPATH . $path . $filename; // Full physical path to save
-			$params['data'] = $qrText;
-			$params['level'] = 'H'; // High error correction
-			$params['size'] = 2;
-			$params['savename'] = $savePath;
-			$this->ciqrcode->generate($params);
-			$qrUrlDivHead = base_url($path . $filename);
-		}
+    // QR CODE UNTUK BOD
+    $qrTextBOD = $approvedNameBod;
+    if ($qrTextBOD != '') {
+        $filenameBOD = 'qr_' . strtolower(str_replace(' ', '_', $qrTextBOD)) . '.png';
+        $pathBOD = 'assets/image/qrcode/';
+        $savePathBOD = FCPATH . $pathBOD . $filenameBOD;
+        $paramsBOD = [
+            'data' => $qrTextBOD,
+            'level' => 'H',
+            'size' => 2,
+            'savename' => $savePathBOD
+        ];
+        $this->ciqrcode->generate($paramsBOD);
+        $qrUrlBOD = base_url($pathBOD . $filenameBOD);
+    }
 
+    // QR CODE UNTUK DIV HEAD
+    $qrTextDivHead = $approvedNameDivHead;
+    if ($qrTextDivHead != '') {
+        $filenameDivHead = 'qr_' . strtolower(str_replace(' ', '_', $qrTextDivHead)) . '.png';
+        $pathDivHead = 'assets/image/qrcode/';
+        $savePathDivHead = FCPATH . $pathDivHead . $filenameDivHead;
+        $paramsDivHead = [
+            'data' => $qrTextDivHead,
+            'level' => 'H',
+            'size' => 2,
+            'savename' => $savePathDivHead
+        ];
+        $this->ciqrcode->generate($paramsDivHead);
+        $qrUrlDivHead = base_url($pathDivHead . $filenameDivHead);
+    }
+
+    // QR CODE UNTUK PIC
     $qrTextPIC = $approvedNamePIC;
-		if($approvedNamePIC != '') {
-			$filename = 'qr_' . strtolower(str_replace(' ', '_', $qrTextPIC)) . '.png';
-			$path = 'assets/image/qrcode/';
-			$savePath = FCPATH . $path . $filename; // Full physical path to save
-			$params['data'] = $qrText;
-			$params['level'] = 'H'; // High error correction
-			$params['size'] = 2;
-			$params['savename'] = $savePath;
-			$this->ciqrcode->generate($params);
-			$qrUrlPIC = base_url($path . $filename);
-		}
+    if ($qrTextPIC != '') {
+        $filenamePIC = 'qr_' . strtolower(str_replace(' ', '_', $qrTextPIC)) . '.png';
+        $pathPIC = 'assets/image/qrcode/';
+        $savePathPIC = FCPATH . $pathPIC . $filenamePIC;
+        $paramsPIC = [
+            'data' => $qrTextPIC,
+            'level' => 'H',
+            'size' => 2,
+            'savename' => $savePathPIC
+        ];
+        $this->ciqrcode->generate($paramsPIC);
+        $qrUrlPIC = base_url($pathPIC . $filenamePIC);
+    }
 
 		$html = '
 		<!DOCTYPE html>

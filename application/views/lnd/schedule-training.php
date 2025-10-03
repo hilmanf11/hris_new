@@ -764,7 +764,11 @@
         });
     }
 
-    const calendarColumns = generateCalendarColumns("2025-01-01", "2025-12-01");
+    // Ambil tahun berjalan secara dinamis
+    const currentYear = new Date().getFullYear();
+    const startDate = `${currentYear}-01-01`;
+    const endDate = `${currentYear}-12-31`;
+    const calendarColumns = generateCalendarColumns(startDate, endDate);
 
     $(function() {
         //SETTING DATAGRID EASYUI
@@ -942,53 +946,145 @@
         bindDatePickers();
     });
 
-    function generateCalendarColumns(startDateStr, endDateStr) {
-        const startDate = new Date(startDateStr);
-        const endDate = new Date(endDateStr);
-        const columns = [];
+    /**
+	 * Fungsi ini menghasilkan definisi kolom untuk kalender/tabel.
+	 * Diperbaiki: Menggunakan 'originalTrainingDate' sebagai sumber string tanggal YYYY-MM-DD
+	 * dan menggunakan 'value' dari kolom dinamis (misal May_2025_W1) sebagai penanda keberadaan data.
+	 * * @param {string} startDateStr Tanggal mulai dalam format 'YYYY-MM-DD'.
+	 * @param {string} endDateStr Tanggal akhir dalam format 'YYYY-MM-DD'.
+	 * @returns {Array<Object>} Array definisi kolom untuk Jeasyui DataGrid (atau sejenisnya).
+	 */
+	function generateCalendarColumns(startDateStr, endDateStr) {
 
-        while (startDate <= endDate) {
-            const year = startDate.getFullYear();
-            const month = startDate.getMonth(); // 0-indexed
-            const monthName = startDate.toLocaleString('default', { month: 'long' });
-            const weeks = ['W1', 'W2', 'W3', 'W4'];
+	// Helper parsing tanggal yyyy-mm-dd agar konsisten di semua browser (termasuk Firefox)
+	function parseDateYMD(str) {
+		if (typeof str !== 'string') return null;
+		
+		const match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+		if (!match) return null;
+		
+		const year = Number(match[1]);
+		const month = Number(match[2]) - 1; // Bulan di JS dimulai dari 0
+		const day = Number(match[3]);
 
-            const children = weeks.map((w, i) => ({
-                field: `${monthName}_${year}_W${i + 1}`,
-                title: w,
-                width: 80,
-                align: 'center',
-                formatter: function (value) {
-					if(value) {
-						// Format the value to show the date in 'dd MMM' format
-						const date = new Date(value); // Assuming value is a valid date string
-						const day = date.getDate();
-						const month = date.toLocaleString('default', { month: 'short' }); // Get short month (e.g., 'Apr')
+		// Kunci Perbaikan Firefox: Gunakan constructor Y, M-1, D, 12, 0, 0 untuk zona waktu lokal
+		const d = new Date(year, month, day, 12, 0, 0); 
 
-						return `${day} ${month}`;
+		if (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) {
+			return d;
+		}
+		return null;
+	}
+
+	function cloneDate(date) {
+		return new Date(date.getTime());
+	}
+
+	function safeParseDate(str) {
+		if (!str) return null;
+		if (Object.prototype.toString.call(str) === '[object Date]') return str;
+		
+		let d = parseDateYMD(str);
+		if (d && !isNaN(d.getTime())) return d;
+		
+		if (typeof str === 'string') {
+			const alt = str.replace(/\//g, '-');
+			d = parseDateYMD(alt);
+			if (d && !isNaN(d.getTime())) return d;
+		}
+
+		// Fallback terakhir ke Date(string) yang tidak konsisten
+		d = new Date(str);
+		if (!isNaN(d.getTime())) return d;
+		
+		return null;
+	}
+
+	// --- Eksekusi Utama ---
+
+	const startDate = safeParseDate(startDateStr);
+	const endDate = safeParseDate(endDateStr);
+	const columns = [];
+
+	if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+		return columns;
+	}
+
+	let iterDate = cloneDate(startDate);
+
+	const monthNames = [
+		'January', 'February', 'March', 'April', 'May', 'June',
+		'July', 'August', 'September', 'October', 'November', 'December'
+	];
+	const monthShortNames = [
+		'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+		'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+	];
+
+	while (iterDate <= endDate) {
+		const year = iterDate.getFullYear();
+		const month = iterDate.getMonth(); 
+		const monthName = monthNames[month];
+		const weeks = ['W1', 'W2', 'W3', 'W4'];
+
+		const children = weeks.map((w, i) => ({
+			// Field ini digunakan Jeasyui untuk mencari data sel, 
+			// biarkan tetap nama dinamis agar terdeteksi adanya data.
+			field: `${monthName}_${year}_W${i + 1}`, 
+			title: w,
+			width: 80,
+			align: 'center',
+			
+			// !!! PERUBAHAN KUNCI: Akses rowData untuk mengambil tanggal asli YYYY-MM-DD
+			formatter: function (value, rowData, rowIndex) {
+				// 1. Cek 'value' (misal: "5 May") sebagai penanda bahwa ada data.
+				if (!value) {
+					return ''; // Kosongkan sel jika tidak ada data pelatihan di minggu ini
+				}
+
+				// 2. Ambil string tanggal YYYY-MM-DD yang valid dari kolom referensi.
+				const dateStr = rowData.originalTrainingDate; 
+				
+				// 3. Pastikan dateStr valid dan parsing tanggal.
+				if (dateStr && typeof dateStr === 'string') {
+					// Gunakan safeParseDate untuk parsing yang konsisten
+					const dateObj = safeParseDate(dateStr);
+					
+					if (dateObj && !isNaN(dateObj.getTime())) {
+						const day = dateObj.getDate();
+						const monthShort = monthShortNames[dateObj.getMonth()];
+						
+						// Kembalikan Hari BulanPendek yang sudah diformat dari objek Date yang valid
+						return `${day} ${monthShort}`; 
 					}
-                    return ``;
-                },
-                styler: function () {
-                    return 'white-space: normal;';
-                }
-            }));
+				}
+				// Jika parsing 'originalTrainingDate' gagal, coba kembalikan 'value' asli (misal "5 May")
+				// sebagai fallback, meskipun ini akan terlihat buruk di Firefox jika 'value' tidak sesuai.
+				// Atau lebih baik, kembalikan string kosong.
+				return ``; 
+			},
+			styler: function () {
+				return 'white-space: normal;'; 
+			}
+		}));
 
-            columns.push({
-                title: `${monthName} ${year}`,
-                colspan: weeks.length,
-                align: 'center'
-            });
+		// Tambahkan header kolom (bulan)
+		columns.push({
+			title: `${monthName} ${year}`,
+			colspan: weeks.length,
+			align: 'center'
+		});
 
-            // Add a placeholder for child fields
-            columns.push(children);
+		// Tambahkan kolom anak (minggu)
+		columns.push(children);
 
-            // Go to next month
-            startDate.setMonth(month + 1);
-        }
+		// Pindah ke bulan berikutnya
+		iterDate.setDate(1); 
+		iterDate.setMonth(iterDate.getMonth() + 1);
+	}
 
-        return columns;
-    }
+	return columns;
+	}
 
     //Format Datepicker
     function myformatter(date) {

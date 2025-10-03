@@ -142,17 +142,24 @@ class Schedule_training extends CI_Controller {
 
 				$fieldName = "{$monthName}_{$year}_{$weekLabel}"; // April_2025_W1
 
-				// If already exists, append new date
+				// Format tanggal asli ke YYYY-MM-DD
+				$originalDateFormatted = $date->format('Y-m-d');
+
+				// Jika sudah ada, tambahkan tanggal baru
 				if (!empty($grouped[$key][$fieldName])) {
 					$existingTrainingDates = explode(', ', $grouped[$key][$fieldName]);
+					$existingOriginalDates = isset($grouped[$key]['originalTrainingDate']) ? explode(', ', $grouped[$key]['originalTrainingDate']) : [];
 
 					if(!in_array($shortDate, $existingTrainingDates)) {
 						$grouped[$key][$fieldName] .= ', ' . $shortDate;
-						$grouped[$key]['originalTrainingDate'] .= ', ' . $trainingDate;
+						// Tambahkan tanggal asli dengan format YYYY-MM-DD
+						if (!in_array($originalDateFormatted, $existingOriginalDates)) {
+							$grouped[$key]['originalTrainingDate'] .= ', ' . $originalDateFormatted;
+						}
 					}
 				} else {
 					$grouped[$key][$fieldName] = $shortDate;
-					$grouped[$key]['originalTrainingDate'] = $trainingDate;
+					$grouped[$key]['originalTrainingDate'] = $originalDateFormatted;
 				}
 			}
 
