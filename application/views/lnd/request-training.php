@@ -460,10 +460,10 @@
 								return '<div style="background-color:red;color:white;padding:5px;">Not Valid</div>';
 							}
                             if(value === '-1') {
-                                const label = 'Waiting Revision ' + (gender === 'MALE' ? 'Pak ' + inputterName : gender === 'FA MALE' ?'Ibu ' + inputterName : inputterName);
+                                const label = 'Waiting Revision ' + (inputterName);
                                 return '<div style="background-color:red;color:white;padding:5px;">' + label + '</div>';
                             } else {
-                                const label = 'Waiting Approval ' + (gender === 'MALE' ? 'Pak ' + approverName : gender === 'FAMALE' ? 'Ibu ' + approverName : approverName);
+                                const label = 'Waiting Approval ' + (approverName);
                                 return '<div style="background-color:green;color:white;padding:5px;">' + label + '</div>';
                             }
                         }

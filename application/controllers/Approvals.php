@@ -816,9 +816,9 @@ class Approvals extends CI_Controller
 		$this->db->from('lnd_request_training_approvals_history a');
 		$this->db->join('users b', 'a.approved_by = b.username');
 		$this->db->join('users c', 'a.approved_to = c.username');
+        $this->db->join('lnd_request_training lrt', 'a.trainingRequestId = lrt.requestTrainingId');
 		$this->db->where('a.approved_to', $this->session->username);
         $this->db->where('a.status', 0);
-		// $this->db->where('a.approved', 1);
 		$this->db->group_by('a.approved_by');
 		$lnd_request_training_approvals_history = $this->db->get()->result_object();
 
@@ -957,14 +957,14 @@ class Approvals extends CI_Controller
         $change_days = $this->db->get()->result_object();
 
 
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar, lrt.createdBy');
+        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
 		$this->db->from('lnd_request_training_approvals_history a');
 		$this->db->join('users b', 'a.approved_by = b.username');
 		$this->db->join('users c', 'a.approved_to = c.username');
 		$this->db->join('lnd_request_training lrt', 'a.trainingRequestId = lrt.requestTrainingId');
 		$this->db->where('a.approved_to', $this->session->username);
         $this->db->where('a.status', 0);
-		$this->db->group_by('a.approved_by, lrt.createdBy');
+		$this->db->group_by('a.approved_by');
 		$lnd_request_training_approvals_history = $this->db->get()->result_object();
 
 

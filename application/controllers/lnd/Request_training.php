@@ -604,9 +604,15 @@ class Request_training extends CI_Controller {
 		$result = $query->row();
 
     // Ambil data approval history training
-    $this->db->select('*, DATE_FORMAT(approved_date, "%Y-%m-%d") as approved_date_convert');
-    $this->db->from('lnd_request_training_approvals_history');
-    $this->db->where('trainingRequestId', $result->requestTrainingId);
+    $this->db->select('
+            rth.*,
+            DATE_FORMAT(rth.approved_date, "%Y-%m-%d") as approved_date_convert,
+            u.name as approver_name
+        ');
+        $this->db->from('lnd_request_training_approvals_history rth');
+        $this->db->join('users u', 'rth.approved_by = u.username', 'left');
+        $this->db->where('rth.trainingRequestId', $result->requestTrainingId);
+        $this->db->order_by('rth.approved_date', 'ASC');
     $historyApprovalTraining = $this->db->get()->result_array();
 
     // Inisialisasi variabel approval
