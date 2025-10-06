@@ -408,7 +408,133 @@
 
 	</div>
 
+	<div id="dlg_agreement" class="easyui-dialog" title="Notification Data" data-options="closed: true" style="width: 1000px; height: 520px;">
+		<div id="toolbar_agreement">
+			<a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="agreementExcel()"><i class="fa fa-file"></i> Export Excel</a>
+			<a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="agreementReload()"><i class="fa fa-rotate-right"></i> Reload</a>
+		</div>
+		<table id="dg_agreement" class="easyui-datagrid"></table>
+	</div>
 
+	<div id="dlg_form_agreement" class="easyui-dialog" data-options="{title: 'Add New', closed: true, modal: true}" style="width: 750px; height: 700px; top: 50px;">
+		<table style="width: 100%;">
+			<tr>
+				<td valign="top" style="width: 50%;"><fieldset style="border:1px solid #d0d0d0; float: left; width: 100%;">
+					<legend>Personal Data</legend>
+					<table style="width: 100%;">
+						<tr>
+							<td>Trans Date</td>
+							<td><input id="trans_date" class="easyui-datebox" required></td>
+						</tr>
+						<tr>
+							<td>Employee ID</td>
+							<td><input id="emp_id" class="easyui-combobox" required disabled></td>
+						</tr>
+						<tr>
+							<td>Name</td>
+							<td><input id="emp_name" class="easyui-textbox" required disabled></td>
+						</tr>
+						<tr>
+							<td>National ID</td>
+							<td><input id="national_id" class="easyui-textbox" required disabled></td>
+						</tr>
+						<tr>
+							<td>Place of Birth</td>
+							<td><input id="place_birth" class="easyui-textbox" required disabled></td>
+						</tr>
+						<tr>
+							<td>Birth Date</td>
+							<td><input id="" class="easyui-textbox" required disabled></td>
+						</tr>
+						<tr>
+							<td>Gender</td>
+							<td>
+								<input type="checkbox" name="gender" value="male" disabled>&nbsp;Male&nbsp;
+								<input type="checkbox" name="gender" value="female" disabled>&nbsp;Female
+							</td>
+						</tr>
+						<tr>
+							<td>Address</td>
+							<td><input id="" class="easyui-textbox" data-options="{multiline: true}" required disabled style="height: 150px;"></td>
+						</tr>
+					</table>
+				</fieldset></td>
+				<td valign="top" style="width: 50%;"><fieldset style="border:1px solid #d0d0d0; float: left; width: 100%;">
+					<legend>Agreement</legend>
+					<form id="frm_agreement" method="post" enctype="multipart/form-data" novalidate><table style="width: 100%;">
+						<tr>
+							<td>Date Sign</td>
+							<td><input id="date_sign" class="easyui-datebox" required></td>
+						</tr>
+						<tr>
+							<td>Date Expired</td>
+							<td><input id="date_expired" class="easyui-datebox" required></td>
+						</tr>
+						<tr>
+							<td>Duration</td>
+							<td><input id="duration" class="easyui-textbox" required disabled></td>
+						</tr>
+						<tr>
+							<td>Department</td>
+							<td><input id="dept" class="easyui-combobox" required></td>
+						</tr>
+						<tr>
+							<td>Department Sub</td>
+							<td><input id="dept_sub" class="easyui-combobox" required></td>
+						</tr>
+						<tr>
+							<td>Process</td>
+							<td><input id="process" class="easyui-textbox" required></td>
+						</tr>
+						<tr>
+							<td>Employee Type</td>
+							<td><input id="emp_type" class="easyui-combobox" required></td>
+						</tr>
+						<tr>
+							<td>Position</td>
+							<td><input id="position" class="easyui-combobox" required></td>
+						</tr>
+						<tr>
+							<td>Group</td>
+							<td><input id="group" class="easyui-combobox" required></td>
+						</tr>
+						<tr>
+							<td>Attachment</td>
+							<td><input id="attachment" class="easyui-filebox"></td>
+						</tr>
+						<tr>
+							<td>Notes</td>
+							<td><input id="notes" class="easyui-textbox"></td>
+						</tr>
+					</table></form>
+				</fieldset></td>
+			</tr>
+			<tr>
+				<td valign="top" style="width: 50%;"><fieldset style="border:1px solid #d0d0d0; float: left; width: 100%;">
+					<legend>Setup Allowances</legend>
+					<table id="tb_allowance" style="width: 100%;"></table><br>
+					<a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="btnAddAllowance()"><i class="fa fa-plus"></i> <span id="add">Add Allowance</span></a>
+				</fieldset></td>
+				<td valign="top" style="width: 50%;"><fieldset style="border:1px solid #d0d0d0; float: left; width: 100%;">
+					<legend>Setup Salary</legend>
+					<table style="width: 100%;">
+						<tr>
+							<td>Component Salary</td>
+							<td><input id="component_salary" class="easyui-combobox" required></td>
+						</tr>
+						<tr>
+							<td>Amount</td>
+							<td><input id="amount" class="easyui-numberbox" data-options="{precision: 0}" required></td>
+						</tr>
+						<tr>
+							<td>BPJS</td>
+							<td><input id="bpjs" class="easyui-numberbox" data-options="{precision: 0}" required></td>
+						</tr>
+					</table>
+				</fieldset></td>
+			</tr>
+		</table>
+	</div>
 
 	<!-- CHATS -->
 
@@ -625,12 +751,69 @@
 		});
 
 
+		$('#dg_agreement').datagrid({
+			url: '<?= base_url('home/datatablesagreement') ?>',
+            pagination: true,
+            remoteFilter: true,
+            rownumbers: true,
+            fit: true,
+            toolbar: '#toolbar_agreement',
+            columns: [[
+            	{field: 'id', title: 'Employee ID', width: '150', halign: 'center'},
+            	{field: 'name', title: 'Employee Name', width: '300', halign: 'center'},
+            	{field: 'division', title: 'Division', width: '100', halign: 'center'},
+            	{field: 'dept', title: 'Departement', width: '150', halign: 'center'},
+            	{field: 'dept_sub', title: 'Departement Sub', width: '150', halign: 'center'},
+            	{field: 'position', title: 'Position', width: '100', halign: 'center'},
+            	{field: 'type', title: 'Employee Type', width: '100', halign: 'center'},
+            	{field: 'date_join', title: 'Join Date', width: '100', halign: 'center', align: 'center'},
+            	{field: 'expired', title: 'Contract Expired', width: '120', halign: 'center', align: 'center'},
+            	{field: 'note', title: 'Note', width: '300', halign: 'center'},
+            	{field: 'act', title: 'Action', width: '100', halign: 'center', align: 'center', formatter: function (value, row, index) { return '<a href="javascript:;" class="easyui-linkbutton" onclick="viewHistory('
+            		+"'"+window.btoa(row.id)+"'"
+        		+')"><i class="fa fa-file-pen"></i></a>'; }}
+            ]],
+            onLoadSuccess: function () { $('.easyui-linkbutton').linkbutton(); }
+		}).datagrid('enableFilter');
 
 		menu();
 
 	});
 
+	function viewHistory(id) {
+		$('#dlg_form_agreement').dialog('open');
+	}
 
+	var numAllowanceAgreement = 0;
+	function formAgreement() {
+		numAllowanceAgreement = 0;
+		agreementReload();
+		$('#tb_allowance').html('');
+		$('#dlg_notif').dialog('close');
+		$('#dlg_agreement').dialog('open');
+	}
+
+	function agreementReload() { $('#dg_agreement').datagrid('loadData', []).datagrid('reload'); }
+
+	function agreementExcel() { window.location.assign('<?= base_url('home/agreementExcel') ?>'); }
+
+	function btnAddAllowance() {
+		let row = $('<tr>');
+
+		row.append(
+			$('<td style="width: 55%;">').html('<input id="allow_'+numAllowanceAgreement+'" class="easyui-textbox">')
+		);
+		row.append(
+			$('<td style="width: 40%;">').html('<input id="amount_'+numAllowanceAgreement+'" class="easyui-numberbox">')
+		);
+
+		let btnDelete = $('<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove"></a>');
+        btnDelete.on("click", function () { row.remove(); });
+		row.append( $('<td style="width: 5%;">').append(btnDelete) );
+
+		$('#tb_allowance').append(row);
+		$.parse.parse(row);
+	}
 
 	function menu(searchName = ""){
 
@@ -3122,65 +3305,65 @@
 
 
 
-	// function notification() {
+	function notification() {
 
-	// 	$('#dlg_notif').dialog('open');
+		$('#dlg_notif').dialog('open');
 
-	// }
-
-
-
-	// notificationList();
-
-	// notificationCount();
-
-	// setInterval(notificationList, 20000);
-
-	// setInterval(notificationCount, 20000);
+	}
 
 
 
-	// function notificationList() {
+	notificationList();
 
-	// 	$.ajax({
+	notificationCount();
 
-	// 		type: "post",
+	setInterval(notificationList, 20000);
 
-	// 		url: "<?= base_url('home/notificationList') ?>",
-
-	// 		dataType: "html",
-
-	// 		success: function(response) {
-
-	// 			$('#notificationList').html(response);
-
-	// 		}
-
-	// 	});
-
-	// }
+	setInterval(notificationCount, 20000);
 
 
 
-	// function notificationCount() {
+	function notificationList() {
 
-	// 	$.ajax({
+		$.ajax({
 
-	// 		type: "post",
+			type: "post",
 
-	// 		url: "<?= base_url('home/notificationCount') ?>",
+			url: "<?= base_url('home/notificationList') ?>",
 
-	// 		dataType: "html",
+			dataType: "html",
 
-	// 		success: function(response) {
+			success: function(response) {
 
-	// 			$('#notificationCount').html(response);
+				$('#notificationList').html(response);
 
-	// 		}
+			}
 
-	// 	});
+		});
 
-	// }
+	}
+
+
+
+	function notificationCount() {
+
+		$.ajax({
+
+			type: "post",
+
+			url: "<?= base_url('home/notificationCount') ?>",
+
+			dataType: "html",
+
+			success: function(response) {
+
+				$('#notificationCount').html(response);
+
+			}
+
+		});
+
+	}
 
 
 

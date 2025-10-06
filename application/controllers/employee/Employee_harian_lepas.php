@@ -426,11 +426,11 @@ class Employee_harian_lepas extends CI_Controller
                 if ($regis_bf) {
                     $national_id = $this->crud->read('employees', [], ["national_id" => $post['national_id']]);
                     $tax_id = $this->crud->read('employees', [], ["tax_id" => $post['tax_id']]);
-                    if ($post['email'] == '-')
+                    if ($post['email'] != '-')
                         { $email = $this->crud->read('employees', [], ["email" => $post['email']]); }
-                    if ($post['mobile_phone'] == '0')
+                    if ($post['mobile_phone'] != '0')
                         { $mobile_phone = $this->crud->read('employees', [], ["mobile_phone" => $post['mobile_phone']]); }
-                    if ($post['bank_no'] == '-')
+                    if ($post['bank_no'] != '-')
                         { $bank_no = $this->crud->read('employees', [], ["bank_no" => $post['bank_no']]); }
                 }
 
