@@ -624,20 +624,31 @@ class Request_training extends CI_Controller {
     $approvedDatePIC = '';
 
     // Loop untuk mendapatkan data approval terakhir berdasarkan status
+    // Cari nilai approved terbesar (maksimal) dari history approval
+    $maxApproved = 0;
     foreach ($historyApprovalTraining as $approval) {
-        switch ($approval['approved']) {
-            case '1': // PIC
-                $approvedDatePIC = $approval['approved_date_convert'];
-                $approvedNamePIC = $approval['approved_by'];
-                break;
-            case '3': // Div Head
-                $approvedDateDivHead = $approval['approved_date_convert'];
-                $approvedNameDivHead = $approval['approved_by'];
-                break;
-            case '4': // BOD
-                $approvedDateBod = $approval['approved_date_convert'];
-                $approvedNameBod = $approval['approved_by'];
-                break;
+        if (is_numeric($approval['approved']) && intval($approval['approved']) > $maxApproved) {
+            $maxApproved = intval($approval['approved']);
+        }
+    }
+
+    // Validasi: BOD adalah approved terakhir (max), Div Head adalah approved terakhir - 1
+    foreach ($historyApprovalTraining as $approval) {
+        $approvedValue = is_numeric($approval['approved']) ? intval($approval['approved']) : 0;
+        // PIC tetap diambil dari approved == 1
+        if ($approvedValue === 1) {
+            $approvedDatePIC = $approval['approved_date_convert'];
+            $approvedNamePIC = $approval['approved_by'];
+        }
+        // Div Head adalah approved == maxApproved - 1
+        if ($approvedValue === ($maxApproved - 1)) {
+            $approvedDateDivHead = $approval['approved_date_convert'];
+            $approvedNameDivHead = $approval['approved_by'];
+        }
+        // BOD adalah approved == maxApproved
+        if ($approvedValue === $maxApproved) {
+            $approvedDateBod = $approval['approved_date_convert'];
+            $approvedNameBod = $approval['approved_by'];
         }
     }
 
