@@ -612,7 +612,7 @@ class Request_training extends CI_Controller {
         $this->db->from('lnd_request_training_approvals_history rth');
         $this->db->join('users u', 'rth.approved_by = u.username', 'left');
         $this->db->where('rth.trainingRequestId', $result->requestTrainingId);
-        $this->db->order_by('rth.approved_date', 'ASC');
+        $this->db->order_by('rth.approved', 'ASC');
     $historyApprovalTraining = $this->db->get()->result_array();
 
     // Inisialisasi variabel approval
@@ -636,7 +636,7 @@ class Request_training extends CI_Controller {
     foreach ($historyApprovalTraining as $approval) {
         $approvedValue = is_numeric($approval['approved']) ? intval($approval['approved']) : 0;
         // PIC tetap diambil dari approved == 1
-        if ($approvedValue === 1) {
+        if ($approvedValue === 2) {
             $approvedDatePIC = $approval['approved_date_convert'];
             $approvedNamePIC = $approval['approved_by'];
         }
