@@ -1846,13 +1846,45 @@ class Approvals extends CI_Controller
 		$tablename = $this->input->post('tablename');
 		$remark = $this->input->post('remark');
 
-		$values = array(
-			"status" => -1,
-			"id" => $id,
-            "approval_data" => $remark
-		);
+		// Ambil data approval saat ini
+		$data = $this->crud->read($tablename, [], ["id" => $id]);
+		if (!$data) {
+			echo json_encode(array("title" => "Error", "message" => "Data not found", "theme" => "error"));
+			return;
+		}
 
-		$send = $this->db->update($tablename, $values, ["id" => $id]);
+		// Jika approval == 1, lakukan disapprove seperti biasa
+		if (isset($data->approved) && intval($data->approved) == 1) {
+			$values = array(
+				"status" => -1,
+				"id" => $id,
+				"approval_data" => $remark
+			);
+			$send = $this->db->update($tablename, $values, ["id" => $id]);
+		} else {
+			// Jika approval > 1, hapus semua data approval history kecuali approved == 1, dan reset status ke 0
+			$trainingRequestId = isset($data->trainingRequestId) ? $data->trainingRequestId : null;
+			if ($trainingRequestId) {
+				// Hapus semua data approval history dengan approved > 1
+				$this->db->where('trainingRequestId', $trainingRequestId);
+				$this->db->where('approved >', 1);
+				$this->db->delete($tablename);
+
+				// Update status pada approval history dengan approved == 1 menjadi 0 dan set approval_data remark
+				$this->db->where('trainingRequestId', $trainingRequestId);
+				$this->db->where('approved', 1);
+				$this->db->update($tablename, [
+					"status" => 0,
+					"approval_data" => $remark
+				]);
+			}
+			// Update status utama ke 0 (proses revisi)
+			$this->db->where('id', $id);
+			$this->db->update('lnd_request_training', [
+				"status" => 0
+			]);
+		}
+
 		echo json_encode(array("title" => "Disapproved", "message" => "Data Disapproved Successfully", "theme" => "success"));
 	}
 
