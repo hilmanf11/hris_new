@@ -482,7 +482,7 @@ class Summary_payrolls extends CI_Controller
                 <center>
                     <table id="customers" style="width:70%;">
                         <tr>
-                            <th colspan="2" rowspan="2" width="100" style="text-align:center;">APPROVED</th>
+                            <th rowspan="2" width="100" style="text-align:center;">APPROVED</th>
                             <th colspan="3" style="text-align:center;">CONFIRM OK</th>
                             <th rowspan="2" width="100" style="text-align:center;">PREPARED</th>
                         </tr>
@@ -497,7 +497,6 @@ class Summary_payrolls extends CI_Controller
                             <td style="height:60px;"></td>
                             <td style="height:60px;"></td>
                             <td style="height:60px;"></td>
-                            <td style="height:60px;"></td>
                         </tr>
                         <tr>
                             <td>&nbsp;</td>
@@ -505,10 +504,9 @@ class Summary_payrolls extends CI_Controller
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
-                            <td>&nbsp;</td>
                         </tr>
                         <tr>
-                            <th colspan="2" style="text-align:center;">BOD</th>
+                            <th style="text-align:center;">BOD</th>
                             <th style="text-align:center;">LEADER</th>
                             <th style="text-align:center;">ASSISTANT MANAGER</th>
                             <th style="text-align:center;">LEADER</th>
@@ -769,7 +767,7 @@ class Summary_payrolls extends CI_Controller
                     $html .= '<br><br><table id="customers" style="width:100%; page-break-inside: avoid;">
                         <tr>
                             <td style="border:none;"></td>
-                            <th style="text-align:center;" colspan="2">Disetujui</th>
+                            <th style="text-align:center;">Disetujui</th>
                             <th style="text-align:center;">Diketahui</th>
                             <th style="text-align:center;" colspan="2">Diperiksa</th>
                             <th style="text-align:center;">Dibuat</th>
@@ -781,11 +779,9 @@ class Summary_payrolls extends CI_Controller
                             <td style="text-align:center;"></td>
                             <td style="text-align:center;"></td>
                             <td style="text-align:center;"></td>
-                            <td style="text-align:center;"></td>
                         </tr>
                         <tr>
                             <td style="border:none;"></td>
-                            <td style="text-align:center;">Abdul Rachman</td>
                             <td style="text-align:center;">Kinenta Harsono</td>
                             <td style="text-align:center;">Maya Evilia</td>
                             <td style="text-align:center;">Rizki Andri S</td>
@@ -794,7 +790,7 @@ class Summary_payrolls extends CI_Controller
                         </tr>
                         <tr>
                             <td style="border:none;"></td>
-                            <th style="text-align:center;" colspan="2">BOD</th>
+                            <th style="text-align:center;">BOD</th>
                             <th style="text-align:center;">Leader FAT Cost Control</th>
                             <th style="text-align:center;">Asst Manager HRD-GA</th>
                             <th style="text-align:center;">Leader HR</th>

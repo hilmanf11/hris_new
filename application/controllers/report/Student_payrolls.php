@@ -384,7 +384,7 @@ class Student_payrolls extends CI_Controller
                             $html .= '<center>
                                         <table id="customers" style="width:70%;">
                                             <tr>
-                                                <th colspan="2" rowspan="2" style="text-align:center;">APPROVED</th>
+                                                <th rowspan="2" style="text-align:center;">APPROVED</th>
                                                 <th colspan="3" style="text-align:center;">CONFIRM OK</th>
                                                 <th rowspan="2" width="100" style="text-align:center;">PREPARED</th>
                                             </tr>
@@ -395,7 +395,6 @@ class Student_payrolls extends CI_Controller
                                             </tr>
                                             <tr>
                                                 <td style="height:60px;" width="100"></td>
-                                                <td style="height:60px;" width="100"></td>
                                                 <td style="height:60px;"></td>
                                                 <td style="height:60px;"></td>
                                                 <td style="height:60px;"></td>
@@ -407,10 +406,9 @@ class Student_payrolls extends CI_Controller
                                                 <td>&nbsp;</td>
                                                 <td>&nbsp;</td>
                                                 <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
                                             </tr>
                                             <tr>
-                                                <th style="text-align:center;" colspan="2">BOD</th>
+                                                <th style="text-align:center;">BOD</th>
                                                 <th style="text-align:center;">LEADER</th>
                                                 <th style="text-align:center;">ASSISTANT MANAGER</th>
                                                 <th style="text-align:center;">LEADER</th>
@@ -578,7 +576,7 @@ class Student_payrolls extends CI_Controller
                             $html2 .= '<center>
                                 <table id="customers" style="width:70%;">
                                     <tr>
-                                        <th colspan="2" rowspan="2" style="text-align:center;">APPROVED</th>
+                                        <th rowspan="2" style="text-align:center;">APPROVED</th>
                                         <th colspan="3" style="text-align:center;">CONFIRM OK</th>
                                         <th rowspan="2" width="100" style="text-align:center;">PREPARED</th>
                                     </tr>
@@ -589,14 +587,13 @@ class Student_payrolls extends CI_Controller
                                     </tr>
                                     <tr>
                                         <td style="height:60px;" width="100"></td>
-                                        <td style="height:60px;" width="100"></td>
                                         <td style="height:60px;"></td>
                                         <td style="height:60px;"></td>
                                         <td style="height:60px;"></td>
                                         <td style="height:60px;"></td>
                                     </tr>
                                     <tr>
-                                        <th style="text-align:center;" colspan="2">BOD</th>
+                                        <th style="text-align:center;">BOD</th>
                                         <th style="text-align:center;">LEADER</th>
                                         <th style="text-align:center;">ASSISTANT MANAGER</th>
                                         <th style="text-align:center;">LEADER</th>
