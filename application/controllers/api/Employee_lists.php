@@ -1,6 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
-
+// HRIS BRI
 class Employee_lists extends CI_Controller
 {
     public function __construct()
