@@ -74,6 +74,13 @@ class Payrolls extends CI_Controller
                 JOIN departements c ON b.departement_id = c.id
             WHERE a.period_start = '$period_start' and a.period_end = '$period_end' 
             GROUP BY c.name
+            UNION ALL
+            SELECT c.name as departement_name, SUM(a.total_income) as income
+            FROM payroll_pkl a
+                JOIN employees b ON a.employee_id = b.id
+                JOIN departements c ON b.departement_id = c.id
+            WHERE a.period_start = '$filter_from' and a.period_end = '$filter_to' 
+            GROUP BY c.name
         ) x GROUP BY departement_name ORDER BY departement_name");
         // die($this->db->last_query());
         $name = array();
@@ -101,6 +108,12 @@ class Payrolls extends CI_Controller
             SELECT position_name, SUM(net_income) as income FROM payroll_harian_lepas
             WHERE period_start = '$period_start' and period_end = '$period_end' 
             GROUP BY position_name
+            UNION ALL
+            SELECT c.name, SUM(a.total_income) as income FROM payroll_pkl a
+              LEFT JOIN employees b ON a.employee_id = b.id
+              LEFT JOIN positions c ON b.position_id = c.id
+            WHERE a.period_start = '$filter_from' and a.period_end = '$filter_to' 
+            GROUP BY c.name
         ) x GROUP BY position_name ORDER BY position_name");
         
         $name = array();
@@ -128,6 +141,12 @@ class Payrolls extends CI_Controller
             SELECT group_name, SUM(net_income) as income FROM payroll_harian_lepas
             WHERE period_start = '$period_start' and period_end = '$period_end' 
             GROUP BY group_name
+            UNION ALL
+            SELECT c.name, SUM(a.total_income) as income FROM payroll_pkl a
+              LEFT JOIN employees b ON a.employee_id = b.id
+              LEFT JOIN groups c ON b.group_id = c.id
+            WHERE a.period_start = '$filter_from' and a.period_end = '$filter_to' 
+            GROUP BY c.name
         ) x GROUP BY group_name ORDER BY group_name");
         
         $name = array();
@@ -161,10 +180,23 @@ class Payrolls extends CI_Controller
                 JOIN departements c ON b.departement_id = c.id
             WHERE a.period_start = '$period_start' and a.period_end = '$period_end' 
             GROUP BY c.name
+            UNION ALL
+            SELECT c.name as departement_name, SUM(a.total_income) as income, COUNT(a.employee_id) as total_mp
+            FROM payroll_pkl a
+                JOIN employees b ON a.employee_id = b.id
+                JOIN departements c ON b.departement_id = c.id
+            WHERE a.period_start = '$filter_from' and a.period_end = '$filter_to' 
+            GROUP BY c.name
         ) x GROUP BY name ORDER BY total DESC");
 
         $result['total'] = count($query);
         $result['rows'] = $query;
+        $result['footer'] = [(object) ['name' => 'Grand Total', 'total' => 0, 'total_mp' => 0]];
+        foreach ($query as $index => $row) {
+            $result['footer'][0]->name = 'Grand Total';
+            $result['footer'][0]->total += $row->total;
+            $result['footer'][0]->total_mp += $row->total_mp;
+        }
 
         die(json_encode($result));
     }
@@ -186,10 +218,22 @@ class Payrolls extends CI_Controller
             FROM payroll_harian_lepas
             WHERE period_start = '$period_start' and period_end = '$period_end' 
             GROUP BY position_name
+            UNION ALL
+            SELECT c.name, SUM(a.total_income) as income, COUNT(a.employee_id) as total_mp FROM payroll_pkl a
+              LEFT JOIN employees b ON a.employee_id = b.id
+              LEFT JOIN positions c ON b.position_id = c.id
+            WHERE a.period_start = '$filter_from' and a.period_end = '$filter_to' 
+            GROUP BY c.name
         ) x GROUP BY name ORDER BY total DESC");
 
         $result['total'] = count($query);
         $result['rows'] = $query;
+        $result['footer'] = [(object) ['name' => 'Grand Total', 'total' => 0, 'total_mp' => 0]];
+        foreach ($query as $index => $row) {
+            $result['footer'][0]->name = 'Grand Total';
+            $result['footer'][0]->total += $row->total;
+            $result['footer'][0]->total_mp += $row->total_mp;
+        }
 
         die(json_encode($result));
     }
@@ -208,10 +252,22 @@ class Payrolls extends CI_Controller
             UNION ALL
             SELECT group_name as name, SUM(net_income) as total, COUNT(employee_id) as total_mp FROM payroll_harian_lepas
             WHERE period_start = '$period_start' and period_end = '$period_end' GROUP BY group_name
+            UNION ALL
+            SELECT c.name, SUM(a.total_income) as income, COUNT(a.employee_id) as total_mp FROM payroll_pkl a
+              LEFT JOIN employees b ON a.employee_id = b.id
+              LEFT JOIN groups c ON b.group_id = c.id
+            WHERE a.period_start = '$filter_from' and a.period_end = '$filter_to' 
+            GROUP BY c.name
         ) x GROUP BY name ORDER BY total DESC");
 
         $result['total'] = count($query);
         $result['rows'] = $query;
+        $result['footer'] = [(object) ['name' => 'Grand Total', 'total' => 0, 'total_mp' => 0]];
+        foreach ($query as $index => $row) {
+            $result['footer'][0]->name = 'Grand Total';
+            $result['footer'][0]->total += $row->total;
+            $result['footer'][0]->total_mp += $row->total_mp;
+        }
 
         die(json_encode($result));
     }
@@ -249,6 +305,12 @@ class Payrolls extends CI_Controller
 
         $result['total'] = count($query);
         $result['rows'] = $query;
+        $result['footer'] = [(object) ['name' => 'Grand Total', 'total' => 0, 'total_mp' => 0]];
+        foreach ($query as $index => $row) {
+            $result['footer'][0]->name = 'Grand Total';
+            $result['footer'][0]->total += $row->total;
+            $result['footer'][0]->total_mp += $row->total_mp;
+        }
 
         die(json_encode($result));
     }

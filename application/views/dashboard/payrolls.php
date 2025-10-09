@@ -74,15 +74,7 @@
                 </div>
             </div>
 
-            <table id="dg_departement" class="easyui-datagrid" title="Table Data" style="width:100%;">
-                <thead>
-                    <tr>
-                        <th data-options="field:'name',width:160,halign:'center'">Name</th>
-                        <th data-options="field:'total_mp',width:50,align:'center'">MP</th>
-                        <th data-options="field:'total',width:120,halign:'center', align:'right', formatter:numberformat">Total</th>
-                    </tr>
-                </thead>
-            </table>
+            <table id="dg_departement" class="easyui-datagrid" title="Table Data" style="width:100%;"></table>
         </div>
         <div class="col-lg-3">
             <div class="row">
@@ -98,15 +90,7 @@
                 </div>
             </div>
 
-            <table id="dg_position" class="easyui-datagrid" title="Table Data" style="width:100%;">
-                <thead>
-                    <tr>
-                        <th data-options="field:'name',width:160,halign:'center'">Name</th>
-                        <th data-options="field:'total_mp',width:50,align:'center'">MP</th>
-                        <th data-options="field:'total',width:120,halign:'center', align:'right', formatter:numberformat">Total</th>
-                    </tr>
-                </thead>
-            </table>
+            <table id="dg_position" class="easyui-datagrid" title="Table Data" style="width:100%;"></table>
         </div>
         <div class="col-lg-3">
             <div class="row">
@@ -122,15 +106,7 @@
                 </div>
             </div>
 
-            <table id="dg_group" class="easyui-datagrid" title="Table Data" style="width:100%;">
-                <thead>
-                    <tr>
-                        <th data-options="field:'name',width:160,halign:'center'">Name</th>
-                        <th data-options="field:'total_mp',width:50,align:'center'">MP</th>
-                        <th data-options="field:'total',width:120,halign:'center', align:'right', formatter:numberformat">Total</th>
-                    </tr>
-                </thead>
-            </table>
+            <table id="dg_group" class="easyui-datagrid" title="Table Data" style="width:100%;"></table>
         </div>
         <div class="col-lg-3">
             <div class="row">
@@ -146,15 +122,7 @@
                 </div>
             </div>
 
-            <table id="dg_pkl" class="easyui-datagrid" title="Table Data" style="width:100%;">
-                <thead>
-                    <tr>
-                        <th data-options="field:'name',width:180,halign:'center'">Name</th>
-                        <th data-options="field:'total_mp',width:50,align:'center'">MP</th>
-                        <th data-options="field:'total',width:100,halign:'center', align:'right', formatter:numberformat">Total</th>
-                    </tr>
-                </thead>
-            </table>
+            <table id="dg_pkl" class="easyui-datagrid" title="Table Data" style="width:100%;"></table>
         </div>
     </div>
 </body>
@@ -190,26 +158,50 @@
 
         $('#dg_departement').datagrid({
             url: '<?= base_url('dashboard/payrolls/tableDepartement?filter_from=') ?>' + btoa(filter_from) + "&filter_to=" + btoa(filter_to),
+            showFooter: true,
             rownumbers: true,
             pagination: false,
+            columns: [[
+                {field: 'name', title: 'Name', width: 160, halign: 'center'},
+                {field: 'total_mp', title: 'MP', width: 50, align: 'center'},
+                {field: 'total', title: 'Total', width: 120, halign: 'center', align: 'right', formatter: numberformat},
+            ]]
         });
 
         $('#dg_position').datagrid({
             url: '<?= base_url('dashboard/payrolls/tablePosition?filter_from=') ?>' + btoa(filter_from) + "&filter_to=" + btoa(filter_to),
+            showFooter: true,
             rownumbers: true,
             pagination: false,
+            columns: [[
+                {field: 'name', title: 'Name', width: 160, halign: 'center'},
+                {field: 'total_mp', title: 'MP', width: 50, align: 'center'},
+                {field: 'total', title: 'Total', width: 120, halign: 'center', align: 'right', formatter: numberformat},
+            ]]
         });
 
         $('#dg_group').datagrid({
             url: '<?= base_url('dashboard/payrolls/tableGroup?filter_from=') ?>' + btoa(filter_from) + "&filter_to=" + btoa(filter_to),
+            showFooter: true,
             rownumbers: true,
             pagination: false,
+            columns: [[
+                {field: 'name', title: 'Name', width: 160, halign: 'center'},
+                {field: 'total_mp', title: 'MP', width: 50, align: 'center'},
+                {field: 'total', title: 'Total', width: 120, halign: 'center', align: 'right', formatter: numberformat},
+            ]]
         });
 
         $('#dg_pkl').datagrid({
             url: '<?= base_url('dashboard/payrolls/tablePkl?filter_from=') ?>' + btoa(filter_from) + "&filter_to=" + btoa(filter_to),
+            showFooter: true,
             rownumbers: true,
             pagination: false,
+            columns: [[
+                {field: 'name', title: 'Name', width: 180, halign: 'center'},
+                {field: 'total_mp', title: 'MP', width: 50, align: 'center'},
+                {field: 'total', title: 'Total', width: 100, halign: 'center', align: 'right', formatter: numberformat},
+            ]]
         });
 
         $.ajax({
