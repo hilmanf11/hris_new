@@ -1874,14 +1874,14 @@ class Approvals extends CI_Controller
 				$this->db->where('trainingRequestId', $trainingRequestId);
 				$this->db->where('approved', 1);
 				$this->db->update($tablename, [
-					"status" => 0,
+					"status" => -1,
 					"approval_data" => $remark
 				]);
 			}
 			// Update status utama ke 0 (proses revisi)
 			$this->db->where('id', $id);
 			$this->db->update('lnd_request_training', [
-				"status" => 0
+				"status" => -1
 			]);
 		}
 
