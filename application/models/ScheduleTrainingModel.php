@@ -58,12 +58,16 @@ class ScheduleTrainingModel extends CI_Model {
 
         $this->db->trans_start(); // Begin transaction
 
-		if(!empty($data['trainingTrainerId'])) {
-			unset($data['trainingTrainerId']);
-		}
+        // Hilangkan field trainer sebelum insert ke master table
+        if (isset($data['trainer'])) {
+            unset($data['trainer']);
+        }
+        if (!empty($data['trainingTrainerId'])) {
+            unset($data['trainingTrainerId']);
+        }
         // Insert into master table
-		$data['updatedBy'] = null;
-		$data['updatedTime'] = null;
+        $data['updatedBy'] = null;
+        $data['updatedTime'] = null;
         $this->db->insert('lnd_schedule_training', $data);
 
         // Insert trainingDates (detail rows)
@@ -87,7 +91,7 @@ class ScheduleTrainingModel extends CI_Model {
 				'id' => $this->uuid->v4(),
 				'training_id' => $training_id,
 				'trainer_name' => $item['name'],
-				'trainer_id' => $item['id'],
+				'trainer_id' => isset($item['id']) && $item['id'] ? $item['id'] : null,
 			];
 			$this->db->insert('lnd_schedule_trainers', $detail);
 		}
@@ -106,6 +110,10 @@ class ScheduleTrainingModel extends CI_Model {
 		// Update metadata
 		$data['updatedBy'] = $this->session->username ?? 'system';
 		$data['updatedTime'] = date('Y-m-d H:i:s');
+		
+		if (isset($data['trainer'])) {
+            unset($data['trainer']);
+        }
 
 		// Update master table
 		$this->db->where('id', $id);
@@ -139,7 +147,7 @@ class ScheduleTrainingModel extends CI_Model {
 			$detail = [
 				'id' => $this->uuid->v4(),
 				'training_id' => $id,
-				'trainer_name' => $item['trainer_name'],
+				'trainer_name' => $item['name'],
 				'trainer_id' => $item['id'],
 			];
 			$this->db->insert('lnd_schedule_trainers', $detail);

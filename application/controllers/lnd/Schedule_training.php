@@ -63,7 +63,7 @@ class Schedule_training extends CI_Controller {
         $offset = ($page - 1) * $rows;
 		// Query Builder
         $this->db->start_cache(); // Cache query sebelum count_all_results
-        $this->db->select('a.*, a.id as id_training, b.*, e.name, e.id as departementId, COALESCE(ta.id, rt.id) as trainingActivityId, COALESCE(ta.trainingActivity, rt.trainingActivities) as trainingActivity, st.trainer_name, st.trainer_id, st.trainer_id as trainingTrainerId');
+        $this->db->select('a.*, a.id as id_training, b.*, rt.trainer as trainer_type, e.name, e.id as departementId, COALESCE(ta.id, rt.id) as trainingActivityId, COALESCE(ta.trainingActivity, rt.trainingActivities) as trainingActivity, st.trainer_name, st.trainer_id, st.trainer_id as trainingTrainerId');
         $this->db->from('lnd_schedule_training a');
         $this->db->join('lnd_schedule_training_dates b', 'a.id = b.training_id', 'left');
 		$this->db->join('departements e', 'e.id = a.trainee', 'left');
@@ -114,7 +114,7 @@ class Schedule_training extends CI_Controller {
                     'id_training' => $row['id_training'],
 					'induction' => $row['induction'],
 					'trainingName' => $row['trainingActivity'],
-		//          'trainer' => $row['trainer'],
+		         	'trainer' => $row['trainer_type'],
 					'trainee' => empty($row['name']) ? $row['category'] : $row['name'],
 					'remarks' => $row['remarks'],
 					'totalTrainee' => $row['totalTrainee'],
@@ -166,17 +166,31 @@ class Schedule_training extends CI_Controller {
 			$trainerName = $row['trainer_name'];
 			$trainerId = $row['trainer_id'];
 			$trainingTrainerid = $row['trainingTrainerId'];
-			if($trainerName && $trainerId) {
-				if (!empty($grouped[$key]['trainer'])) {
-					$existingTrainers = explode(', ', $grouped[$key]['trainer']);
+			$trainerType = isset($row['trainer_type']) ? $row['trainer_type'] : null;
+			
+			// Validasi: Jika trainer_type == External, abaikan pengecekan trainerId (boleh kosong)
+			if ($trainerType === 'External' && $trainerName) {
+				if (!empty($grouped[$key]['trainerName'])) {
+					$existingTrainers = explode(', ', $grouped[$key]['trainerName']);
+					if (!in_array($trainerName, $existingTrainers)) {
+						$grouped[$key]['trainerName'] .= ', ' . $trainerName;
+						$grouped[$key]['trainingTrainerId'] .= ', '; // External tidak punya id, jadi dikosongkan
+					}
+				} else {
+					$grouped[$key]['trainerName'] = $trainerName;
+					$grouped[$key]['trainingTrainerId'] = '';
+				}
+			} elseif ($trainerName && $trainerId) {
+				if (!empty($grouped[$key]['trainerName'])) {
+					$existingTrainers = explode(', ', $grouped[$key]['trainerName']);
 
 					// Only add if not already in the list
 					if (!in_array($trainerName, $existingTrainers)) {
-						$grouped[$key]['trainer'] .= ', ' . $trainerName;
+						$grouped[$key]['trainerName'] .= ', ' . $trainerName;
 						$grouped[$key]['trainingTrainerId'] .= ', ' . $trainingTrainerid;
 					}
 				} else {
-					$grouped[$key]['trainer'] = $trainerName;
+					$grouped[$key]['trainerName'] = $trainerName;
 					$grouped[$key]['trainingTrainerId'] = $trainingTrainerid;
 				}
 			}
@@ -284,51 +298,63 @@ class Schedule_training extends CI_Controller {
     }
 
     public function create_data() {
-         // Ambil raw input
+        // Ambil raw input
         $rawInput = file_get_contents("php://input");
         parse_str($rawInput, $data);
 
         // Check and decode training_dates (assumed as JSON string in POST)
         $trainingDates = [];
-		$combineTrainer = [];
-	        if (!empty($data['training_dates'])) {
+        $combineTrainer = [];
+        if (!empty($data['training_dates'])) {
             $trainingDates = json_decode($data['training_dates'], true);
             unset($data['training_dates']); // Remove from main data to avoid DB issue
         }
-		if(!empty($data['trainerName'])) {
-			$trainerId = $data['trainerName'];
-			foreach($trainerId as $value) {
-				$trainer = $this->crud->read('employees', ['id' => $value]);
-				$combineTrainer[] = [
-					'id' => $trainer->id,
-					'name' => $trainer->name,
-				];
-			}
-			unset($data['trainerName']);
-		}
+
+        if (!empty($data['trainerName'])) {
+            $trainerIdArr = $data['trainerName'];
+
+            if (isset($data['trainer']) && $data['trainer'] === 'External') {
+                // Jika trainer eksternal, langsung gunakan nama dari input trainerName[]
+                foreach ($trainerIdArr as $extTrainerName) {
+                    $combineTrainer[] = [
+                        'id' => '', // Tidak ada ID untuk eksternal
+                        'name' => $extTrainerName,
+                    ];
+                }
+            } else {
+                foreach ($trainerIdArr as $value) {
+                    $trainer = $this->crud->read('employees', ['id' => $value]);
+                    $combineTrainer[] = [
+                        'id' => !empty($trainer->id) ? $trainer->id : '',
+                        'name' => $trainer->name,
+                    ];
+                }
+            }
+            unset($data['trainerName']);
+        }
 
         // Validasi dan proses data
         if (!empty($data)) {
             $dataTemp = $this->ScheduleTrainingModel->insert_data($data, $trainingDates, $combineTrainer);
-			return $this->output
-            ->set_content_type('application/json')
-            ->set_status_header(201)
-            ->set_output(json_encode([
-                'code' => 201,
-                'status' => ResponseStatus::CREATED,
-                'data' => $dataTemp,
-                'message' => 'Schedule Training created successfully'
-            ]));
+            return $this->output
+                ->set_content_type('application/json')
+                ->set_status_header(201)
+                ->set_output(json_encode([
+                    'code' => 201,
+                    'status' => ResponseStatus::CREATED,
+                    'data' => [$dataTemp, $combineTrainer],
+                    'message' => 'Schedule Training created successfully'
+                ]));
         } else {
-			return $this->output
-            ->set_content_type('application/json')
-            ->set_status_header(400)
-            ->set_output(json_encode([
-                'code' => 400,
-                'status' => ResponseStatus::BAD_REQUEST,
-                'data' => null,
-                'message' => 'Schedule Training creation failed.'
-            ]));
+            return $this->output
+                ->set_content_type('application/json')
+                ->set_status_header(400)
+                ->set_output(json_encode([
+                    'code' => 400,
+                    'status' => ResponseStatus::BAD_REQUEST,
+                    'data' => null,
+                    'message' => 'Schedule Training creation failed.'
+                ]));
         }
     }
 
@@ -345,21 +371,30 @@ class Schedule_training extends CI_Controller {
 			unset($data['training_dates']); // Prevent DB insert issue
 		}
 
-		// Extract and enrich trainer data
+
 		if (!empty($data['trainerName'])) {
-			$trainerIdArray = $data['trainerName'];
-			foreach ($trainerIdArray as $value) {
-				$trainer = $this->crud->read('employees', ['id' => $value]);
-				if ($trainer) {
-					$combineTrainer[] = [
-						'id' => $trainer->id,
-						'trainer_name' => $trainer->name,
-					];
-				}
-			}
-			unset($data['trainerName']);
+            $trainerIdArr = $data['trainerName'];
+
+            if (isset($data['trainer']) && $data['trainer'] === 'External') {
+                // Jika trainer eksternal, langsung gunakan nama dari input trainerName[]
+                foreach ($trainerIdArr as $extTrainerName) {
+                    $combineTrainer[] = [
+                        'id' => '', // Tidak ada ID untuk eksternal
+                        'name' => $extTrainerName,
+                    ];
+                }
+            } else {
+                foreach ($trainerIdArr as $value) {
+                    $trainer = $this->crud->read('employees', ['id' => $value]);
+                    $combineTrainer[] = [
+                        'id' => !empty($trainer->id) ? $trainer->id : '',
+                        'name' => $trainer->name,
+                    ];
+                }
+            }
+            unset($data['trainerName']);
 			unset($data['trainingTrainerId']);
-		}
+        }
 
 		// Proceed with update
 		if (!empty($data)) {
@@ -457,7 +492,7 @@ class Schedule_training extends CI_Controller {
         FROM lnd_request_training a 
         JOIN lnd_request_training_approvals_history b 
             ON b.trainingRequestId = a.requestTrainingId 
-        WHERE a.induction = '$induction' AND b.approved = 4 
+        WHERE a.induction = '$induction' AND b.approval_data = 'COMPLETED' 
         ORDER BY a.requestTrainingId ASC");
 
 		// Combine both into one response

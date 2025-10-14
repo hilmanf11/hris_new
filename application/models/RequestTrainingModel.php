@@ -54,6 +54,11 @@ class RequestTrainingModel extends CI_Model {
         $this->db->delete('lnd_request_training');
     }
 
+    public function delete_data_history($id) {
+        $this->db->where('trainingRequestId', $id);
+        $this->db->delete('lnd_request_training_approvals_history');
+    }
+
     public function insert_data_trainee($data) {
         $data['createdBy'] = $this->session->username;
         $data['createdTime'] = date('Y-m-d H:i:s');

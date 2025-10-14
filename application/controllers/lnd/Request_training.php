@@ -349,6 +349,10 @@ class Request_training extends CI_Controller {
             ]));
         } else {
             $this->RequestTrainingModel->delete_data($id);
+            // Cek apakah kolom requestTrainingId tersedia dan tidak null
+            if (!empty($data['requestTrainingId'])) {
+                $this->RequestTrainingModel->delete_data_history($data['requestTrainingId']);
+            }
             $this->RequestTrainingModel->delete_data_trainee($id);
             return $this->output
             ->set_content_type('application/json')
