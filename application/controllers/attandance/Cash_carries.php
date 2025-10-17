@@ -2124,6 +2124,7 @@ class Cash_carries extends CI_Controller
                     $att_time_end = strtotime($record['trans_date'] . " " . $attandance->time_out);
                     $tomorrow = strtotime(date('Y-m-d', strtotime($record['trans_date'] . "+1 days")) . " " . $attandance->time_out);
                     $att_diff = $att_time_end - $att_time_begin;
+                    $att_hour = floor($att_diff / (60 * 60));
                     if ($att_hour < 0) { $att_diff = $tomorrow - $att_time_begin; }
 
                     $minutes = ($att_diff % 3600) / 60;
