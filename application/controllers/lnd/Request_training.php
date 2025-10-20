@@ -504,7 +504,7 @@ class Request_training extends CI_Controller {
     public function readsTrainee() {
         $post = isset($_POST['q']) ? array("a.name" => $_POST['q']) : $this->input->get();
 
-        $this->db->select('a.name, a.id');
+        $this->db->select('a.name, a.id, a.number');
         $this->db->from('employees a');
         if ($post) {
             $this->db->like($post);
@@ -523,6 +523,23 @@ class Request_training extends CI_Controller {
 		$this->db->from('employees a');
 		$this->db->join('positions b', 'b.id = a.position_id', 'left');
 		$this->db->where("(CAST(b.level AS UNSIGNED) <= 5 OR a.departement_sub_id = '20221213000007') AND a.status = 0", null, false);
+		if(!empty($post)) {
+			$this->db->like($post);
+		}
+		$this->db->stop_cache();
+		$res = $this->db->get()->result_array();
+		$this->db->flush_cache(); // Hapus cache query
+		echo json_encode($res);
+	}
+
+  public function readsEmployeesStaffUp() {
+		$post = isset($_POST['q']) ? array("a.name" => $_POST['q']) : $this->input->get();
+
+		$this->db->start_cache();
+		$this->db->select('a.id, a.name, b.name as positionName, a.number');
+		$this->db->from('employees a');
+		$this->db->join('positions b', 'b.id = a.position_id', 'left');
+		$this->db->where("(CAST(b.level AS UNSIGNED) <= 6 OR a.departement_sub_id = '20221213000007') AND a.status = 0", null, false);
 		if(!empty($post)) {
 			$this->db->like($post);
 		}

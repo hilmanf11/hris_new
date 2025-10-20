@@ -612,7 +612,7 @@
             }],
             columns: [
                 [{
-					field: 'id',
+					field: 'number',
 					title: 'ID Trainee',
 					width: 120
 				}, {
@@ -624,7 +624,7 @@
         });
 
 		$('#trainerNameFilter').combogrid({
-			url: '<?= base_url('lnd/request_training/readsEmployeesLeaderUp') ?>',
+			url: '<?= base_url('lnd/request_training/readsEmployeesStaffUp') ?>',
 			panelWidth: 450,
 			idField: 'id',
 			textField: 'name',
@@ -639,7 +639,7 @@
 			}],
 			columns: [
 				[{
-					field: 'id',
+					field: 'number',
 					title: 'ID Trainer',
 					width: 120
 				}, {
@@ -849,7 +849,7 @@
 
     function templateInternal() {
         const html = `<span style="width:35%; display:inline-block;">Trainer Name</span>
-					<input style="width:60%;" id="trainerNameFilter" name="trainer_name" class="easyui-combogrid" data-options="url: '<?= base_url('lnd/request_training/readsEmployeesLeaderUp') ?>',
+					<input style="width:60%;" id="trainerNameFilter" name="trainer_name" class="easyui-combogrid" data-options="url: '<?= base_url('lnd/request_training/readsEmployeesStaffUp') ?>',
                         panelWidth: 450,
                         idField: 'id',
                         textField: 'name',
@@ -864,7 +864,7 @@
                         }],
                         columns: [
                             [{
-                                field: 'id',
+                                field: 'number',
                                 title: 'ID Trainer',
                                 width: 120
                             }, {

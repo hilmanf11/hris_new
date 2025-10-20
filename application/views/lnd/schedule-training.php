@@ -115,15 +115,8 @@
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Training Name</span>
                 <input style="width:60%;" name="trainingName" id="trainingName" required="" class="easyui-textbox">
+                <input type="hidden" name="trainer" id="trainer_hidden">
             </div>
-			<div class="fitem">
-				<span style="width:35%; display:inline-block;">Trainer</span>
-				<select style="width:60%;" name="trainer" id="trainer" required="" class="easyui-combobox" panelHeight="auto" tabindex="-1" aria-disabled="true" disabled="disabled">
-					<option value="Internal">Internal</option>
-					<option value="External">External</option>
-				</select>
-				<input type="hidden" name="trainer" id="trainer_hidden">
-			</div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Category</span>
                 <select style="width:60%;" name="category" id="category" required="" class="easyui-combobox" panelHeight="auto">
@@ -200,7 +193,7 @@
         
         // Initial setup for trainerName_1 (default internal)
         $(`#trainerName_1`).combogrid({
-            url: '<?= base_url('lnd/schedule_training/readsEmployeesLeaderUp') ?>',
+            url: '<?= base_url('lnd/request_training/readsEmployeesStaffUp') ?>',
             panelWidth: 450,
             idField: 'id',
             textField: 'name',
@@ -226,7 +219,7 @@
             ],
         });
 		// Optionally, ensure default value is properly synced at form show
-		$('#dlg_insert').on('open', syncTrainerHidden);
+		// $('#dlg_insert').on('open', syncTrainerHidden);
 
         $('#trainingMaterialFilter').combogrid({
             url: '<?= base_url('lnd/training_activity/list') ?>',
@@ -455,7 +448,7 @@
 
             // Re-initialize EasyUI combogrid on the default trainer
             $(`#trainerName_${currentId}`).combogrid({
-                url: '<?= base_url('lnd/schedule_training/readsEmployeesLeaderUp') ?>',
+                url: '<?= base_url('lnd/request_training/readsEmployeesStaffUp') ?>',
                 panelWidth: 450,
                 idField: 'id',
                 textField: 'name',
@@ -529,7 +522,7 @@
                     
                     // Inisialisasi EasyUI combogrid
                     $(`#trainerName_${trainerId}`).combogrid({
-                        url: '<?= base_url('lnd/schedule_training/readsEmployeesLeaderUp') ?>',
+                        url: '<?= base_url('lnd/request_training/readsEmployeesStaffUp') ?>',
                         panelWidth: 450,
                         idField: 'id',
                         textField: 'name',
@@ -1296,7 +1289,7 @@
         } else {
             // Reinitialize EasyUI combogrid
             $(`#trainerName_${currentId}`).combogrid({
-                url: '<?= base_url('lnd/schedule_training/readsEmployeesLeaderUp') ?>',
+                url: '<?= base_url('lnd/request_training/readsEmployeesStaffUp') ?>',
                 panelWidth: 450,
                 idField: 'id',
                 textField: 'name',

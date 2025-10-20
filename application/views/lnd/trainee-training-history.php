@@ -113,7 +113,7 @@
 		});
 
 		$('#filter_trainer_name').combogrid({
-			url: '<?= base_url('lnd/Trainee_Training_History/readsEmployeesLeaderUp') ?>',
+			url: '<?= base_url('lnd/request_training/readsEmployeesStaffUp') ?>',
 			panelWidth: 450,
 			idField: 'name',
 			textField: 'name',
@@ -128,7 +128,7 @@
 			}],
 			columns: [
 				[{
-					field: 'id',
+					field: 'number',
 					title: 'Employee ID',
 					width: 120
 				}, {
