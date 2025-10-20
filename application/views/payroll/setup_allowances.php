@@ -98,7 +98,7 @@
             </div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Description</span>
-                <input style="width:60%; height: 60px;" name="description" class="easyui-textbox" data-options="multiline:true">
+                <input style="width:60%; height: 60px;" name="description" id="description" class="easyui-textbox" data-options="multiline:true">
             </div>
         </fieldset>
     </form>
@@ -130,6 +130,7 @@
 <script>
     //ADD DATA
     function add() {
+        $("#amount").numberbox('enable');
         $('#dlg_insert').dialog('open');
         url_save = '<?= base_url('payroll/setup_allowances/create') ?>';
         $('#frm_insert').form('clear');
@@ -139,8 +140,16 @@
     function update() {
         var rows = $('#dg').datagrid('getChecked');
         if (rows.length == 1) {
+            $("#amount").numberbox('enable');
+            var data = $('#allowance_id').combobox('getData');
             for (var i = 0; i < rows.length; i++) {
                 var row = rows[i];
+                var object = data.find(obj => obj.id == row.allowance_id);
+
+                if (object != null) {
+                    if (object.amount != '0') { $("#amount").numberbox('disable'); }
+                }
+
                 $('#dlg_insert').dialog('open');
                 $('#frm_insert').form('load', row);
                 url_save = '<?= base_url('payroll/setup_allowances/update') ?>?id=' + btoa(row.id);
@@ -292,6 +301,7 @@
                 text: 'Save',
                 iconCls: 'icon-ok',
                 handler: function() {
+                    $("#amount").numberbox('enable');
                     $('#frm_insert').form('submit', {
                         url: url_save,
                         onSubmit: function() {
@@ -559,11 +569,13 @@
 
         $('#allowance_id').combobox({
             url: '<?= base_url('payroll/allowances/reads') ?>',
+            editable: false,
             valueField: 'id',
             textField: 'name',
             prompt: "Choose Allowance",
             onSelect: function(allowance) {
-                $("#amount").numberbox('setValue', allowance.amount);
+                $("#amount").numberbox('disable').numberbox('setValue', allowance.amount);
+                if (allowance.amount == 0) { $("#amount").numberbox('enable'); }
             }
         });
     });
