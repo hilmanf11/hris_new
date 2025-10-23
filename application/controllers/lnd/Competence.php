@@ -94,6 +94,7 @@ class Competence extends CI_Controller {
         $this->db->from('lnd_competence');
         $this->db->order_by('index', 'ASC');
         $records = $this->db->get()->result_array();
+        $logo = base_url('assets/image/logo_bei_2.jpg');
 
         $html = '<html><head><title>Print Data</title></head><style>body {font-family: Arial, Helvetica, sans-serif;}#customers {border-collapse: collapse;width: 100%;font-size: 12px;}#customers td, #customers th {border: 1px solid #ddd;padding: 2px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 2px;padding-bottom: 2px;text-align: left;color: black;}</style><body>
         <center>
@@ -101,11 +102,11 @@ class Competence extends CI_Controller {
                 <table style="width: 100%;">
                     <tr>
                         <td width="50" style="font-size: 12px; vertical-align: top; text-align: center; vertical-align:jus margin-right:10px;">
-                            <img src="' . $config->favicon . '" width="30">
+                            <img src="'.$logo.'" width="30">
                         </td>
                         <td style="font-size: 14px; text-align: left; margin:2px;">
-                            <b>' . $config->name . '</b><br>
-                            <small>MASTER DIVISION</small>
+                            <b>PT BANSHU ELECTRIC INDONESIA</b><br>
+                            <small>MASTER COMPETENCE</small>
                         </td>
                     </tr>
                 </table>

@@ -761,6 +761,8 @@ class Schedule_training extends CI_Controller {
 			];
 		}
 
+		$logo = base_url('assets/image/logo_bei_2.jpg');
+
 // Start HTML
 		$months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 		$html = '<html><head></head><style>body {font-family: Arial, Helvetica, sans-serif;}#customers {border-collapse: collapse;width: 100%;font-size: 12px;}#customers td, #customers th {border: 1px solid #ddd;padding: 2px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 2px;padding-bottom: 2px;text-align: left;color: black;}</style><body>
@@ -776,8 +778,8 @@ class Schedule_training extends CI_Controller {
 		$html .= '<tr>
 			<td colspan="56" style="position: relative; text-align: center; font-size: 16px; font-weight: bold;">
 				<div style="position: absolute; top: 0; left: 0; font-size: 12px; text-align: left;">
-					<img src="' . $config->favicon . '" width="30">
-					<b>' . $config->name . '</b><br>
+					<img src="' . $logo . '" width="30">
+					<b>PT BANSHU ELECTRIC INDONESIA</b><br>
 					<small>' . $config->description . '</small>
 				</div>
 				PT BANSHU ELECTRIC INDONESIA<br>SCHEDULE TRAINING

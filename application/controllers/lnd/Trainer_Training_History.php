@@ -120,6 +120,7 @@ class Trainer_Training_History extends CI_Controller {
 
 				$html = '';
 
+				$logo = base_url('assets/image/logo_bei_2.jpg');
 				foreach ($records as $index => $dataEmployee) {
 					// Add page break for every employee except the first one
 					if ($index > 0) {
@@ -163,10 +164,10 @@ class Trainer_Training_History extends CI_Controller {
 								<table style="width: 100%;">
 									<tr>
 										<td width="50" style="font-size: 12px; vertical-align: top; text-align: center; vertical-align:jus margin-right:10px;">
-											<img src="' . $config->favicon . '" width="30">
+											<img src="' . $logo . '" width="30">
 										</td>
 										<td style="font-size: 14px; text-align: left; margin:2px;">
-											<b>' . $config->name . '</b><br>
+											<b>PT BANSHU ELECTRIC INDONESIA</b><br>
 											<small>' . $config->description . '</small>
 										</td>
 									</tr>
@@ -286,7 +287,7 @@ class Trainer_Training_History extends CI_Controller {
 																->join('lnd_feedback_history b', "a.history_feedback_id = b.id", "left")
 																->join('lnd_detail_trainer_history c', 'a.id=c.training_history_id', 'left')
 																->join('lnd_test_form_detail d', 'a.id=d.test_id', 'left')
-																->where('c.trainer_name', $dataEmployee['employee_id'])
+																->where('c.trainer_name', '20230116001455')
 																->where('d.test_completed_date IS NOT NULL')
 																->get();
 										$feedback_result = $feedback_query->result_array();

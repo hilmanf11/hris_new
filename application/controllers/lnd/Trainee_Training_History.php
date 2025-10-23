@@ -157,6 +157,7 @@ class Trainee_Training_History extends CI_Controller {
 				$this->db->from('config');
 				$config = $this->db->get()->row();
 				$html = '';
+				$logo = base_url('assets/image/logo_bei_2.jpg');
 				
 				if($records) {
 					$employeeCount = 0;
@@ -199,10 +200,10 @@ class Trainee_Training_History extends CI_Controller {
 								<table style="width: 100%;">
 									<tr>
 										<td width="50" style="font-size: 12px; vertical-align: top; text-align: center; margin-right:10px;">
-											<img src="' . $config->favicon . '" width="30">
+											<img src="' . $logo . '" width="30">
 										</td>
 										<td style="font-size: 14px; text-align: left; margin:2px;">
-											<b>' . $config->name . '</b><br>
+											<b>PT BANSHU ELECTIRC INDONESIA</b><br>
 											<small>' . $config->description . '</small>
 										</td>
 									</tr>
@@ -256,82 +257,70 @@ class Trainee_Training_History extends CI_Controller {
 		
 						$no = 1;
 						$content = "";
-						// foreach ($records as $data) {
-							$this->db->select("
-								lta.trainingActivity AS training_name,
-								lth.trainer,
-								MAX(ltd.score_pre_test) AS score_pre_test,
-								MAX(ltd.score_post_test) AS score_post_test,
-								MAX(ltd.test_date) AS test_date,
-								MAX(ltd.test_date) AS completed_date,
-								lfh.json_response AS json_feedback_history
-							");
-		
-							$this->db->from('lnd_training_history lth');
-							$this->db->join('lnd_test_form_detail ltd', "lth.id = ltd.test_id", "left");
-							$this->db->join('lnd_master_form_test lmft', "lth.test_id = lmft.id", "left");
-							$this->db->join('lnd_schedule_training lst', "lmft.training_name = lst.id", "left");
-							$this->db->join('lnd_training_activity lta', "lst.trainingName = lta.id", "left");
-							$this->db->join('lnd_feedback_history lfh', "lth.history_feedback_id = lfh.id", "left");
-		
-							// $this->db->where('lth.employee_id', $employee_id);
-							// $this->db->where("DATE(ltd.test_date) BETWEEN '".$filter_from."' AND '".$filter_to."'");
-							$this->db->where('lth.employee_id', $dataEmployee['employee_id']);
-							$this->db->where("DATE(ltd.test_date) BETWEEN '".$form['filter_from']."' AND '".$form['filter_to']."'");
-		
-							if (!empty($form['filter_trainer_name'])) {
-								$this->db->where('lth.trainer', $form['filter_trainer_name']);
-							}
-		
-							if (!empty($form['filter_training_name'])) {
-								$this->db->where('lth.test_id', $form['filter_training_name']);
-							}
-		
-							// Mengelompokkan hasil untuk agregasi skor dan tanggal
-							$this->db->group_by('lth.id');
-							$this->db->group_by('lta.trainingActivity');
-							$this->db->group_by('lth.trainer');
-							$this->db->group_by('lfh.json_response');
-		
-							// --- Perbaikan untuk error "No tables used" ---
-							// Hitung total data TANPA mereset query builder
-							// Parameter kedua 'FALSE' mencegah reset Active Record class
-							$totalRows = $this->db->count_all_results(null, FALSE);
-		
-							// Mengurutkan hasil (ini harus setelah count_all_results jika Anda ingin menghitung sebelum order/limit)
-							$this->db->order_by('lth.id');
-		
-							// Jalankan query untuk mendapatkan data aktual
-							$query = $this->db->get();
-		
-							// Ambil hasil
-							// $result = $query->result_array(); // atau $query->result() untuk objek
-							$history_training = $query->result_array(); //$this->db->get()->result_array();
-							if (count($history_training) > 0) {
-								foreach ($history_training as $traine) {
-									$content .= "<tr>
-													<td>" . $no . "</td>
-													<td style='mso-number-format:\@;width:100px'>" . htmlspecialchars($traine['training_name']) . "</td>
-													<td style='mso-number-format:\@;width:100px'>" . htmlspecialchars($traine['trainer']) . "</td>
-													<td style='mso-number-format:\@;width:100px'>" . htmlspecialchars($traine['test_date']) . "</td>
-													<td style='mso-number-format:\@;width:100px'>PT. PIRANTI TEKNIK INDONESIA</td>
-													<td style='mso-number-format:\@;width:100px'>".$traine['score_pre_test']." </td>
-													<td style='mso-number-format:\@;width:100px'>".$traine['score_post_test']." </td>
-												</tr>";
-									$no++;
-								}
-							} else {
+
+						// Gunakan DISTINCT agar tidak double, dan test_date hanya YYYY-mm-dd
+						$this->db->select("
+							DISTINCT lta.trainingActivity AS training_name,
+							lth.trainer,
+							MAX(ltd.score_pre_test) AS score_pre_test,
+							MAX(ltd.score_post_test) AS score_post_test,
+							DATE_FORMAT(MAX(ltd.test_date), '%Y-%m-%d') AS test_date,
+							DATE_FORMAT(MAX(ltd.test_date), '%Y-%m-%d') AS completed_date,
+							lfh.json_response AS json_feedback_history
+						", false);
+
+						$this->db->from('lnd_training_history lth');
+						$this->db->join('lnd_test_form_detail ltd', "lth.id = ltd.test_id", "left");
+						$this->db->join('lnd_master_form_test lmft', "lth.test_id = lmft.id", "left");
+						$this->db->join('lnd_schedule_training lst', "lmft.training_name = lst.id", "left");
+						$this->db->join('lnd_training_activity lta', "lst.trainingName = lta.id", "left");
+						$this->db->join('lnd_feedback_history lfh', "lth.history_feedback_id = lfh.id", "left");
+
+						$this->db->where('lth.employee_id', $dataEmployee['employee_id']);
+						$this->db->where("DATE(ltd.test_date) BETWEEN '".$form['filter_from']."' AND '".$form['filter_to']."'");
+
+						if (!empty($form['filter_trainer_name'])) {
+							$this->db->where('lth.trainer', $form['filter_trainer_name']);
+						}
+
+						if (!empty($form['filter_training_name'])) {
+							$this->db->where('lth.test_id', $form['filter_training_name']);
+						}
+
+						// Group by untuk mendistink hasil berdasarkan training, trainer, test_date
+						$this->db->group_by('lta.trainingActivity');
+						$this->db->group_by('lth.trainer');
+						$this->db->group_by('test_date'); // Sudah berbentuk '%Y-%m-%d'
+
+						$totalRows = $this->db->count_all_results(null, FALSE);
+						$this->db->order_by('test_date DESC');
+
+						$query = $this->db->get();
+						$history_training = $query->result_array();
+
+						if (count($history_training) > 0) {
+							foreach ($history_training as $traine) {
 								$content .= "<tr>
-												<td colspan='7' style='text-align:center'>Data tidak ditemukan</td>
+												<td>" . $no . "</td>
+												<td style='mso-number-format:\@;width:100px'>" . htmlspecialchars($traine['training_name']) . "</td>
+												<td style='mso-number-format:\@;width:100px'>" . htmlspecialchars($traine['trainer']) . "</td>
+												<td style='mso-number-format:\@;width:100px'>" . htmlspecialchars($traine['test_date']) . "</td>
+												<td style='mso-number-format:\@;width:100px'>PT. PIRANTI TEKNIK INDONESIA</td>
+												<td style='mso-number-format:\@;width:100px'>".$traine['score_pre_test']." </td>
+												<td style='mso-number-format:\@;width:100px'>".$traine['score_post_test']." </td>
 											</tr>";
+								$no++;
 							}
-		
-							$content .= "</tr>";
-		
-							$html .= $content;
-							$no++;
-						// }
-		
+						} else {
+							$content .= "<tr>
+											<td colspan='7' style='text-align:center'>Data tidak ditemukan</td>
+										</tr>";
+						}
+						$content .= "</tr>";
+
+						$html .= $content;
+						$no++;
+
 						$html .= '</table> <br> <br>';
 					}
 				}

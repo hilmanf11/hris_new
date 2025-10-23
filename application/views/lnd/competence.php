@@ -67,7 +67,7 @@
 </div>
 
 <!-- PDF -->
-<iframe id="printout" src="<?= base_url('employee/departements/print') ?>" style="width: 100%;" hidden></iframe>
+<iframe id="printout" src="<?= base_url('lnd/competence/print') ?>" style="width: 100%;" hidden></iframe>
 <script>
     // Initialize competence grid on page load
     window.onload = initCompetenceGrid;
@@ -192,7 +192,7 @@
     function updatePrintout(params) {
         $("#printout").contents().find('html')
             .html("<center><br><br><br><b style='font-size:20px;'>Please Wait...</b></center>");
-        $("#printout").attr('src', '<?= base_url('employee/departements/print') ?>' + params);
+        $("#printout").attr('src', '<?= base_url('lnd/competence/print') ?>' + params);
     }
 
     // Server communication

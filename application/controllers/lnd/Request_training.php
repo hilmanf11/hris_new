@@ -662,7 +662,7 @@ class Request_training extends CI_Controller {
             $approvedNamePIC = $approval['approved_by'];
         }
         // Div Head adalah approved == maxApproved - 1
-        if ($approvedValue === ($maxApproved - 1)) {
+        if ($approvedValue === ($maxApproved - 2)) {
             $approvedDateDivHead = $approval['approved_date_convert'];
             $approvedNameDivHead = $approval['approved_by'];
         }
@@ -725,6 +725,8 @@ class Request_training extends CI_Controller {
         $this->ciqrcode->generate($paramsPIC);
         $qrUrlPIC = base_url($pathPIC . $filenamePIC);
     }
+
+    $logo = base_url('assets/image/logo_bei_2.jpg');
 
 		$html = '
 		<!DOCTYPE html>
@@ -850,10 +852,10 @@ class Request_training extends CI_Controller {
     <table style="width: 100%;">
         <tr>
             <td style="font-size: 12px; vertical-align: top; text-align: center; width: 10px;">
-                <img src="' . $config->favicon . '" width="10">
+                <img src="' . $logo . '" width="30">
             </td>
             <td colspan="2" style="font-size: 14px; text-align: left; margin:2px;">
-                <b>' . $config->name . '</b><br>
+                <b>PT BANSHU ELECTRIC INDONESIA</b><br>
                 <small>' . $config->description . '</small>
             </td>
             <td colspan="5" style="border-bottom:0">

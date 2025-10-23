@@ -674,7 +674,7 @@
                     text: url,
                     width: 228,
                     height: 228,
-                    correctLevel: QRCode.CorrectLevel['H']
+                    correctLevel: QRCode.CorrectLevel['M']
                 });
 
                 console.log("#pre", url, url_post);
@@ -685,7 +685,7 @@
                     text: url_post,
                     width: 228,
                     height: 228,
-                    correctLevel: QRCode.CorrectLevel['H']
+                    correctLevel: QRCode.CorrectLevel['M']
                 });
                 $('#pretest-url').val(url);
                 $('#posttest-url').val(url_post);
