@@ -482,11 +482,11 @@ class Payroll_harian_lepas extends CI_Controller
             $working_days = ($attandance_amount + $arr_total_permit_absence + $changeDays_amount);
             //Jika hari kerja nya lebih besar dari HKW maka nilai ambil HKW
             // die($attandance_amount.' + '.$arr_total_permit_absence.' + '.$changeDays_amount.' = '.$working_days);
-            if ($working_days >= $hkw) {
-                $wd = $hkw;
-            } else {
+            // if ($working_days >= $hkw) {
+            //     $wd = $hkw;
+            // } else {
                 $wd = $working_days;
-            }
+            // }
             //Total Masuk kerja
             $masuk = @$wd;
             //Allowances / Tunjangan kerja
