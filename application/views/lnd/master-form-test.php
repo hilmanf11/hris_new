@@ -71,7 +71,7 @@
                     <div style="width: 60%; margin-left: 2px">
                         <input style="width:100%;" id="department" name="department" required="" class="easyui-combogrid"
                         data-options="
-                            url: '<?= base_url('employee/departements/reads') ?>',
+                            url: '<?= base_url('lnd/Master_form_test/readDept') ?>',
                             idField: 'name',
                             textField: 'name', 
                             mode: 'remote',
@@ -80,7 +80,7 @@
                             panelWidth: 500,
                             maxSelections: 2,
                             columns: [[
-                                {field:'number',title:'Dept. Number',width:200},
+                                {field:'division_name',title:'Division',width:200},
                                 {field:'name',title:'Dept. Name',width:200},
                             ]],
                              onSelect: function(index, row) {
@@ -565,7 +565,7 @@
 
     function generatedDepList(){
         $('#departement_id').combogrid({
-            url: '<?= base_url('employee/departements/reads') ?>',
+            url: '<?= base_url('lnd/Master_form_test/readDept') ?>',
             panelWidth: 420,
             idField: 'id',
             textField: 'name',

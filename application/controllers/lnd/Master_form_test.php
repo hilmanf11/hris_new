@@ -535,6 +535,38 @@ class Master_form_test extends CI_Controller {
         }
     }
 
+    //GET DATA
+    public function readDept()
+    {
+        $post = isset($_POST['q']) ? $_POST['q'] : "";
+        $division_id = $this->input->get('division_id') ? $this->input->get('division_id') : "";
+
+        $user = $this->crud->read("users", [], ["id" => $this->session->id]);
+        if ($user->access == "0") {
+            $departement_id = "";
+        } else {
+            $departement_id = $this->session->departement_id;
+        }
+
+        // Join ke table division on division.id = division_id
+        $this->db->select('departements.*, divisions.name as division_name');
+        $this->db->from('departements');
+        $this->db->join('divisions', 'divisions.id = departements.division_id', 'left');
+        if ($post !== "") {
+            $this->db->like('departements.name', $post);
+        }
+        if ($division_id !== "") {
+            $this->db->where('departements.division_id', $division_id);
+        }
+        if ($departement_id !== "") {
+            $this->db->where('departements.id', $departement_id);
+        }
+        $query = $this->db->get();
+        $send = $query->result_array();
+
+        echo json_encode($send);
+    }
+
     public function update_data_v2($id) {
         log_message('debug', 'ISI $_FILES: ' . print_r($_FILES, true));
         log_message('debug', 'ISI $_POST: ' . print_r($_POST, true));

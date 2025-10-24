@@ -1794,6 +1794,11 @@ class Approvals extends CI_Controller
 					$approved = 5;
 					$approval_data = empty($approval->user_approval_5) ? 'COMPLETED' : null;
 					break;
+                case 5:
+                        $users_id = isset($approval->user_approval_6) ? $approval->user_approval_6 : "";
+                        $approved = 6;
+                        $approval_data = empty($approval->user_approval_6) ? 'COMPLETED' : null;
+                        break;
 				default:
 					$users_id = "";
 					$approved = 0;
