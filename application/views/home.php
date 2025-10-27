@@ -416,10 +416,10 @@
 		<table id="dg_agreement" class="easyui-datagrid"></table>
 	</div>
 
-	<div id="dlg_form_agreement" class="easyui-dialog" data-options="{title: 'Add New', closed: true, modal: true}" style="width: 750px; height: 700px; top: 50px;">
-		<table style="width: 100%;">
+	<div id="dlg_form_agreement" class="easyui-dialog" data-options="{title: 'Add New', closed: true, modal: true}" style="width: 800px; height: 700px; top: 50px;">
+		<table style="width: 100%; min-height: 101%;">
 			<tr>
-				<td valign="top" style="width: 50%;"><fieldset style="border:1px solid #d0d0d0; float: left; width: 100%;">
+				<td style="width: 50%; vertical-align: top; height: 429px;"><fieldset style="height: 100%;">
 					<legend>Personal Data</legend>
 					<table style="width: 100%;">
 						<tr>
@@ -428,40 +428,37 @@
 						</tr>
 						<tr>
 							<td>Employee ID</td>
-							<td><input id="emp_id" class="easyui-combobox" required disabled></td>
+							<td><input id="emp_id" class="easyui-textbox" required></td>
 						</tr>
 						<tr>
 							<td>Name</td>
-							<td><input id="emp_name" class="easyui-textbox" required disabled></td>
+							<td><input id="emp_name" class="easyui-textbox" required></td>
 						</tr>
 						<tr>
 							<td>National ID</td>
-							<td><input id="national_id" class="easyui-textbox" required disabled></td>
+							<td><input id="national_id" class="easyui-textbox" required></td>
 						</tr>
 						<tr>
 							<td>Place of Birth</td>
-							<td><input id="place_birth" class="easyui-textbox" required disabled></td>
+							<td><input id="place_birth" class="easyui-textbox" required></td>
 						</tr>
 						<tr>
 							<td>Birth Date</td>
-							<td><input id="" class="easyui-textbox" required disabled></td>
+							<td><input id="birthday" class="easyui-textbox" required></td>
 						</tr>
 						<tr>
 							<td>Gender</td>
-							<td>
-								<input type="checkbox" name="gender" value="male" disabled>&nbsp;Male&nbsp;
-								<input type="checkbox" name="gender" value="female" disabled>&nbsp;Female
-							</td>
+							<td><input id="gender" class="easyui-textbox" required></td>
 						</tr>
 						<tr>
 							<td>Address</td>
-							<td><input id="" class="easyui-textbox" data-options="{multiline: true}" required disabled style="height: 150px;"></td>
+							<td><input id="address" class="easyui-textbox" data-options="{multiline: true}" required style="height: 140px;"></td>
 						</tr>
 					</table>
 				</fieldset></td>
-				<td valign="top" style="width: 50%;"><fieldset style="border:1px solid #d0d0d0; float: left; width: 100%;">
+				<td style="width: 50%; vertical-align: top; height: 429px;"><fieldset style="height: 100%;">
 					<legend>Agreement</legend>
-					<form id="frm_agreement" method="post" enctype="multipart/form-data" novalidate><table style="width: 100%;">
+					<table style="width: 100%;">
 						<tr>
 							<td>Date Sign</td>
 							<td><input id="date_sign" class="easyui-datebox" required></td>
@@ -472,7 +469,11 @@
 						</tr>
 						<tr>
 							<td>Duration</td>
-							<td><input id="duration" class="easyui-textbox" required disabled></td>
+							<td><input id="duration" class="easyui-textbox" required></td>
+						</tr>
+						<tr>
+							<td>Division</td>
+							<td><input id="division" class="easyui-combobox" required></td>
 						</tr>
 						<tr>
 							<td>Department</td>
@@ -484,7 +485,7 @@
 						</tr>
 						<tr>
 							<td>Process</td>
-							<td><input id="process" class="easyui-textbox" required></td>
+							<td><input id="process_agreement" class="easyui-textbox" required></td>
 						</tr>
 						<tr>
 							<td>Employee Type</td>
@@ -492,7 +493,7 @@
 						</tr>
 						<tr>
 							<td>Position</td>
-							<td><input id="position" class="easyui-combobox" required></td>
+							<td><input id="position_agreement" class="easyui-combobox" required></td>
 						</tr>
 						<tr>
 							<td>Group</td>
@@ -500,35 +501,35 @@
 						</tr>
 						<tr>
 							<td>Attachment</td>
-							<td><input id="attachment" class="easyui-filebox"></td>
+							<td><form id="formAttachment" enctype="multipart/form-data"><input id="attachment" name="attachment" class="easyui-filebox"></form></td>
 						</tr>
 						<tr>
 							<td>Notes</td>
 							<td><input id="notes" class="easyui-textbox"></td>
 						</tr>
-					</table></form>
+					</table>
 				</fieldset></td>
 			</tr>
 			<tr>
-				<td valign="top" style="width: 50%;"><fieldset style="border:1px solid #d0d0d0; float: left; width: 100%;">
+				<td style="width: 50%; vertical-align: top;"><fieldset>
 					<legend>Setup Allowances</legend>
 					<table id="tb_allowance" style="width: 100%;"></table><br>
 					<a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="btnAddAllowance()"><i class="fa fa-plus"></i> <span id="add">Add Allowance</span></a>
 				</fieldset></td>
-				<td valign="top" style="width: 50%;"><fieldset style="border:1px solid #d0d0d0; float: left; width: 100%;">
+				<td style="width: 50%; vertical-align: top;"><fieldset>
 					<legend>Setup Salary</legend>
 					<table style="width: 100%;">
 						<tr>
 							<td>Component Salary</td>
-							<td><input id="component_salary" class="easyui-combobox" required></td>
+							<td><input id="component_salary" class="easyui-combobox"></td>
 						</tr>
 						<tr>
 							<td>Amount</td>
-							<td><input id="amount" class="easyui-numberbox" data-options="{precision: 0}" required></td>
+							<td><input id="amount" class="easyui-numberbox" data-options="{precision: 0}"></td>
 						</tr>
 						<tr>
 							<td>BPJS</td>
-							<td><input id="bpjs" class="easyui-numberbox" data-options="{precision: 0}" required></td>
+							<td><input id="bpjs" class="easyui-numberbox" data-options="{precision: 0}"></td>
 						</tr>
 					</table>
 				</fieldset></td>
@@ -598,41 +599,15 @@
 
 	</div>
 
+	<iframe id="printcontract" src="" style="width: 100%;" hidden></iframe>
 </body>
-
-
-
 <script>
-
-	function searchMenu(e){
-
-		menu(e);
-
-	};
-
-
+	function searchMenu(e) { menu(e); };
 
 	$(function() {
-
-		window.addEventListener('load', function(event) {
-
-			detectInternet();
-
-		});
-
-		window.addEventListener('online', function(event) {
-
-			detectInternet();
-
-		});
-
-		window.addEventListener('offline', function(event) {
-
-			detectInternet();
-
-		});
-
-
+		window.addEventListener('load', function(event) { detectInternet(); });
+		window.addEventListener('online', function(event) { detectInternet(); });
+		window.addEventListener('offline', function(event) { detectInternet(); });
 
 		function detectInternet() {
 
@@ -759,7 +734,7 @@
             fit: true,
             toolbar: '#toolbar_agreement',
             columns: [[
-            	{field: 'id', title: 'Employee ID', width: '150', halign: 'center'},
+            	{field: 'emp', title: 'Employee ID', width: '150', halign: 'center'},
             	{field: 'name', title: 'Employee Name', width: '300', halign: 'center'},
             	{field: 'division', title: 'Division', width: '100', halign: 'center'},
             	{field: 'dept', title: 'Departement', width: '150', halign: 'center'},
@@ -770,49 +745,445 @@
             	{field: 'expired', title: 'Contract Expired', width: '120', halign: 'center', align: 'center'},
             	{field: 'note', title: 'Note', width: '300', halign: 'center'},
             	{field: 'act', title: 'Action', width: '100', halign: 'center', align: 'center', formatter: function (value, row, index) { return '<a href="javascript:;" class="easyui-linkbutton" onclick="viewHistory('
-            		+"'"+window.btoa(row.id)+"'"
-        		+')"><i class="fa fa-file-pen"></i></a>'; }}
+            		+"'"+window.btoa(JSON.stringify(row))+"'"+')"><i class="fa fa-file-pen"></i></a>'; }}
             ]],
             onLoadSuccess: function () { $('.easyui-linkbutton').linkbutton(); }
 		}).datagrid('enableFilter');
 
 		menu();
 
+		$('#emp_id').textbox('readonly', true);
+		$('#emp_name').textbox('readonly', true);
+		$('#national_id').textbox('readonly', true);
+		$('#place_birth').textbox('readonly', true);
+		$('#birthday').textbox('readonly', true);
+		$('#gender').textbox('readonly', true);
+		$('#address').textbox('readonly', true);
+		$('#duration').textbox('readonly', true);
+		$('#amount').numberbox({precision: 0});
 	});
 
-	function viewHistory(id) {
-		$('#dlg_form_agreement').dialog('open');
+	var agreement_setup_salary_req = true;
+	var agreement_select_sub_dept = [];
+	var agreement_select_salary = [];
+	var agreement_select_dept = [];
+	var agreement_allowance = [];
+	var agreement_agreement = [];
+	var agreement_employee = [];
+	var agreement_salary = [];
+	var agreement_setup = [];
+	function formAgreement() {
+		$.ajax({
+			url: '<?= base_url('home/formAgreement'); ?>',
+			async: false,
+			method: 'POST',
+			dataType: 'json',
+			success: function (result) {
+				var now = new Date();
+				agreement_select_sub_dept = result.departement_sub;
+				agreement_select_dept = result.departement;
+				agreement_allowance = result.allowance;
+				agreement_agreement = result.agreement;
+				agreement_employee = result.employee;
+				agreement_salary = result.salary;
+				agreement_setup = result.setup;
+
+				$('#trans_date').datebox({
+					formatter: myformatter,
+					parser: myparser,
+					editable: false,
+					value: now.getFullYear()+'-'+
+					String(now.getMonth() + 1).padStart(2, '0')+'-'+
+					String(now.getDate()).padStart(2, '0')
+				});
+
+				$('#date_sign').datebox({
+					formatter: myformatter,
+					parser: myparser,
+					editable: false,
+					onSelect: function (date) {
+						var format = date.getFullYear()+'-'+(date.getMonth() + 1)+'-'+date.getDate();
+						$('#duration').textbox(
+							'setValue',
+							calculateDuration(format, $('#date_expired').datebox('getValue')).text
+						);
+
+						if (format >= $('#date_expired').datebox('getValue'))
+							{ toastr.warning('Please select date sign < date expired!', 'Warning'); }
+					}
+				});
+
+				$('#date_expired').datebox({
+					formatter: myformatter,
+					parser: myparser,
+					editable: false,
+					onSelect: function (date) {
+						var format = date.getFullYear()+'-'+(date.getMonth() + 1)+'-'+date.getDate();
+						$('#duration').textbox(
+							'setValue',
+							calculateDuration($('#date_sign').datebox('getValue'), format).text
+						);
+
+						if ($('#date_sign').datebox('getValue') >= format)
+							{ toastr.warning('Please select date sign < date expired!', 'Warning'); }
+					}
+				});
+
+				$('#division').combobox({
+					data: result.division,
+					textField: 'name',
+					valueField: 'id',
+					editable: false,
+					onSelect: function (rec) {
+						var data = agreement_select_dept.filter(obj => obj.division == rec.id);
+						$('#dept')
+							.combobox('clear')
+							.combobox('enable')
+							.combobox('loadData', data);
+						if (data.length == 1) { $('#dept').combobox('setValue', data[0].id).combobox('disable'); }
+					}
+				});
+
+				$('#dept').combobox({
+					textField: 'name',
+					valueField: 'id',
+					editable: false,
+					onSelect: function (rec) {
+						var data = agreement_select_sub_dept.filter(obj => obj.dept == rec.id);
+						$('#dept_sub')
+							.combobox('clear')
+							.combobox('enable')
+							.combobox('loadData', data);
+						if (data.length == 1) { $('#dept_sub').combobox('setValue', data[0].id).combobox('disable'); }
+					}
+				}).combobox('clear').combobox('disable');
+
+				$('#dept_sub').combobox({
+					textField: 'name',
+					valueField: 'id',
+					editable: false
+				}).combobox('clear').combobox('disable');
+
+				$('#emp_type').combobox({
+					data: result.employee_type,
+					textField: 'name',
+					valueField: 'id',
+					editable: false,
+					onSelect: function (rec) {
+						agreement_setup_salary_req = true;
+
+						if (['20221119000003','20221119000006'].includes(rec.id)) { agreement_setup_salary_req = false; }
+
+						$('#component_salary').combobox('textbox').validatebox({required: agreement_setup_salary_req});
+						$('#amount').numberbox('textbox').validatebox({required: agreement_setup_salary_req});
+						$('#bpjs').numberbox('textbox').validatebox({required: agreement_setup_salary_req});
+						$('#component_salary').combobox('validate');
+						$('#amount').numberbox('validate');
+						$('#bpjs').numberbox('validate');
+					}
+				});
+
+				$('#position_agreement').combobox({
+					data: result.position,
+					textField: 'name',
+					valueField: 'id',
+					editable: false
+				});
+
+				$('#group').combobox({
+					data: result.group,
+					textField: 'name',
+					valueField: 'id',
+					editable: false
+				});
+
+				$('#component_salary').combobox({
+				    data: result.component,
+					textField: 'name',
+					valueField: 'id',
+					editable: false,
+					onSelect: function (rec) { selectSalary(rec.id); }
+				});
+
+				agreementReload();
+				$('#dlg_notif').dialog('close');
+				$('#dlg_agreement').dialog('open');
+			}
+		});
 	}
 
-	var numAllowanceAgreement = 0;
-	function formAgreement() {
-		numAllowanceAgreement = 0;
-		agreementReload();
+	var agreement_id = '';
+	var is_contract = false;
+	function viewHistory(row) {
+		var data = JSON.parse(window.atob(row));
+		is_contract = parseInt(data.is_contract) != 0;
+		var emp = agreement_employee.find(obj => obj.number == data.emp);
+		var setups = agreement_setup.filter(obj => obj.employee == data.emp);
+		var agreements = agreement_agreement.find(obj => obj.employee == data.emp);
+		agreement_id = data.id;
+
+		$('#emp_id').textbox('setValue', emp.number);
+		$('#emp_name').textbox('setValue', emp.name);
+		$('#national_id').textbox('setValue', emp.national);
+		$('#place_birth').textbox('setValue', emp.place);
+		$('#birthday').textbox('setValue', emp.date);
+		$('#gender').textbox('setValue', emp.gender);
+		$('#address').textbox('setValue', emp.address);
+		$('#component_salary').combobox('clear');
+		$('#amount').numberbox('clear');
+		$('#bpjs').numberbox('clear');
+
+		$('#date_sign').datebox('setValue', agreements.sign);
+		$('#date_expired').datebox('setValue', agreements.expired);
+		$('#duration').textbox('setValue', calculateDuration(agreements.sign, agreements.expired).text);
+		$('#division').combobox('setValue', agreements.division);
+		$('#dept').combobox('setValue', agreements.dept);
+		$('#dept_sub').combobox('setValue', agreements.sub_dept);
+		$('#process_agreement').textbox('setValue', agreements.process);
+		$('#emp_type').combobox('setValue', agreements.type);
+		$('#position_agreement').combobox('setValue', agreements.position);
+		$('#group').combobox('setValue', agreements.group_id);
+		$('#notes').textbox('setValue', agreements.note);
+
 		$('#tb_allowance').html('');
-		$('#dlg_notif').dialog('close');
-		$('#dlg_agreement').dialog('open');
+		btnAddAllowance(setups.length);
+		var all_tr = $('#tb_allowance tr');
+		for (var i = 0; i < all_tr.length; i++) {
+			var setup = setups[i];
+			var elem = $(all_tr[i]);
+			var elem_amount = elem.find('.easyui-numberbox');
+			var get = agreement_allowance.find(obj => obj.id == setup.id);
+
+			$(elem.find('.easyui-combobox')).combobox('setValue', setup.id);
+			$(elem_amount).numberbox('setValue', setup.amount).numberbox('disable');
+			if (get.amount != undefined) { if (get.amount == '0') { $(elem_amount).numberbox('enable'); } }
+		}
+
+		agreement_select_salary = agreement_salary.find(obj => obj.employee == data.emp);
+		if (agreement_select_salary != undefined) {
+			selectSalary(agreement_select_salary.component);
+			$('#component_salary').combobox('setValue', agreement_select_salary.component);
+		}
+
+		$('#dlg_form_agreement').dialog({
+			buttons:[{
+				text: 'Save'+((is_contract) ? ' and Print Contract' : ''),
+				iconCls: 'icon-ok',
+				handler: function () {
+					var trans_date = $('#trans_date').datebox('getValue');
+					var emp_id = $('#emp_id').textbox('getValue');
+					var emp_name = $('#emp_name').textbox('getValue');
+					var national_id = $('#national_id').textbox('getValue');
+					var place_birth = $('#place_birth').textbox('getValue');
+					var birthday = $('#birthday').textbox('getValue');
+					var gender = $('#gender').textbox('getValue');
+					var address = $('#address').textbox('getValue');
+					var date_sign = $('#date_sign').datebox('getValue');
+					var date_expired = $('#date_expired').datebox('getValue');
+					var duration = $('#duration').textbox('getValue');
+					var division = $('#division').combobox('getValue');
+					var dept = $('#dept').combobox('getValue');
+					var dept_sub = $('#dept_sub').combobox('getValue');
+					var process_agreement = $('#process_agreement').textbox('getValue');
+					var emp_type = $('#emp_type').combobox('getValue');
+					var position_agreement = $('#position_agreement').combobox('getValue');
+					var group = $('#group').combobox('getValue');
+					var component = $('#component_salary').combobox('getValue');
+					var amount = $('#amount').numberbox('getValue');
+					var bpjs = $('#bpjs').numberbox('getValue');
+					var arr = [trans_date, emp_id, emp_name, national_id, place_birth, birthday, gender, address, date_sign, date_expired, duration, division, dept, dept_sub, process_agreement, emp_type, position_agreement, group];
+					var allowances = $('#tb_allowance tr');
+					var data_allowances = [];
+
+					for (var i = 0; i < allowances.length; i++) {
+						var allow = $(allowances[i]).find('.easyui-combobox').combobox('getValue');
+						var amount = parseInt($(allowances[i]).find('.easyui-numberbox').numberbox('getValue'));
+
+	            		arr.push(allow);
+		            	arr.push((amount == 0) ? NaN : amount);
+
+		            	if (allow != '' && amount != NaN) { data_allowances.push({allow: allow, amount: amount}); }
+		            }
+
+		            if (agreement_setup_salary_req) { arr.push(component); arr.push(amount); arr.push(bpjs); }
+
+					if (arr.includes('')) { toastr.warning('Please fill in the required input form!', 'Warning'); }
+					else {
+						var data = {
+							agreement_id: window.btoa(agreement_id),
+							trans_date: window.btoa(trans_date),
+							emp_id: window.btoa(emp_id),
+							date_sign: window.btoa(date_sign),
+							date_expired: window.btoa(date_expired),
+							duration: window.btoa(duration),
+							division: window.btoa(division),
+							dept: window.btoa(dept),
+							dept_sub: window.btoa(dept_sub),
+							process_agreement: window.btoa(process_agreement),
+							emp_type: window.btoa(emp_type),
+							position_agreement: window.btoa(position_agreement),
+							group: window.btoa(group),
+							notes: window.btoa($('#notes').textbox('getValue')),
+							allowances: window.btoa(JSON.stringify(data_allowances)),
+							component: window.btoa(component),
+							amount: window.btoa(amount),
+							bpjs: window.btoa(bpjs),
+						};
+
+						if ($('#attachment').filebox('getValue') != '') {
+							var file = $('#attachment').next().find('input[type=file]')[0].files[0];
+							var ext = file.name.split('.').pop().toLowerCase();
+						    var extensions = ['pdf', 'xls', 'xlsx'];
+						    var maxSize = 2 * 1024 * 1024; // 2MB
+
+						    if (!extensions.includes(ext))
+						    	{ toastr.warning('No file types allowed! Only PDF, XLS, and XLSX.', 'Warning'); }
+						    else if (file.size > maxSize)
+						    	{ toastr.warning('The file size is too large! Maximum 2MB.', 'Warning'); }
+						    else {
+								$.ajax({
+									url: '<?= base_url('home/saveAgreement'); ?>/attachment',
+									data: new FormData($('#formAttachment')[0]),
+									type: 'POST',
+									dataType: 'json',
+									processData: false,
+									contentType: false,
+									beforeSend: function ()
+										{ $.messager.progress({title:'Process Upload', msg:'Please wait...'}); },
+									success: function (result) {
+										$.messager.progress('close');
+										if (result.stat != 'ok') { toastr.warning('Failed upload!', 'Warning'); }
+										else { data.attachment = result.attachment; saveAgreement(data); }
+									},
+									error: function()
+										{ $.messager.progress('close'); toastr.error('Failed upload!', 'Error'); }
+								});
+							}
+						} else { saveAgreement(data); }
+					}
+				}
+			}]
+		}).dialog('open');
+	}
+
+	function saveAgreement(data) {
+		$.ajax({
+			url: '<?= base_url('home/saveAgreement'); ?>',
+			data: data,
+			async: false,
+			method: 'POST',
+			dataType: 'json',
+			beforeSend: function () { $.messager.progress({title:'Process Save', msg:'Please wait...'}); },
+			success: function (result) {
+				$.messager.progress('close');
+				if (result.stat != 'ok') { toastr.warning('Failed save!', 'Warning'); }
+				else {
+					$('#dlg_form_agreement').dialog('close');
+					$('#dlg_agreement').dialog('close');
+					toastr.success('Success save');
+					formAgreement();
+					if (is_contract) { $("#printcontract").prop(
+						'src',
+						'<?= base_url('excel/print_contract/index') ?>?id='+result.id
+					); }
+				}
+			},
+			error: function() {
+				$.messager.progress('close');
+				toastr.error('Failed save!', 'Error');
+			}
+		});
+	}
+
+	function calculateDuration(sign, expired) {
+		var text = '';
+		var start = new Date(sign);
+		var end = new Date(expired);
+		var time = parseInt((end - start) / (1000 * 60 * 60 * 24));
+
+		if (sign < expired) {
+			var year = end.getFullYear() - start.getFullYear();
+			var month = end.getMonth() - start.getMonth();
+			var day = end.getDate() - start.getDate();
+
+			if (day < 0) {
+				month--;
+				day += new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+			}
+
+			if (month < 0) { year--; month += 12; }
+
+			text = year+' year '+month+' month '+day+' day';
+		}
+
+		return {text: text, time: time};
+	}
+
+	function selectSalary(component) {
+		$('#amount').numberbox('clear');
+		$('#bpjs').numberbox('clear');
+		if (agreement_select_salary != undefined) {
+			if (agreement_select_salary.component == component) {
+				$('#amount').numberbox('setValue', agreement_select_salary.amount);
+				$('#bpjs').numberbox('setValue', agreement_select_salary.bpjs);
+			}
+		}
 	}
 
 	function agreementReload() { $('#dg_agreement').datagrid('loadData', []).datagrid('reload'); }
 
 	function agreementExcel() { window.location.assign('<?= base_url('home/agreementExcel') ?>'); }
 
-	function btnAddAllowance() {
-		let row = $('<tr>');
+	function btnAddAllowance(count = 1) {
+		for (var i = 0; i < count; i++) {
+			var row = $('<tr>');
+			var input1 = $('<input class="easyui-combobox allows" style="width: 190px;" required>');
+			var input2 = $('<input class="easyui-numberbox" style="width: 100px;" required>');
+			var btnDelete = $('<a href="javascript:void(0)" class="easyui-linkbutton"></a>').linkbutton({plain: true, iconCls: 'icon-clear'});
+	        btnDelete.on("click", function () { row.remove(); });
 
-		row.append(
-			$('<td style="width: 55%;">').html('<input id="allow_'+numAllowanceAgreement+'" class="easyui-textbox">')
-		);
-		row.append(
-			$('<td style="width: 40%;">').html('<input id="amount_'+numAllowanceAgreement+'" class="easyui-numberbox">')
-		);
+			row.append($('<td>').append(input1));
+			row.append($('<td>').append(input2));
+			row.append($('<td>').append(btnDelete));
 
-		let btnDelete = $('<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove"></a>');
-        btnDelete.on("click", function () { row.remove(); });
-		row.append( $('<td style="width: 5%;">').append(btnDelete) );
+			$('#tb_allowance').append(row);
 
-		$('#tb_allowance').append(row);
-		$.parse.parse(row);
+			input1.combobox({
+	            valueField: 'id',
+	            textField: 'name',
+				prompt: 'Select Allowance',
+	            data: agreement_allowance,
+	            onChange: function (newValue, oldValue) {
+	            	if (newValue != '') {
+		            	var msg = '';
+	            		var all_tr = $('#tb_allowance tr');
+	            		var this_tr = $(this).closest('tr');
+	            		var this_allow = $(this_tr.find('.easyui-combobox'));
+		            	var this_amount = $(this_tr.find('.easyui-numberbox'));
+
+	            		for (var i = 0; i < all_tr.length; i++) {
+	            			if (this_tr.index() != i && msg == '') {
+	            				var elem = $($(all_tr[i]).find('.easyui-combobox')).combobox('getValue');
+
+	            				if (elem == newValue) { msg = 'Allowance has been selected'; }
+	            			}
+	            		}
+
+		            	if (msg == '') {
+		            		var amount = parseFloat(agreement_allowance.find(obj => obj.id == newValue).amount);
+
+		            		this_amount.numberbox('setValue', amount);
+		            		if (amount == 0) { this_amount.numberbox('enable'); }
+		            		else { this_amount.numberbox('disable'); }
+		            	} else {
+		            		toastr.info(msg, 'Information');
+		            		this_allow.combobox('setValue', oldValue);
+		            	}
+	            	}
+	            }
+			});
+			input2.numberbox({prompt: 'Amount', precision: 0});
+		}
 	}
 
 	function menu(searchName = ""){
@@ -3856,7 +4227,7 @@
 
 	function numberformat(value, row) {
 
-		const formatter = new Intl.NumberFormat('id-ID');
+		var formatter = new Intl.NumberFormat('id-ID');
 
 
 
@@ -3896,6 +4267,25 @@
 
     };
 
+    function myformatter(date) {
+        var y = date.getFullYear();
+        var m = date.getMonth() + 1;
+        var d = date.getDate();
+        return y + '-' + (m < 10 ? ('0' + m) : m) + '-' + (d < 10 ? ('0' + d) : d);
+    }
+
+    function myparser(s) {
+        if (!s) return new Date();
+        var ss = (s.split('-'));
+        var y = parseInt(ss[0], 10);
+        var m = parseInt(ss[1], 10);
+        var d = parseInt(ss[2], 10);
+        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+            return new Date(y, m - 1, d);
+        } else {
+            return new Date();
+        }
+    }
 </script>
 
 
