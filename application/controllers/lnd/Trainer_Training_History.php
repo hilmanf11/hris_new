@@ -287,7 +287,7 @@ class Trainer_Training_History extends CI_Controller {
 																->join('lnd_feedback_history b', "a.history_feedback_id = b.id", "left")
 																->join('lnd_detail_trainer_history c', 'a.id=c.training_history_id', 'left')
 																->join('lnd_test_form_detail d', 'a.id=d.test_id', 'left')
-																->where('c.trainer_name', '20230116001455')
+																->where('c.trainer_name', $dataEmployee['employee_id'])
 																->where('d.test_completed_date IS NOT NULL')
 																->get();
 										$feedback_result = $feedback_query->result_array();
