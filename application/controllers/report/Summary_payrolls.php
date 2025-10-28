@@ -344,6 +344,7 @@ class Summary_payrolls extends CI_Controller
                                     <th rowspan="2" style="text-align:center;">Position</th>
                                     <th rowspan="2" style="text-align:center;">Group</th>
                                     <th rowspan="2" style="text-align:center;">WD</th>
+                                    <th rowspan="2" style="text-align:center;">HKW</th>
                                     <th rowspan="2" style="text-align:center;">Salary</th>
                                     <th colspan="7" style="text-align:center;">Allowance</th>
                                     <th rowspan="2" style="text-align:center;">Correction <br> Plus</th>
@@ -437,6 +438,7 @@ class Summary_payrolls extends CI_Controller
                                 <td>' . $record['position_name'] . '</td>
                                 <td>' . $record['group_name'] . '</td>
                                 <td>' . $record['attandance_wd'] . '</td>
+                                <td>' . $record['working_day'] . '</td>
                                 <td style="text-align:right;">' . number_format($record['salary']) . '</td>
                                 <td style="text-align:right;">' . number_format($total_allowence_fix) . '</td>
                                 <td style="text-align:right;">' . number_format($total_allowence_temp) . '</td>
@@ -927,6 +929,7 @@ class Summary_payrolls extends CI_Controller
                                     <th rowspan="2" style="text-align:center;">Position</th>
                                     <th rowspan="2" style="text-align:center;">Marital</th>
                                     <th rowspan="2" style="text-align:center;">WD</th>
+                                    <th rowspan="2" style="text-align:center;">HKW</th>
                                     <th rowspan="2" style="text-align:center;">Salary</th>
                                     <th colspan="6" style="text-align:center;">Allowance</th>
                                     <th rowspan="2" style="text-align:center;">Correction <br> Plus</th>
@@ -937,10 +940,10 @@ class Summary_payrolls extends CI_Controller
                                     <th rowspan="2" style="text-align:center;">Correction <br> Minus</th>
                                     <th rowspan="2" style="text-align:center;">TER</th>
                                     <th rowspan="2" style="text-align:center;">Total<br>Deduction</th>
-                                    <th rowspan="2" style="text-align:center;">Nett Income</th>
                                     <th rowspan="2" style="text-align:center;">BPJS TK</th>
                                     <th rowspan="2" style="text-align:center;">BPJS KES</th>
                                     <th rowspan="2" style="text-align:center;">Bruto<br>Income</th>
+                                    <th rowspan="2" style="text-align:center;">Nett Income</th>
                                 </tr>
                                 <tr>
                                     <th style="text-align:center;">Allowence</th>';
@@ -1053,6 +1056,7 @@ class Summary_payrolls extends CI_Controller
                             <td>' . $record['position_name'] . '</td>
                             <td>' . $record['marital'] . '</td>
                             <td>' . $record['attandance_wd'] . '</td>
+                            <td>' . $record['working_day'] . '</td>
                             <td style="text-align:right;">' . number_format($record['salary']) . '</td>
                             <td style="text-align:right;">' . number_format($total_allowence) . '</td>
                             ' . $html_bpjs_company . '
@@ -1067,17 +1071,17 @@ class Summary_payrolls extends CI_Controller
                             <td style="text-align:right;">' . number_format($record['correction_minus']) . '</td>
                             <td style="text-align:right;">' . number_format($record['ter']) . '</td>
                             <td style="text-align:right;">' . number_format($record['deduction_absence_amount'] + $record['bpjs_employee_total'] + $record['bpjs_company_total'] + $record['loan_cooperative'] + $record['loan_bank'] + $record['loan_other'] + $record['correction_minus'] + $total_ip_amount + $total_deduction) . '</td>
-                            <td style="text-align:right;">' . number_format(($record['net_income'])) . '</td>
                             <td style="text-align:right;">' . number_format(($total_bpjs_tk)) . '</td>
                             <td style="text-align:right;">' . number_format(($total_bpjs_kes)) . '</td>
                             <td style="text-align:right;">' . number_format(($record['salary'] + $total_allowence)) . '</td>
+                            <td style="text-align:right;">' . number_format(($record['net_income'])) . '</td>
                         </tr>';
                 $total += $record['net_income'];
                 $no++;
             }
 
             $html .= '  <tr>
-                            <th style="text-align:right;" colspan="30">GRAND TOTAL</th>
+                            <th style="text-align:right;" colspan="34">GRAND TOTAL</th>
                             <th style="text-align:right;">' . number_format($total) . '</th>
                         </tr>';
             $html .= '</body></html>';
