@@ -924,7 +924,7 @@ class Payroll_harian_lepas extends CI_Controller
                 "shift_name" => $record['shift_name_2'],
                 "attandance" => json_encode($arr_permit_combine),
                 "attandance_wd" => ($masuk),
-                "working_day" => $wd, // Gunakan $wd yang sama dengan perhitungan income
+                "working_day" => count($weekday_day), // Gunakan $wd yang sama dengan perhitungan income
                 "salary" => $record['salary'],
                 "allowence" => json_encode($arr_allowance_combine),
                 "bpjs_company" => json_encode($arr_bpjs_com_combine),
