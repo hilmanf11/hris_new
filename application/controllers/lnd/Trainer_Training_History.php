@@ -414,7 +414,7 @@ class Trainer_Training_History extends CI_Controller {
 								</tr>
 								";
 				$html .= '</table>';
-				$html .= "<div style='height:350px;'></div>";
+				// $html .= "<div style='height:350px;'></div>";
 				$html .= '</body></html>';
 			}
 			echo $html;
