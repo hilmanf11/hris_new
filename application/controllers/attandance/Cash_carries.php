@@ -2112,30 +2112,31 @@ class Cash_carries extends CI_Controller
             $display_time_out = @$attandance->time_out ? @$attandance->time_out : '';
 
             // Untuk perhitungan duration
+            // die($attandance->time_in.' && '.$attandance->time_out);
             if (empty($attandance->time_in) && empty($attandance->time_out)) {
                 // Keduanya kosong, duration dan amount harus 0
                 $duration_att = "0.00";
                 $hour = 0;
             } else {
-                // die(var_dump($duration_att));
-                if (@$attandance->time_in && @$attandance->time_out) {
-                    // Hitung dari attendance
-                    $att_time_begin = strtotime($record['trans_date'] . " " . $attandance->time_in);
-                    $att_time_end = strtotime($record['trans_date'] . " " . $attandance->time_out);
-                    $tomorrow = strtotime(date('Y-m-d', strtotime($record['trans_date'] . "+1 days")) . " " . $attandance->time_out);
-                    $att_diff = $att_time_end - $att_time_begin;
-                    $att_hour = floor($att_diff / (60 * 60));
-                    if ($att_hour < 0) { $att_diff = $tomorrow - $att_time_begin; }
+                // if (@$attandance->time_in && @$attandance->time_out) {
+                //     // Hitung dari attendance
+                //     $att_time_begin = strtotime($record['trans_date'] . " " . $attandance->time_in);
+                //     $att_time_end = strtotime($record['trans_date'] . " " . $attandance->time_out);
+                //     $tomorrow = strtotime(date('Y-m-d', strtotime($record['trans_date'] . "+1 days")) . " " . $attandance->time_out);
+                //     $att_diff = $att_time_end - $att_time_begin;
+                //     $att_hour = floor($att_diff / (60 * 60));
+                //     if ($att_hour < 0) { $att_diff = $tomorrow - $att_time_begin; }
 
-                    $minutes = ($att_diff % 3600) / 60;
-                    $att_minutes = ($minutes >= 30 && $minutes <= "59") ? 0.5 : 0.0;
-                    $att_hour = floor($att_diff / (60 * 60));
+                //     $minutes = ($att_diff % 3600) / 60;
+                //     $att_minutes = ($minutes >= 30 && $minutes <= "59") ? 0.5 : 0.0;
+                //     $att_hour = floor($att_diff / (60 * 60));
 
-                    $duration_att = number_format($att_hour + $att_minutes, 2);
-                    // die(var_dump($duration_att));
-                    $cc_hour = $record['duration_hour'];
-                    $hour = ($att_hour > $cc_hour) ? $cc_hour : $att_hour;
-                } else if (!empty($record['duration_hour'])) {
+                //     $duration_att = number_format($att_hour + $att_minutes, 2);
+                //     // die(var_dump($duration_att));
+                //     $cc_hour = $record['duration_hour'];
+                //     $hour = ($att_hour > $cc_hour) ? $cc_hour : $att_hour;
+                // } else
+                if (!empty($record['duration_hour'])) {
                     // Salah satu kosong, pakai cash_carries
                     $duration_att = number_format($record['duration_hour'], 2);
                     $hour = $record['duration_hour'];
@@ -2143,7 +2144,9 @@ class Cash_carries extends CI_Controller
                     $duration_att = 0;
                     $hour = 0;
                 }
+                // die(var_dump($duration_att));
             }
+            // die(var_dump($duration_att));
 
             //Validasi Uang makan
             if ($record['meal'] == 0 or !@$attandance->time_in) {
