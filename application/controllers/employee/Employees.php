@@ -54,7 +54,7 @@ class Employees extends CI_Controller
             $data['id_menu'] = $id_menu;
 
             $this->load->view('template/header', $data);
-            $this->load->view('employee/employee_details');
+            $this->load->view('employee/employee_details', ['loc' => 'assets/document/agreement/']);
         }
     }
 
@@ -180,6 +180,22 @@ class Employees extends CI_Controller
     public function readCarrer($number)
     {
         $reads = $this->crud->reads("employee_carrers", [], ["number" => $number]);
+        echo json_encode($reads);
+    }
+
+    public function readContract($number)
+    {
+        $reads = $this->db->distinct()->select(
+             "MAX(a.created_date) AS max_create,"
+            ."COALESCE(TRIM(b.name), '') AS position,"
+            ."COALESCE(TRIM(c.name), '') AS contract,"
+            ."DATE(a.date_expired) AS date,"
+            ."MAX(COALESCE(TRIM(a.attachment), '')) AS attachment"
+        )->from("agreements a")
+            ->join("positions b", "a.position_id = b.id")
+            ->join("contracts c", "a.contract_id = c.id")
+        ->where("a.number", $number)->group_by("b.name, c.name, a.date_expired")->order_by("date", "DESC")->get()->result();
+        // die($this->db->last_query());
         echo json_encode($reads);
     }
 
