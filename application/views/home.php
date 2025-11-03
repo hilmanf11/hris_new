@@ -923,7 +923,6 @@
 		var setups = agreement_setup.filter(obj => obj.employee == data.emp);
 		var agreements = agreement_agreement.find(obj => obj.employee == data.emp);
 		agreement_id = data.id;
-		console.log(data);
 
 		$('#emp_id').textbox('setValue', emp.number);
 		$('#emp_name').textbox('setValue', emp.name);
