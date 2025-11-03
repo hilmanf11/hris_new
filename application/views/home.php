@@ -914,13 +914,16 @@
 
 	var agreement_id = '';
 	var is_contract = false;
+	var template_contract = '';
 	function viewHistory(row) {
 		var data = JSON.parse(window.atob(row));
+		template_contract = data.template_contract;
 		is_contract = parseInt(data.is_contract) != 0;
 		var emp = agreement_employee.find(obj => obj.number == data.emp);
 		var setups = agreement_setup.filter(obj => obj.employee == data.emp);
 		var agreements = agreement_agreement.find(obj => obj.employee == data.emp);
 		agreement_id = data.id;
+		console.log(data);
 
 		$('#emp_id').textbox('setValue', emp.number);
 		$('#emp_name').textbox('setValue', emp.name);
@@ -1009,7 +1012,7 @@
 
 					if (arr.includes('')) { toastr.warning('Please fill in the required input form!', 'Warning'); }
 					else {
-						var data = {
+						var send = {
 							agreement_id: window.btoa(agreement_id),
 							trans_date: window.btoa(trans_date),
 							emp_id: window.btoa(emp_id),
@@ -1048,22 +1051,35 @@
 									dataType: 'json',
 									processData: false,
 									contentType: false,
-									beforeSend: function ()
-										{ $.messager.progress({title:'Process Upload', msg:'Please wait...'}); },
+									beforeSend: function () { $.messager.progress({title:'Process Upload', msg:'Please wait...'}); },
 									success: function (result) {
 										$.messager.progress('close');
 										if (result.stat != 'ok') { toastr.warning('Failed upload!', 'Warning'); }
-										else { data.attachment = result.attachment; saveAgreement(data); }
+										else {
+											send.attachment = result.attachment;
+											if (is_contract && template_contract == '') { validateContract(send); }
+											else { saveAgreement(send); }
+										}
 									},
-									error: function()
-										{ $.messager.progress('close'); toastr.error('Failed upload!', 'Error'); }
+									error: function() { $.messager.progress('close'); toastr.error('Failed upload!', 'Error'); }
 								});
 							}
-						} else { saveAgreement(data); }
+						} else {
+							if (is_contract && template_contract == '') { validateContract(send); }
+							else { saveAgreement(send); }
+						}
 					}
 				}
 			}]
 		}).dialog('open');
+	}
+
+	function validateContract(data) {
+		$.messager.confirm(
+			'Warning',
+			'The contract template is not registered yet. Do you want to continue saving?',
+			function(r) { if (r) { saveAgreement(data); } }
+		);
 	}
 
 	function saveAgreement(data) {
@@ -1082,9 +1098,8 @@
 					$('#dlg_agreement').dialog('close');
 					toastr.success('Success save');
 					formAgreement();
-					if (is_contract) { $("#printcontract").prop(
-						'src',
-						'<?= base_url('excel/print_contract/index') ?>?id='+result.id
+					if (is_contract && template_contract != '') { $("#printcontract").prop('src',
+						'<?= base_url('excel/print_contract/index') ?>?id='+result.id+'&template='+window.btoa(result.loc+template_contract)
 					); }
 				}
 			},

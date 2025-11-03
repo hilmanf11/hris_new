@@ -203,7 +203,8 @@ class Home extends CI_Controller
             ."DATE(a.date_sign) AS date_join,"
             ."DATE(a.date_expired) AS expired,"
             ."COALESCE(TRIM(a.note),'') AS note,"
-            ."COALESCE(TRIM(b.contract_id), '') IN ('20221119000001', '20221119000002', '20230112000001', '20230124000001', '20240104000001') AS is_contract"
+            ."COALESCE(TRIM(b.contract_id), '') IN ('20221119000001', '20221119000002', '20230112000001', '20230124000001', '20240104000001') AS is_contract,"
+            ."COALESCE(TRIM(h.attachment),'') AS template_contract"
         )->from("agreements a")
             ->join("employees b", "a.number = b.number")
             ->join("divisions c", "b.division_id = c.id")
@@ -211,6 +212,7 @@ class Home extends CI_Controller
             ->join("departement_subs e", "b.departement_sub_id = e.id")
             ->join("positions f", "a.position_id = f.id")
             ->join("contracts g", "a.contract_id = g.id")
+            ->join("master_contract h", "a.position_id = h.position_id AND FIND_IN_SET(a.contract_id, h.contracts)", "LEFT")
         ->where("a.status", '0')
         ->where("b.contract_id !=", '20221119000005')
         ->group_start()
@@ -219,6 +221,7 @@ class Home extends CI_Controller
         ->group_end()
         // ->where_in("b.id", ["20221119000007", "18050009210574"])
         ->order_by("expired")->get()->result_object();
+        // die($this->db->last_query());
         foreach ($get as $key => $value) { array_push($result['rows'], $value); }
         $result['total'] = count($result['rows']);
 
@@ -459,21 +462,19 @@ class Home extends CI_Controller
 
     public function saveAgreement($act = '')
     {
-        $result = ['stat' => 'ok'];
+        $loc = 'assets/document/agreement/';
+        $result = ['stat' => 'ok', 'loc' => $loc];
 
-        if ($act == 'attachment') {
-            $result['attachment'] = $this->crud->upload(
-                'attachment',
-                ['pdf', 'xls', 'xlsx'],
-                'assets/document/agreement/'
-            );
-        } else {
+        if ($act == 'attachment') { $result['attachment'] = $this->crud->upload('attachment', ['pdf', 'xls', 'xlsx'], $loc); }
+        else {
             $post = [];
             foreach ($this->input->post() as $key => $value) { $post[$key] = base64_decode($value); }
+            $attachment = NULL;
 
             $this->db->trans_start();
             $this->crud->update('agreements', ["id" => $post['agreement_id']], ["status" => 1]);
             $stat = $this->db->where('id', $post['agreement_id'])->get('agreements')->row()->status == '1';
+            if (!$stat) { $result['stat'] = 'Failed update agreement!'; }
 
             if ($stat) {
                 $map = ['M' => 1000,'CM' => 900,'D' => 500,'CD' => 400,'C' => 100,'XC' => 90,'L' => 50,'XL' => 40,'X' => 10,'IX' => 9,'V' => 5,'IV' => 4,'I' => 1];
@@ -490,6 +491,7 @@ class Home extends CI_Controller
                     }
                 }
                 $format = "/PKWT/KI/$returnValue/".date('Y');
+                if (isset($post['attachment'])) { $attachment = $post['attachment']; }
 
                 $data = [
                     'number' => $post['emp_id'],
@@ -498,17 +500,18 @@ class Home extends CI_Controller
                     'group_id' => $post['group'],
                     'date_sign' => $post['date_sign'],
                     'date_expired' => $post['date_expired'],
-                    'attachment' => (!isset($post['attachment'])) ? NULL : $post['attachment'],
+                    'attachment' => $attachment,
                     'note' => $post['notes'],
                     'process' => $post['process_agreement'],
                     'duration' => str_replace(['year', 'month', 'day'], ['tahun', 'bulan', 'hari'], $post['duration']),
                     'pwkt_no' => $this->db->query("SELECT LPAD(COALESCE(CONVERT(MAX(LEFT(pwkt_no,3)), UNSIGNED), 0) + 1, 3, '0') AS no FROM agreements WHERE pwkt_no LIKE '%$format'")->row()->no.$format,
+                    'trans_date' => $post['trans_date'],
                 ];
                 $this->crud->create('agreements', $data);
                 $get = $this->db->where($data)->get('agreements')->row();
                 $stat = (isset($get->id));
                 if ($stat) { $result['id'] = base64_encode($get->id); }
-            }
+            } else { $result['stat'] = 'Failed insert agreement!'; }
 
             if ($stat) {
                 $data = [
@@ -522,14 +525,14 @@ class Home extends CI_Controller
                 $get = $this->db->where("number", $post['emp_id'])->get('employees')->row_array();
                 foreach ($data as $key => $value) { if ($get[$key] != $value) { $stat = false; break; } }
                 if ($stat) { $emp_id = $get['id']; }
-            }
+            } else { $result['stat'] = 'Failed update employee!'; }
 
             if ($stat) {
                 if ($this->db->where('employee_id', $get['id'])->get('setup_allowances')->num_rows() > 0) {
                     $this->crud->delete('setup_allowances', ['employee_id' => $get['id']]);
                     $stat = $this->db->where('employee_id', $get['id'])->get('setup_allowances')->num_rows() == 0;
                 }
-            }
+            } else { $result['stat'] = 'Failed delete allowance!'; }
 
             if ($stat) {
                 foreach (json_decode($post['allowances']) as $key => $value) {
@@ -542,7 +545,7 @@ class Home extends CI_Controller
                     $stat = $this->db->where($data)->get('setup_allowances')->num_rows() > 0;
                     if (!$stat) { break; }
                 }
-            }
+            } else { $result['stat'] = 'Failed insert allowance!'; }
 
             if ($stat) {
                 $data = [
@@ -563,12 +566,17 @@ class Home extends CI_Controller
                 }
 
                 $stat = $this->db->get('setup_salaries')->num_rows() > 0;
-            }
+            } else { $result['stat'] = 'Failed save salary!'; }
 
             if (!$stat) {
                 // $result['stat'] = $this->db->error()['message'];
-                $result['stat'] = $this->db->last_query();
+                // $result['stat'] = $this->db->last_query();
                 $this->db->trans_rollback();
+
+                if (!empty($attachment)) {
+                    $location = './'.$loc.$attachment;
+                    if (file_exists($location)) { unset($location); }
+                }
             } else { $this->db->trans_commit(); }
         }
 

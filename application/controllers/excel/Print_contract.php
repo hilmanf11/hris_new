@@ -51,6 +51,14 @@ class Print_contract extends CI_Controller
                 11 => 'November',
                 12 => 'Desember'
             ];
+            $fields = [];
+
+            $spreadsheet = IOFactory::load(FCPATH.'template/contract_example.xls');
+            $spreadsheet->setActiveSheetIndex(1);
+            $sheet = $spreadsheet->getActiveSheet();
+            $kolomB = $sheet->rangeToArray('B1:B'.$sheet->getHighestRow());
+            unset($kolomB[0]);
+            foreach ($kolomB as $key => $value) { array_push($fields, $value[0]); }
 
             $this->db->distinct()->select(
                  "a.created_date AS date,"
@@ -59,7 +67,8 @@ class Print_contract extends CI_Controller
                 ."COALESCE(TRIM(b.name), '') AS fullname,"
                 ."TRIM(a.number) AS nik,"
                 ."COALESCE(TRIM(b.national_id), '') AS ktp,"
-                ."CONCAT(COALESCE(TRIM(b.place_birth), ''), ', ', COALESCE(DATE_FORMAT(b.birthday, '%d %M %Y'), '')) AS birth,"
+                ."COALESCE(TRIM(b.place_birth), '') AS birth,"
+                ."COALESCE(DATE_FORMAT(b.birthday, '%d %M %Y'), '') AS birth_date,"
                 ."COALESCE(TRIM(b.gender), '') AS gender,"
                 ."COALESCE(TRIM(b.address), '') AS address,"
                 ."TRIM(a.duration) AS duration,"
@@ -72,15 +81,16 @@ class Print_contract extends CI_Controller
                 ."COALESCE(f.amount, 0) AS salary,"
                 ."COALESCE(g.amount, 0) AS tunj,"
                 ."COALESCE(h.amount, 0) AS tunj_else,"
-                ."COALESCE(f.amount, 0) + COALESCE(g.amount, 0) + COALESCE(h.amount, 0) AS total"
+                ."COALESCE(TRIM(i.attachment), '') AS template"
             )->from("agreements a")
                 ->join("employees b", "a.number = b.number")
                 ->join("departements c", "b.departement_id = c.id")
                 ->join("departement_subs d", "b.departement_sub_id = d.id")
-                ->join("positions e", "b.position_id = e.id")
+                ->join("positions e", "a.position_id = e.id")
                 ->join("setup_salaries f", "b.id = f.employee_id")
                 ->join("(SELECT DISTINCT TRIM(employee_id) AS emp, amount FROM setup_allowances WHERE allowance_id = '20230221000001') g", "b.id = g.emp", "LEFT")
                 ->join("(SELECT DISTINCT TRIM(employee_id) AS emp, SUM(amount) AS amount FROM setup_allowances WHERE allowance_id != '20230221000001' GROUP BY employee_id) h", "b.id = h.emp", "LEFT")
+                ->join("master_contract i", "a.position_id = i.position_id AND FIND_IN_SET(a.contract_id, i.contracts)", "LEFT")
             ->where("a.id", $id);
             // die($this->db->get_compiled_select());
             $get = $this->db->get()->row();
@@ -97,36 +107,60 @@ class Print_contract extends CI_Controller
             $duration_num = ($duration_stat) ? $bulan : $tahun;
 
             $title = "DRAFT KONTRAK STAFF $roman KI";
-            $arr = [
-                'A3' => "SURAT PERJANJIAN KERJA WAKTU TERTENTU $roman",
-                'A4' => $get->pwkt,
-                'A6' => "Pada hari ini ".$days[date('l', $create_date)].", Tanggal ".date('d', $create_date)." (".$this->convertNumber(date('d', $create_date)).") Bulan ".date('n', $create_date)." (".$months[date('n', $create_date)].") Tahun ".date('Y', $create_date)." (".$this->convertNumber(date('Y', $create_date)).") bertempat di PT. Kinenta Indonesia kami yang bertanda tangan di bawah ini:",
-                'H17' => $get->fullname,
-                'H18' => $get->nik,
-                'N18' => $get->ktp,
-                'H19' => $get->birth,
-                'H21' => ($get->gender == 'MALE') ? 'Laki-Laki' : 'Perempuan',
-                'H22' => $get->address,
-                'B38' => "Perjanjian ini memiliki jangka waktu selama $duration_num (".$this->convertNumber($duration_num).") ".(($duration_stat) ? 'Bulan' : 'Tahun')." terhitung sejak tanggal ".$get->sign." s/d ".$get->expired,
-                'I54' => ucwords(strtolower($get->dept)),
-                'I55' => ucwords(strtolower($get->sub_dept)),
-                'I56' => ucwords(strtolower($get->process)),
-                'I57' => ucwords(strtolower($get->position))
-            ];
-            if ($contract_no == '1') {
-                $arr['J68'] = number_format(intval($get->salary), 0, ',', '.');
-                $arr['J69'] = number_format(intval($get->tunj), 0, ',', '.');
-                $arr['J70'] = number_format(intval($get->tunj_else), 0, ',', '.');
-                $arr['J71'] = number_format(intval($get->total), 0, ',', '.');
-            }
-            $arr['AF126'] = $get->fullname;
 
-            $filePath = FCPATH."template/contract_staff_".(($contract_no == '1') ? 'first' : 'else').".xls";
+            $filePath = FCPATH."assets/document/master_contract/".$get->template;
             if (file_exists($filePath)) {
                 $spreadsheet = IOFactory::load($filePath);
+                $spreadsheet->setActiveSheetIndex(0);
                 $sheet = $spreadsheet->getActiveSheet();
 
-                foreach ($arr as $key => $value) { $sheet->setCellValueExplicit($key, $value, DataType::TYPE_STRING); }
+                foreach ($sheet->getRowIterator() as $row) {
+                    $cellIterator = $row->getCellIterator();
+                    $cellIterator->setIterateOnlyExistingCells(false); // termasuk cell kosong
+
+                    foreach ($cellIterator as $cell) {
+                        $value = $cell->getValue();
+                        if ($value !== null) {
+                            foreach ($fields as $key => $cari) {
+                                if (stripos($value, $cari) !== false) {
+                                    if ($cari == '<contract:no>') { $value = str_replace($cari, $roman, $value); }
+                                    if ($cari == '<agreement:pwkt>') { $value = str_replace($cari, $get->pwkt, $value); }
+                                    if ($cari == '<agreement:day>') { $value = str_replace($cari, $days[date('l', $create_date)], $value); }
+                                    if ($cari == '<agreement:date>') { $value = str_replace($cari, date('d', $create_date), $value); }
+                                    if ($cari == '<agreement:date_name>') { $value = str_replace($cari, $this->convertNumber(date('d', $create_date)), $value); }
+                                    if ($cari == '<agreement:month>') { $value = str_replace($cari, date('n', $create_date), $value); }
+                                    if ($cari == '<agreement:month_name>') { $value = str_replace($cari, $months[date('n', $create_date)], $value); }
+                                    if ($cari == '<agreement:year>') { $value = str_replace($cari, date('Y', $create_date), $value); }
+                                    if ($cari == '<agreement:year_name>') { $value = str_replace($cari, $this->convertNumber(date('Y', $create_date)), $value); }
+                                    if ($cari == '<agreement:sign>') { $value = str_replace($cari, $get->sign, $value); }
+                                    if ($cari == '<agreement:expired>') { $value = str_replace($cari, $get->expired, $value); }
+                                    if ($cari == '<agreement:process>') { $value = str_replace($cari, ucwords($get->process), $value); }
+                                    if ($cari == '<duration:number>') { $value = str_replace($cari, $duration_num, $value); }
+                                    if ($cari == '<duration:number_name>') { $value = str_replace($cari, $this->convertNumber($duration_num), $value); }
+                                    if ($cari == '<duration:name>') { $value = str_replace($cari, ($duration_stat) ? 'Bulan' : 'Tahun', $value); }
+                                    if ($cari == '<employee:departement>') { $value = str_replace($cari, ucwords($get->dept), $value); }
+                                    if ($cari == '<employee:sub_departement>') { $value = str_replace($cari, ucwords($get->sub_dept), $value); }
+                                    if ($cari == '<employee:position>') { $value = str_replace($cari, ucwords($get->position), $value); }
+                                    if ($cari == '<employee:name>') { $value = str_replace($cari, $get->fullname, $value); }
+                                    if ($cari == '<employee:nik>') { $value = str_replace($cari, $get->nik, $value); }
+                                    if ($cari == '<employee:national>') { $value = str_replace($cari, $get->ktp, $value); }
+                                    if ($cari == '<employee:birth_place>') { $value = str_replace($cari, $get->birth, $value); }
+                                    if ($cari == '<employee:birth_date>') { $value = str_replace($cari, $get->birth_date, $value); }
+                                    if ($cari == '<employee:gender>') { $value = str_replace($cari, ($get->gender == 'MALE') ? 'Laki-Laki' : 'Perempuan', $value); }
+                                    if ($cari == '<employee:address>') { $value = str_replace($cari, $get->address, $value); }
+                                    if ($cari == '<salaries:amount>') { $value = str_replace($cari, number_format(intval($get->salary), 0, ',', '.'), $value); }
+                                    if ($cari == '<allowance:amount>') { $value = str_replace($cari, number_format(intval($get->tunj), 0, ',', '.'), $value); }
+                                    if ($cari == '<allowance:amount_else>') { $value = str_replace($cari, number_format(intval($get->tunj_else), 0, ',', '.'), $value); }
+                                    if ($cari == '<sum:<salaries:amount>+<allowance:amount>+<allowance:amount_else>>')
+                                        { $value = str_replace($cari, number_format(intval($get->salary) + intval($get->tunj) + intval($get->tunj_else), ',', '.'), $value); }
+
+                                    $sheet->setCellValueExplicit($cell->getCoordinate(), $value, DataType::TYPE_STRING);
+                                    if ($cari == '<contract:no>') { $title = $value; }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 $writer = IOFactory::createWriter($spreadsheet, 'Html');
                 ob_start();

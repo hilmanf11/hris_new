@@ -3,7 +3,7 @@
 <div id="toolbar"><?= $button ?></div>
 
 <div id="dlg_add" class="easyui-dialog">
-    <table>
+    <table style="margin: 3px;">
         <tr>
             <td>Position</td>
             <td><input id="position" class="easyui-combobox" required></td>
@@ -69,6 +69,10 @@
             closed: true,
             modal: true,
             buttons: [{
+                text: 'Download Template',
+                iconCls: 'fa fa-download',
+                handler: function() { window.location.assign('<?= base_url('./template/contract_example.xls') ?>'); }
+            },{
                 text: 'Save',
                 iconCls: 'icon-ok',
                 handler: function() {
@@ -109,7 +113,7 @@
         var d = (date.getDate()).toString().padStart(2, '0');
         var a = document.createElement('a');
 
-        a.href = '<?= base_url('./assets/document/master_contract/') ?>'+name;
+        a.href = '<?= base_url($loc) ?>'+name;
         a.download = 'master_contract_'+y+m+d+ext;
 
         document.body.appendChild(a);

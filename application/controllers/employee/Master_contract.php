@@ -7,6 +7,8 @@ use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 class Master_contract extends CI_Controller
 {
+    public $location = 'assets/document/master_contract/';
+
     public function __construct()
     {
         parent::__construct();
@@ -23,7 +25,7 @@ class Master_contract extends CI_Controller
         elseif ($this->checkuserAccess($this->id_menu()) > 0) {
             $data['button'] = $this->getbutton($this->id_menu());
             $this->load->view('template/header', $data);
-            $this->load->view('employee/master_contract');
+            $this->load->view('employee/master_contract', ['loc' => './'.$this->location]);
         } else { redirect('error_access'); }
     }
 
@@ -69,14 +71,12 @@ class Master_contract extends CI_Controller
 
     public function save($act = '')
     {
+        $loc = './'.$this->location;
         $result = ['stat' => 'ok'];
 
         if ($act == 'attachment') {
-            $loc = 'assets/document/master_contract/';
-
-            if (!is_dir('./'.$loc)) { mkdir('./'.$loc, 0777, TRUE); }
-
-            $result['attachment'] = $this->crud->upload('attachment', ['xls', 'xlsx'], $loc);
+            if (!is_dir($loc)) { mkdir($loc, 0777, TRUE); }
+            $result['attachment'] = $this->crud->upload('attachment', ['xls', 'xlsx'], $this->location);
         } else {
             $post = $this->input->post();
             $send_data = ['attachment' => base64_decode($post['attachment'])];
@@ -88,18 +88,23 @@ class Master_contract extends CI_Controller
                 $send_data['contracts'] = base64_decode($post['contract']);
 
                 $this->crud->create('master_contract', $send_data);
-                $stat = $this->db->where($send_data)->get('master_contract')->num_rows() > 0;
+                $this->db->where($send_data);
             } else {
                 $where = ['id' => base64_decode($post['id'])];
 
                 $this->crud->update('master_contract', $where, $send_data);
-                $stat = $this->db->where($where)->get('master_contract')->num_rows() > 0;
+                $this->db->where($where);
             }
+            $stat = $this->db->get('master_contract')->num_rows() > 0;
 
             if (!$stat) {
-                $result['stat'] = $this->db->error()['message'];
+                // $result['stat'] = $this->db->error()['message'];
                 // $result['stat'] = $this->db->last_query();
+                $result['stat'] = 'Failed save!';
                 $this->db->trans_rollback();
+
+                $location = $loc.$send_data['attachment'];
+                if (file_exists($location)) { unset($location); }
             } else { $this->db->trans_commit(); }
         }
 
