@@ -830,7 +830,7 @@ class Mutations extends CI_Controller
                     'division_name' => $division_old ? $division_old->name : '-',
                     'departement_name' => $departement_old ? $departement_old->name : '-',
                     'departement_sub_name' => $departement_sub_old ? $departement_sub_old->name : '-',
-                    'position' => $permanent_mutation['position'] ? $permanent_mutation['position'] : '-'
+                    'position' => $permanent_mutation['position'] ? $permanent_mutation['position'] : ''
                 ];
             } else {
                 // If no PERMANENT mutation, get from employees table
@@ -849,7 +849,8 @@ class Mutations extends CI_Controller
                         'trans_date' => $employee->date_sign ?? date('Y-m-d'),
                         'mutation_type' => 'INITIAL POSITION',
                         'description' => 'Initial Position',
-                        'type' => 'PERMANENT'
+                        'type' => 'PERMANENT',
+                        'position' => ''
                     ]);
                 }
             }
