@@ -708,12 +708,13 @@ class Mutations extends CI_Controller
         
         // Main query
         $sql = "SELECT a.*, b.number as employee_number, b.name as employee_name, 
-                c.name as division_name, d.name as departement_name, e.name as departement_sub_name
+                c.name as division_name, d.name as departement_name, e.name as departement_sub_name, COALESCE(TRIM(f.name), '') AS position
                 FROM mutations a
                 JOIN employees b ON a.employee_id = b.id
                 JOIN divisions c ON a.division_id = c.id
                 JOIN departements d ON a.departement_id = d.id
                 JOIN departement_subs e ON a.departement_sub_id = e.id
+                LEFT JOIN positions f ON b.position_id = f.id
                 WHERE a.deleted = 0 
                 AND a.trans_date >= ?
                 AND a.trans_date <= ?";
@@ -776,7 +777,7 @@ class Mutations extends CI_Controller
             $employee_id = $data['employee_id'];
             
             // Get all mutations for this employee (excluding current one to avoid duplication)
-            $this->db->select('a.*, b.number as employee_number, b.name as employee_name, a.mutation_type, c.name as division_name, d.name as departement_name, e.name as departement_sub_name');
+            $this->db->select("a.*, b.number as employee_number, b.name as employee_name, a.mutation_type, c.name as division_name, d.name as departement_name, e.name as departement_sub_name, COALESCE(TRIM(a.old_position), '') AS position");
             $this->db->from('mutations a');
             $this->db->join('employees b', 'a.employee_id = b.id');
             $this->db->join('divisions c', 'a.division_id = c.id');
@@ -786,6 +787,7 @@ class Mutations extends CI_Controller
             $this->db->where('a.deleted', 0);
             $this->db->where('a.id !=', $data['id']); // Exclude current mutation
             $this->db->order_by('a.trans_date', 'DESC');
+            $this->db->order_by('a.created_date', 'DESC');
             $history_mutations = $this->db->get()->result_array();
             
             // Add history mutations
@@ -827,7 +829,8 @@ class Mutations extends CI_Controller
                     'type' => 'PERMANENT',
                     'division_name' => $division_old ? $division_old->name : '-',
                     'departement_name' => $departement_old ? $departement_old->name : '-',
-                    'departement_sub_name' => $departement_sub_old ? $departement_sub_old->name : '-'
+                    'departement_sub_name' => $departement_sub_old ? $departement_sub_old->name : '-',
+                    'position' => $permanent_mutation['position'] ? $permanent_mutation['position'] : '-'
                 ];
             } else {
                 // If no PERMANENT mutation, get from employees table
@@ -926,6 +929,8 @@ class Mutations extends CI_Controller
 
                 <th>Departement Sub</th>
 
+                <th>Position</th>
+
                 <th>Note</th>
 
             </tr>';
@@ -963,6 +968,8 @@ class Mutations extends CI_Controller
                     <td>' . $data['departement_name'] . '</td>
 
                     <td>' . $data['departement_sub_name'] . '</td>
+
+                    <td>' . $data['position'] . '</td>
 
                     <td>' . $data['description'] . '</td>';
 
