@@ -80,7 +80,15 @@ class Mutations extends CI_Controller
 
     }
 
-
+    public function readPositions()
+    {
+        $this->db->distinct()->select(
+             "TRIM(id) AS id,"
+            ."TRIM(name) AS name,"
+            ."TRIM(level) AS level"
+        )->from('positions')->order_by('name');
+        echo json_encode($this->db->get()->result());
+    }
 
     //GET DATATABLES
 
@@ -174,12 +182,13 @@ class Mutations extends CI_Controller
         // Main query
         $sql = "SELECT a.*, b.number as employee_number, b.name as employee_name, 
                 c.name as division_name, d.name as departement_name, e.name as departement_sub_name,
-                e.proses, e.sub_proses
+                e.proses, e.sub_proses, COALESCE(TRIM(f.name), '') AS position
                 FROM mutations a
                 JOIN employees b ON a.employee_id = b.id
                 JOIN divisions c ON a.division_id = c.id
                 JOIN departements d ON a.departement_id = d.id
                 JOIN departement_subs e ON a.departement_sub_id = e.id
+                LEFT JOIN positions f ON b.position_id = f.id
                 WHERE a.deleted = 0 
                 AND a.trans_date >= ?
                 AND a.trans_date <= ?";
@@ -272,9 +281,14 @@ class Mutations extends CI_Controller
                 $approval = $this->crud->read('approvals', [], ["table_name" => "mutations", "departement_id" => $departement_id]);
 
                 // Tambahkan data ID lama ke post data
+                $post['old_position'] = $this->input->post('position_old');
+                $post['new_position'] = $this->input->post('position_new');
                 $post['division_old_id'] = $this->input->post('division_old_id');
                 $post['departement_old_id'] = $this->input->post('departement_old_id');
                 $post['departement_sub_old_id'] = $this->input->post('departement_sub_old_id');
+
+                unset($post['position_old']);
+                unset($post['position_new']);
 
                 if ($approval) {
 
@@ -284,6 +298,8 @@ class Mutations extends CI_Controller
 
                     $postEmployee = array(
 
+                        "position_id" => $post['position'],
+
                         "division_id" => $post['division_id'],
 
                         "departement_id" => $post['departement_id'],
@@ -292,7 +308,7 @@ class Mutations extends CI_Controller
 
                     );
 
-
+                    unset($post['position']);
 
                     if ($post['type'] == "PERMANENT") {
 
@@ -301,7 +317,7 @@ class Mutations extends CI_Controller
                     }
 
 
-
+                    // die(var_dump($post));
                     $send   = $this->crud->create('mutations', $post);
 
                 }
@@ -982,6 +998,7 @@ class Mutations extends CI_Controller
         $this->db->where('a.employee_id', $employee_id);
         $this->db->where('a.deleted', 0);
         $this->db->order_by('a.trans_date', 'DESC');
+        $this->db->order_by('a.created_date', 'DESC');
         $mutations = $this->db->get()->result_array();
 
         // Gabungkan data: mutasi + posisi awal

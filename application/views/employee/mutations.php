@@ -9,6 +9,7 @@
             <th rowspan="2" data-options="field:'division_name',width:200,halign:'center'">Division</th>
             <th rowspan="2" data-options="field:'departement_name',width:150,halign:'center'">Departement</th>
             <th rowspan="2" data-options="field:'departement_sub_name',width:150,halign:'center'">Departement Sub</th>
+            <th rowspan="2" data-options="field:'position',width:150,halign:'center'">Position</th>
             <th rowspan="2" data-options="field:'mutation_type',width:150,halign:'center'">Mutation Type</th>
             <th rowspan="2" data-options="field:'description',width:300,halign:'center'">Note</th>
             <th rowspan="2" data-options="field:'approved',width:100,align:'center',styler:statusStyler, formatter:statusFormatter">Approval</th>
@@ -82,7 +83,7 @@
 </div>
 
 <!-- DIALOG SAVE AND UPDATE -->
-<div id="dlg_insert" class="easyui-dialog" title="Add New" data-options="closed: true,modal:true" style="width: 500px; padding:10px; top: 20px;">
+<div id="dlg_insert" class="easyui-dialog" title="Add New" data-options="closed: true,modal:true" style="width: 500px; height: 600px; padding:10px; top: 20px;">
     <form id="frm_insert" method="post" novalidate>
         <fieldset style="width:100%; border:1px solid #d0d0d0; margin-bottom: 10px; border-radius:4px; float: left;">
             <legend><b>Mutation From</b></legend>
@@ -92,16 +93,22 @@
             </div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Division</span>
-                <input style="width:60%;" id="division_old" disabled class="easyui-textbox">
+                <input style="width:60%;" id="division_old" readonly class="easyui-textbox">
             </div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Departement</span>
-                <input style="width:60%;" id="departement_old" disabled class="easyui-textbox">
+                <input style="width:60%;" id="departement_old" readonly class="easyui-textbox">
             </div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Departement Sub</span>
-                <input style="width:60%;" id="departement_sub_old" disabled class="easyui-textbox">
+                <input style="width:60%;" id="departement_sub_old" readonly class="easyui-textbox">
             </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Position</span>
+                <input style="width:60%;" name="position_old" id="position_old" readonly class="easyui-textbox">
+            </div>
+            <!-- Hidden inputs untuk menyimpan Position baru -->
+            <input type="hidden" name="position_new" id="position_new">
             <!-- Hidden inputs untuk menyimpan ID lama -->
             <input type="hidden" name="division_old_id" id="division_old_id">
             <input type="hidden" name="departement_old_id" id="departement_old_id">
@@ -134,12 +141,11 @@
             </div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Mutation Type</span>
-                <select style="width:60%;" name="mutation_type" id="mutation_type" required="" class="easyui-combobox" panelHeight="auto">
-                    <option value="MUTATION">MUTATION</option>
-                    <option value="ROTATION">ROTATION</option>
-                    <option value="PROMOTION">PROMOTION</option>
-                    <option value="DEMOTION">DEMOTION</option>
-                </select>
+                <input style="width:60%;" name="mutation_type" id="mutation_type" required="" class="easyui-combobox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Position</span>
+                <input style="width:60%;" name="position" id="position" required="" class="easyui-combobox">
             </div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Note</span>
@@ -185,6 +191,8 @@
         $("#division_old_id").val('');
         $("#departement_old_id").val('');
         $("#departement_sub_old_id").val('');
+        $('#position').combobox('clear').combobox('disable');
+        $('#mutation_type').combobox('clear').combobox('disable');
     }
 
     //EDIT DATA
@@ -392,6 +400,7 @@
                         {field: 'division_name', title: 'Division', width: 150},
                         {field: 'departement_name', title: 'Departement', width: 150},
                         {field: 'departement_sub_name', title: 'Departement Sub', width: 150},
+                        {field: 'old_position', title: 'Position', width: 150},
                         {field: 'mutation_type', title: 'Mutation Type', width: 120},
                         {field: 'description', title: 'Note', width: 200}
                     ]],
@@ -649,6 +658,28 @@
             ]
         });
 
+        var data_position = [];
+        $.ajax({
+            url: '<?= base_url('employee/mutations/readPositions'); ?>',
+            async: false,
+            method: 'POST',
+            dataType: 'json',
+            success: function (result) {
+                data_position = result;
+                $('#position').combobox({
+                    data: result,
+                    valueField: 'id',
+                    textField: 'name',
+                    prompt: 'Choose Position',
+                    onSelect: function (rec) { $('#position_new').val(rec.name); },
+                    onLoadSuccess: function (data) {
+                        if (!data.some(value => value.id == $(this).combobox('getValue')))
+                            { $(this).combobox('clear'); }
+                    }
+                }).combobox('disable');
+            }
+        });
+
         $('#employee_id').combogrid({
             url: '<?= base_url('employee/employees/readFulls') ?>',
             panelWidth: 450,
@@ -669,15 +700,47 @@
                 }]
             ],
             onSelect: function(val, row) {
+                var ol_position = data_position.find(value => value.id == row.position_id).name;
+
+                $("#position_old").textbox('setValue', ol_position);
+                $('#mutation_type').combobox('clear').combobox('enable');
                 $("#division_old").textbox('setValue', row.division_name);
                 $("#departement_old").textbox('setValue', row.departement_name);
                 $("#departement_sub_old").textbox('setValue', row.departement_sub_name);
+                $("#position").combobox('loadData', data_position).combobox('setValue', row.position_id);
+
+                // Set hidden inputs dengan position baru
+                $('#position_new').val(ol_position);
                 // Set hidden inputs dengan ID lama
                 $("#division_old_id").val(row.division_old_id);
                 $("#departement_old_id").val(row.departement_old_id);
                 $("#departement_sub_old_id").val(row.departement_sub_old_id);
             }
         });
+
+        $('#mutation_type').combobox({
+            editable: false,
+            textField: 'name',
+            valueField: 'name',
+            prompt: 'Choose Mutation Type',
+            data: [{name: 'MUTATION'}, {name: 'ROTATION'}, {name: 'PROMOTION'}, {name: 'DEMOTION'}],
+            panelHeight: 'auto',
+            onSelect: function (rec) {
+                var position = $('#position').combobox('getValue');
+
+                $("#position").combobox('readonly', !['PROMOTION', 'DEMOTION'].includes(rec.name)).combobox('enable');
+                if (position != '') {
+                    var level_mp = parseFloat(data_position.find(value => value.id == position).level);
+                    var data = [];
+
+                    data_position.forEach(function (value, key) {
+                        if ((rec.name == 'PROMOTION') ? parseFloat(value.level) <= level_mp : parseFloat(value.level) >= level_mp)
+                            { data.push(value); }
+                    });
+                    $("#position").combobox('loadData', data)
+                }
+            }
+        })
     });
 
     function FormatterDate(val) {
