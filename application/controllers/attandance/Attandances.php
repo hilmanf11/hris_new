@@ -282,17 +282,17 @@ class Attandances extends CI_Controller
             $time_in = $explode[1];
             $type_in = $data['lokasi'] == 1;
             $send = [];
-            $message = [
-                "theme" => "success",
-                "title" => "Updated",
-                "message" => $employee->name." | ".$date_in." ".$time_in
-            ];
 
             //Employee
             $this->db->select('*');
             $this->db->from('employees');
             $this->db->where('number', $data['number']);
             $employee = $this->db->get()->row();
+            $message = [
+                "theme" => "success",
+                "title" => "Updated",
+                "message" => $employee->name." | ".$date_in." ".$time_in
+            ];
 
             //Jika Terdaftar di master employee
             if (!empty($employee->number)) {
