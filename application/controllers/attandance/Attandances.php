@@ -280,6 +280,7 @@ class Attandances extends CI_Controller
             $explode = explode(" ", $data['date_in']);
             $date_in = $this->formatTanggal($explode[0]);
             $time_in = $explode[1];
+            $to_time_in = strtotime($time_in);
             $type_in = $data['lokasi'] == 1;
             $send = [];
 
