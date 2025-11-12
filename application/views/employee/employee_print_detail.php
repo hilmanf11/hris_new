@@ -223,6 +223,23 @@
         </tr>
         <?php endforeach; endif; ?>
     </table>
+    <div class="section-title">Contracs</div>
+    <table id="customers">
+        <tr>
+            <th>Position</th>
+            <th>Employee Type</th>
+            <th>Expired Date</th>
+        </tr>
+        <?php if (isset($contracts)) {
+            foreach ($contracts as $key => $row) { ?>
+                <tr>
+                    <td><?= $row->position ?></td>
+                    <td><?= $row->contract ?></td>
+                    <td align="center"><?= $row->date ?></td>
+                </tr>
+            <?php }
+        } ?>
+    </table>
 </fieldset>
 </body>
 </html> 

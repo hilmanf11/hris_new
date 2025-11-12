@@ -6,6 +6,7 @@
             <th rowspan="2" data-options="field:'image_profile',width:35,halign:'center',formatter:FormatterImage">Foto</th>
             <th rowspan="2" data-options="field:'print',width:75,align:'center', formatter:btnPrint">Print Detail</th>
             <th rowspan="2" data-options="field:'details',width:50,halign:'center',formatter:FormatterDetail">Detail</th>
+            <th rowspan="2" data-options="field:'id',width:50,halign:'center',formatter:FormatterCard">ID Card</th>
             <th rowspan="2" data-options="field:'number',width:120,halign:'center'">Employee ID</th>
             <th rowspan="2" data-options="field:'name',width:200,halign:'center'">Fullname</th>
             <th rowspan="2" data-options="field:'division_name',width:150,halign:'center'">Division</th>
@@ -141,11 +142,20 @@
     <form id="frm_insert" method="post" enctype="multipart/form-data" novalidate>
         <fieldset style="width:100%; border:1px solid #d0d0d0; margin-bottom: 10px; border-radius:4px; float: left;">
             <legend><b>Basic Information</b></legend>
-            <div style="width: 50%; float: left;">
+            <div id="div_first" style="width: 50%; float: left;">
+                <div class="fitem" style="margin-bottom: 5px;">
+                    <span style="width:35%; display:inline-block;">Registered Before</span>
+                    <input class="easyui-radiobutton" name="regis_bf" id="regis_bf_yes">
+                    <input class="easyui-radiobutton" name="regis_bf" id="regis_bf_no">
+                </div>
                 <div class="fitem">
-                    <span style="width:35%; display:inline-block;">Employee ID</span>
+                    <span style="width:35%; display:inline-block;" id="label_number">Employee ID</span>
                     <input style="width:30%;" name="number" id="number" required="" class="easyui-textbox">
                     <a class="easyui-linkbutton" onclick="generate_id()"><i class="fa fa-rotate-left"></i></a>
+                </div>
+                <div class="fitem" id="div_emp_old">
+                    <span style="width:35%; display:inline-block;">Employee ID Old</span>
+                    <input style="width:60%;" id="emp_old" class="easyui-combobox">
                 </div>
                 <div class="fitem" hidden>
                     <span style="width:35%; display:inline-block;">Candidate ID</span>
@@ -161,7 +171,7 @@
                 </div>
                 <div class="fitem">
                     <span style="width:35%; display:inline-block;">Sign Date</span>
-                    <input style="width:60%;" name="date_sign" id="date_sign" required="" data-options="onSelect:onChangeDate,formatter:myformatter,parser:myparser, editable: false" class="easyui-datebox">
+                    <input style="width:60%;" name="date_sign" id="date_sign" required="" data-options="{onSelect: onChangeDate, formatter: myformatter, parser: myparser, editable: false}" class="easyui-datebox">
                 </div>
                 <div class="fitem">
                     <span style="width:35%; display:inline-block;">Fit For Services</span>
@@ -171,12 +181,12 @@
                     <span style="width:35%; display:inline-block;">Contract Expired</span>
                     <input style="width:60%;" name="date_expired" id="date_expired" data-options="formatter:myformatter,parser:myparser, editable: false" class="easyui-datebox">
                 </div>
-                <div class="fitem">
+                <div class="fitem" id="div_division">
                     <span style="width:35%; display:inline-block;">Division</span>
                     <input style="width:60%;" name="division_id" id="division_id" required="" class="easyui-combobox">
                 </div>
             </div>
-            <div style="width: 50%; float: left;">
+            <div id="div_second" style="width: 50%; float: left;">
                 <div class="fitem">
                     <span style="width:35%; display:inline-block;">Departement</span>
                     <input style="width:60%;" name="departement_id" id="departement_id" required="" class="easyui-combobox">
@@ -206,11 +216,6 @@
                 <div class="fitem" style="margin-bottom: 5px;">
                     <span style="width:35%; display:inline-block;">Source</span>
                     <input style="width:60%;" name="source_id" id="source_id" class="easyui-combobox">
-                </div>
-                <div class="fitem" style="margin-bottom: 5px;">
-                    <span style="width:35%; display:inline-block;">Registered Before</span>
-                    <input class="easyui-radiobutton" name="regis_bf" value="Yes"> Yes &nbsp;
-                    <input class="easyui-radiobutton" name="regis_bf" id="regis_bf" value="No"> No
                 </div>
                 <!-- <div class="fitem" style="margin-bottom: 5px;">
                     <span style="width:35%; display:inline-block;">Employee Status</span>
@@ -242,16 +247,16 @@
                     </div>
                     <div class="fitem" style="margin-bottom: 5px;">
                         <span style="width:35%; display:inline-block;">Gender</span>
-                        <input class="easyui-radiobutton" name="gender" id="gender" checked="true" value="MALE"> Male &nbsp;
-                        <input class="easyui-radiobutton" name="gender" value="FEMALE"> Female
+                        <input class="easyui-radiobutton" name="gender" id="gender_male" checked="true" value="MALE"> Male &nbsp;
+                        <input class="easyui-radiobutton" name="gender" id="gender_female" value="FEMALE"> Female
                     </div>
                     <div class="fitem" style="margin-bottom: 5px;">
                         <span style="width:35%; display:inline-block;">Blood Type</span>
                         <input class="easyui-radiobutton" name="blood" id="blood" checked="true" value="-"> - &nbsp;
-                        <input class="easyui-radiobutton" name="blood" value="A"> A &nbsp;
-                        <input class="easyui-radiobutton" name="blood" value="B"> B &nbsp;
-                        <input class="easyui-radiobutton" name="blood" value="AB"> AB &nbsp;
-                        <input class="easyui-radiobutton" name="blood" value="O"> O &nbsp;
+                        <input class="easyui-radiobutton" name="blood" id="blood_a" value="A"> A &nbsp;
+                        <input class="easyui-radiobutton" name="blood" id="blood_b" value="B"> B &nbsp;
+                        <input class="easyui-radiobutton" name="blood" id="blood_ab" value="AB"> AB &nbsp;
+                        <input class="easyui-radiobutton" name="blood" id="blood_o" value="O"> O &nbsp;
                     </div>
                     <div class="fitem">
                         <span style="width:35%; display:inline-block;">Religion</span>
@@ -492,8 +497,15 @@
 
 <!-- PDF -->
 <iframe id="printout" src="" style="width: 100%;" hidden></iframe>
+<iframe id="printidcard" src="" style="width: 100%;" hidden></iframe>
 
 <script>
+    var url_division = '<?= base_url('employee/divisions/reads') ?>';
+    var url_departement = '<?= base_url('employee/departements/reads') ?>';
+    var url_departement_sub = '<?= base_url('employee/departement_subs/reads') ?>';
+    var url_source = '<?= base_url('employee/sources/reads') ?>';
+    var url_group = '<?= base_url('employee/employees/readGroupFilters') ?>';
+
     //GENERATE ID
     function generate_id() {
         var departement_id = $("#departement_id").combobox('getValue');
@@ -515,6 +527,7 @@
             });
         }
     }
+
     //ADD DATA
     function add() {
         $('#dlg_insert').dialog('open');
@@ -529,19 +542,11 @@
         $("#departement_sub_id").combobox("enable");
         $("#contract_id").combobox("enable");
         $("#position_id").combogrid("enable");
-        $("#group_id").combobox("enable");
-        $("#blood").radiobutton({
-            checked: true
-        });
-        $("#gender").radiobutton({
-            checked: true
-        });
-        $(".status_active").radiobutton({
-            checked: true
-        });
-        $("#regis_bf").radiobutton({
-            checked: true
-        });
+        $("#group_id").combobox('reload', url_group).combobox("enable");
+        $("#blood").radiobutton({checked: true});
+        $("#gender_male").radiobutton({checked: true});
+        // $(".status_active").radiobutton({checked: true});
+        $("#regis_bf_no").radiobutton({checked: true});
         $("#jkn_family").combobox("setValue", "1");
         $("#form_status_date").hide();
 
@@ -550,6 +555,7 @@
         tableExperience();
         tableTraining();
         tableCarrer();
+        regiteredBFNo();
     }
 
     //EDIT DATA
@@ -566,6 +572,7 @@
                 tableExperience(row.number);
                 tableTraining(row.number);
                 tableCarrer(row.number);
+                regiteredBFNo();
 
                 $("#number").textbox("disable");
                 $("#candidate_id").combogrid("disable");
@@ -575,42 +582,11 @@
                 $("#departement_sub_id").combobox("disable");
                 $("#contract_id").combobox("disable");
                 $("#position_id").combogrid("disable");
-                $("#group_id").combobox("disable");
+                $("#group_id").combobox('reload', url_group).combobox("disable");
 
-                $('#division_id').combobox({
-                    url: '<?php echo base_url('employee/divisions/reads'); ?>',
-                    valueField: 'id',
-                    textField: 'name',
-                    prompt: 'Choose Division',
-                    onLoadSuccess: function() {
-                        $("#division_id").combobox('setValue', row.division_id);
-                    },
-                    onSelect: function(division) {
-                        $('#departement_id').combobox({
-                            url: '<?php echo base_url('employee/departements/reads'); ?>?division_id=' + division.id,
-                            valueField: 'id',
-                            textField: 'name',
-                            prompt: 'Choose Departement',
-                            onLoadSuccess: function() {
-                                $("#departement_id").combobox('setValue', row.departement_id);
-                            },
-                            onSelect: function(departement) {
-                                $('#departement_sub_id').combobox({
-                                    url: '<?php echo base_url('employee/departement_subs/reads'); ?>?division_id=' + division.id + '&departement_id=' + departement.id,
-                                    valueField: 'id',
-                                    textField: 'name',
-                                    prompt: 'Choose Department Sub',
-                                    onLoadSuccess: function() {
-                                        $("#departement_sub_id").combobox('setValue', row.departement_sub_id);
-                                    },
-                                    onSelect: function(deptsub) {
-                                        $("#job_type").combobox('setValue', deptsub.type);
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
+                $("#division_id").combobox('setValue', row.division_id);
+                $("#departement_id").combobox('setValue', row.departement_id);
+                $("#departement_sub_id").combobox('setValue', row.departement_sub_id);
             } else {
                 toastr.error("Approval still Checked");
             }
@@ -2007,9 +1983,7 @@
                 handler: function() {
                     $('#frm_insert').form('submit', {
                         url: url_save,
-                        onSubmit: function() {
-                            return $(this).form('validate');
-                        },
+                        onSubmit: function() { return $(this).form('validate'); },
                         success: function(result) {
                             var result = eval('(' + result + ')');
 
@@ -2164,44 +2138,41 @@
 
         //Get Departement
         $('#filter_divisions').combobox({
-            url: '<?php echo base_url('employee/divisions/reads'); ?>',
+            url: url_division,
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose All',
             icons: [{
                 iconCls: 'icon-clear',
-                handler: function(e) {
-                    $(e.data.target).combobox('clear').combobox('textbox').focus();
-                }
+                handler: function(e) { $(e.data.target).combobox('clear').combobox('textbox').focus(); }
             }],
-            onSelect: function(division) {
-                $('#filter_departements').combobox({
-                    url: '<?php echo base_url('employee/departements/reads'); ?>?division_id=' + division.id,
-                    valueField: 'id',
-                    textField: 'name',
-                    prompt: 'Choose All',
-                    icons: [{
-                        iconCls: 'icon-clear',
-                        handler: function(e) {
-                            $(e.data.target).combobox('clear').combobox('textbox').focus();
-                        }
-                    }],
-                    onSelect: function(departement) {
-                        $('#filter_departement_subs').combobox({
-                            url: '<?php echo base_url('employee/departement_subs/reads'); ?>?division_id=' + division.id + '&departement_id=' + departement.id,
-                            valueField: 'id',
-                            textField: 'name',
-                            prompt: 'Choose All',
-                            icons: [{
-                                iconCls: 'icon-clear',
-                                handler: function(e) {
-                                    $(e.data.target).combobox('clear').combobox('textbox').focus();
-                                }
-                            }],
-                        });
-                    }
-                });
-            }
+            onSelect: function(division) { $('#filter_departements').combobox('reload', url_departement+'?division_id='+division.id); }
+        });
+
+        $('#filter_departements').combobox({
+            url: url_departement,
+            valueField: 'id',
+            textField: 'name',
+            prompt: 'Choose All',
+            icons: [{
+                iconCls: 'icon-clear',
+                handler: function(e) { $(e.data.target).combobox('clear').combobox('textbox').focus(); }
+            }],
+            onSelect: function(departement) { $('#filter_departement_subs').combobox('reload', url_departement_sub
+                +'?division_id='+$('#filter_divisions').combobox('getValue')
+                +'&departement_id='+departement.id
+            ); }
+        });
+
+        $('#filter_departement_subs').combobox({
+            url: url_departement_sub,
+            valueField: 'id',
+            textField: 'name',
+            prompt: 'Choose All',
+            icons: [{
+                iconCls: 'icon-clear',
+                handler: function(e) { $(e.data.target).combobox('clear').combobox('textbox').focus(); }
+            }]
         });
 
         $('#filter_contracts').combobox({
@@ -2363,34 +2334,9 @@
             onSelect: function(value, row) {
                 $("#name").textbox('setValue', row.name);
                 $("#nickname").textbox('setValue', row.nickname);
-                $('#division_id').combobox({
-                    url: '<?php echo base_url('employee/divisions/reads'); ?>',
-                    valueField: 'id',
-                    textField: 'name',
-                    onLoadSuccess: function() {
-                        $("#division_id").combobox('setValue', row.division_id);
-                    },
-                    onSelect: function(division) {
-                        $('#departement_id').combobox({
-                            url: '<?php echo base_url('employee/departements/reads'); ?>?division_id=' + division.id,
-                            valueField: 'id',
-                            textField: 'name',
-                            onLoadSuccess: function() {
-                                $("#departement_id").combobox('setValue', row.departement_id);
-                            },
-                            onSelect: function(departement) {
-                                $('#departement_sub_id').combobox({
-                                    url: '<?php echo base_url('employee/departement_subs/reads'); ?>?division_id=' + division.id + '&departement_id=' + departement.id,
-                                    valueField: 'id',
-                                    textField: 'name',
-                                    onLoadSuccess: function() {
-                                        $("#departement_sub_id").combobox('setValue', row.departement_sub_id);
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
+                $("#division_id").combobox('setValue', row.division_id);
+                $("#departement_id").combobox('setValue', row.departement_id);
+                $("#departement_sub_id").combobox('setValue', row.departement_sub_id);
                 $("#address").textbox('setValue', row.address);
                 $("#place_birth").textbox('setValue', row.place_birth);
                 $("#birthday").datebox('setValue', row.birthday);
@@ -2406,29 +2352,30 @@
 
         //Get Departement
         $('#division_id').combobox({
-            url: '<?php echo base_url('employee/divisions/reads'); ?>',
+            url: url_division,
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose Division',
-            onSelect: function(division) {
-                $('#departement_id').combobox({
-                    url: '<?php echo base_url('employee/departements/reads'); ?>?division_id=' + division.id,
-                    valueField: 'id',
-                    textField: 'name',
-                    prompt: 'Choose Departement',
-                    onSelect: function(departement) {
-                        $('#departement_sub_id').combobox({
-                            url: '<?php echo base_url('employee/departement_subs/reads'); ?>?division_id=' + division.id + '&departement_id=' + departement.id,
-                            valueField: 'id',
-                            textField: 'name',
-                            prompt: 'Choose Department Sub',
-                            onSelect: function(deptsub) {
-                                $('#job_type').combobox('setValue', deptsub.type);
-                            }
-                        });
-                    }
-                });
-            }
+            onSelect: function(division) { $('#departement_id').combobox('reload', url_departement+'?division_id='+division.id); }
+        });
+
+        $('#departement_id').combobox({
+            url: url_departement,
+            valueField: 'id',
+            textField: 'name',
+            prompt: 'Choose Departement',
+            onSelect: function(departement) { $('#departement_sub_id').combobox('reload', url_departement_sub
+                +'?division_id='+$('#division_id').combobox('getValue')
+                +'&departement_id='+departement.id
+            ); }
+        });
+
+        $('#departement_sub_id').combobox({
+            url: url_departement_sub,
+            valueField: 'id',
+            textField: 'name',
+            prompt: 'Choose Department Sub',
+            onSelect: function(deptsub) { $('#job_type').combobox('setValue', deptsub.type); }
         });
 
         $('#contract_id').combobox({
@@ -2439,18 +2386,18 @@
         });
 
         $('#group_id').combobox({
-            url: '<?php echo base_url('employee/groups/reads'); ?>',
+            url: url_group,
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose Group',
-            onSelect: function(group) {
-                $('#source_id').combobox({
-                    url: '<?php echo base_url('employee/sources/reads'); ?>/' + group.id,
-                    valueField: 'id',
-                    textField: 'name',
-                    prompt: 'Choose Source'
-                });
-            }
+            onSelect: function(group) { $('#source_id').combobox('reload', url_source+'/'+group.id); }
+        });
+
+        $('#source_id').combobox({
+            url: url_source,
+            valueField: 'id',
+            textField: 'name',
+            prompt: 'Choose Source'
         });
 
         $('#marital_id').combogrid({
@@ -2502,24 +2449,116 @@
             prompt: 'Choose Religion'
         });
 
-        $("#form_status_date").hide();
-        $('.status_active').radiobutton({
-            onChange: function(val) {
-                if (val === false) {
-                    $("#form_status_date").show();
-                } else {
-                    $("#form_status_date").hide();
+        $("#regis_bf_yes").radiobutton({
+            label: 'Yes',
+            value: 'Yes',
+            labelPosition: 'after',
+            onChange: function (checked) {
+                if (checked) {
+                    $('#div_division').prependTo('#div_second');
+                    $('#label_number').text('Employee ID New');
+                    $('#div_emp_old').show();
+                    $('#emp_old').combogrid('options').required = true;
+                    $('#emp_old').combogrid('textbox').validatebox('options').required = true;
+                    $('#emp_old').combogrid('textbox').validatebox('validate');
+                    $('#group_id').combobox('reload', url_group+'?hl=true');
                 }
             }
         });
+
+        $("#regis_bf_no").radiobutton({
+            checked: true,
+            label: 'No',
+            value: 'No',
+            labelPosition: 'after',
+            onChange: function (checked) { if (checked) {
+                $('#emp_old').combogrid('options').required = false;
+                $('#emp_old').combogrid('textbox').validatebox('options').required = false;
+                $('#emp_old').combogrid('textbox').validatebox('validate');
+                $('#group_id').combobox('reload', url_group);
+                regiteredBFNo();
+            } }
+        });
+
+        $('#emp_old').combogrid({
+            url: '<?= base_url('employee/employees/readEmployeeOld') ?>',
+            mode: 'remote',
+            fitColumns: true,
+            idField: 'number',
+            textField: 'number',
+            prompt: 'Choose Employee ID Old',
+            columns: [[
+                {field: 'number', title: 'Employee ID', halign: 'center'},
+                {field: 'name', title: 'Employee Name', halign: 'center'}
+            ]],
+            onSelect: function (index, row) {
+                $('#name').textbox('setValue', row.name);
+                $('#date_sign').datebox('setValue', row.sign);
+                $('#date_expired').datebox('setValue', row.expired);
+                $('#division_id').combobox('setValue', row.division);
+                $('#departement_id').combobox('setValue', row.dept);
+                $('#departement_sub_id').combobox('setValue', row.sub_dept);
+                $('#contract_id').combobox('setValue', row.contract);
+                $('#position_id').combogrid('setValue', row.position);
+                $('#group_id').combobox('setValue', row.group_id);
+                $('#source_id').combobox('setValue', row.source);
+
+                $('#address').textbox('setValue', row.address);
+                $('#place_birth').textbox('setValue', row.place_birth);
+                $('#birthday').datebox('setValue', row.birthday);
+                $('#gender_'+row.gender.toLowerCase()).radiobutton({checked: true});
+                $('#blood_'+((row.blood == '') ? '-' : row.blood.toLowerCase())).radiobutton({checked: true});
+                $('#religion_id').combobox('setValue', row.religion_id);
+                $('#marital_id').combogrid('setValue', row.marital_id);
+                $('#national_id').textbox('setValue', row.national_id);
+                $('#tax_id').textbox('setValue', row.tax_id);
+                $('#jamsostek').textbox('setValue', row.jamsostek);
+                $('#jamsostek_date').datebox('setValue', row.jamsostek_date);
+                $('#jkn').textbox('setValue', row.jkn);
+                $('#jkn_date').datebox('setValue', row.jkn_date);
+                $('#jkn_family').combobox('setValue', row.jkn_family);
+                $('#telphone').numberbox('setValue', row.telphone);
+                $('#mobile_phone').numberbox('setValue', row.mobile_phone);
+                $('#email').textbox('setValue', row.email);
+
+                $('#bank_name').combobox('setValue', row.bank_name);
+                $('#bank_no').textbox('setValue', row.bank_no);
+                $('#bank_branch').textbox('setValue', row.bank_branch);
+
+                tableFamily(row.number);
+                tableEducation(row.number);
+                tableExperience(row.number);
+                tableTraining(row.number);
+                tableCarrer(row.number);
+                onChangeDate(new Date(row.sign));
+            }
+        });
+
+        $("#form_status_date").hide();
+
+        // $('.status_active').radiobutton({
+            // onChange: function(val) {
+            //     if (val === false) {
+            //         $("#form_status_date").show();
+            //     } else {
+            //         $("#form_status_date").hide();
+            //     }
+            // }
+        // });
     });
 
+    function regiteredBFNo() {
+        $('#div_division').appendTo('#div_first');
+        $('#label_number').text('Employee ID');
+        $('#div_emp_old').hide();
+    }
+
     function onChangeDate(value) {
-        $.post('<?= base_url('employee/employees/readService') ?>', {
-            date: myformatter(value)
-        }, function(e) {
-            $('#service').textbox('setValue', e);
-        });
+        $.post(
+            '<?= base_url('employee/employees/readService') ?>',
+            { date: myformatter(value) },
+            function(e) { $('#service').textbox('setValue', e); }
+        );
     }
 
     function FormatterImage(val) {
@@ -2534,6 +2573,10 @@
         return '<a class="button-green" style="width:100%;" href="<?= base_url('employee/employees/details/') ?>' + row.id + '/<?= $id_menu ?>"><i class="fa fa-user"></i></a>';
     };
 
+    function FormatterCard(value, row, index) {
+        return '<a class="btn btn-info w-100" style="width: 100%; pointer-events: visible; opacity: 1;" href="#" onClick="print_employee_card('+"'"+window.btoa(row.id)+"'"+')"><i class="fa fa-id-card-clip"></i></a>';
+    }
+
     function btnPrint(val, row) {
         var print = "print_employee_detail('" + row.number + "')";
         return '<a class="btn btn-primary w-100" onClick="' + print + '" style="pointer-events: visible; opacity:1;"><i class="fa fa-print"></i></a>';
@@ -2541,6 +2584,11 @@
 
     function print_employee_detail(employee_number) {
         window.open("<?= base_url('employee/employees/print_employee_detail/') ?>" + window.btoa(employee_number), "_blank", "width=1200,height=600");
+    }
+
+    function print_employee_card(id) {
+        $("#printidcard").attr("src", "<?= base_url('employee/employees/cards/') ?>"+id);
+        setTimeout(function () { $("#printidcard").attr("src", ""); }, 1000);
     }
 
     function FormatterDate(val) {

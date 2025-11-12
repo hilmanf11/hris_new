@@ -36,9 +36,8 @@ class Employees extends CI_Controller
     //DETAIL
     public function details($number, $id_menu)
     {
-        if (empty($this->session->username)) {
-            redirect('error_session');
-        } else {
+        if (empty($this->session->username)) { redirect('error_session'); }
+        else {
             $data['employee'] = $this->crud->read('employees', [], ["id" => $number]);
             $data['division'] = $this->crud->read('divisions', [], ["id" => $data['employee']->division_id]);
             $data['departement'] = $this->crud->read('departements', [], ["id" => $data['employee']->departement_id]);
@@ -55,6 +54,81 @@ class Employees extends CI_Controller
 
             $this->load->view('template/header', $data);
             $this->load->view('employee/employee_details', ['loc' => 'assets/document/agreement/']);
+        }
+    }
+
+    //ID CARD
+    public function cards($id)
+    {
+        if (empty($this->session->username)) { redirect('error_session'); }
+        else {
+            $img_front = base_url('template/id_card_front.png');
+            $img_back = base_url('template/id_card_back.png');
+            $id = base64_decode($id);
+
+            $this->db->distinct()->select(
+                "TRIM(a.number) AS nik,".
+                "TRIM(a.name) AS name,".
+                "COALESCE(TRIM(b.name), '') AS dept,".
+                "DATE(a.date_sign) AS date,".
+                "TRIM(a.machine_code) AS machine,".
+                "TRIM(a.image_profile) AS img"
+            )->from("employees a")->join("departements b", "a.departement_id = b.id")->where("a.id", $id);
+            $get = $this->db->get()->row();
+            $date = date('d / m / Y', strtotime($get->date));
+            $img = (empty($img)) ? $get->img : base_url('assets/image/users/default.png');
+            $format = $get->name.', '.$get->dept.', '.$get->nik.', '.$get->date.', '.$get->machine;
+
+            $this->load->library('barcode');
+            $barcode = base64_encode($this->barcode->generate($format));
+
+            echo <<<HTML
+                <html>
+                    <head>
+                        <title>ID Card - $get->name</title>
+                        <style>body { font-family: "Cambria", Georgia, serif; }</style>
+                    </head>
+                    <body onload="window.print()">
+                        <table><tr>
+                            <td style="width: 5.2cm; height: 8.8cm; position: relative;" align="center" valign="top">
+                                <img src="$img_front" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: -1;">
+                                <img src="$img" style="width: 90px; height: 87px; border-radius: 50%; margin-top: 47px; z-index: 1;"><br>
+                                <p style="color: white; font-size: 12pt; font-weight: bold; margin-top: 27px; margin-bottom: 0;">$get->name<br>$get->dept<br>$get->nik</p>
+                                <!-- <img src="data:image/png;base64,$barcode" style="width: 142px; height: 33px; margin-top: 24px;"> -->
+                            </td>
+                            <td class="back" style="width: 5.2cm; height: 8.8cm; position: relative;" align="center" valign="top">
+                                <img src="$img_back" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: -1;">
+                                <p style="color: white; font-size: 9pt; font-style: italic; font-weight: bold; margin-top: 140px;">Join&nbsp;&nbsp;:&nbsp;&nbsp;$date</p>
+                            </td>
+                        </tr></table>
+                    </body>
+                </html>
+            HTML;
+
+            // $img_front = base_url('template/id_card_front_bri.png');
+            // $img_back = base_url('template/id_card_back_bri.png');
+            // echo <<<HTML
+                // <html>
+                //     <head>
+                //         <title>ID Card</title>
+                //         <style>body { font-family: "Cambria", Georgia, serif; }</style>
+                //     </head>
+                //     <body onload="window.print()">
+                //         <table><tr>
+                //             <td style="width: 5.2cm; height: 8.8cm; position: relative;" align="center" valign="top">
+                //                 <img src="$img_front" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: -1;">
+                //                 <img src="$img" style="width: 88px; height: 87px; border-radius: 50%; margin-top: 47px; z-index: 1;"><br>
+                //                 <p style="color: white; font-size: 12pt; font-weight: bold; margin-top: 27px; margin-bottom: 0;">$get->name<br>$get->dept<br>$get->nik</p>
+                //                 <!-- <img src="data:image/png;base64,$barcode" style="width: 142px; height: 33px; margin-top: 24px;"> -->
+                //             </td>
+                //             <td class="back" style="width: 5.2cm; height: 8.8cm; position: relative;" align="center" valign="top">
+                //                 <img src="$img_back" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: -1;">
+                //                 <p style="color: white; font-size: 9pt; font-style: italic; font-weight: bold; margin-top: 160px;">Join&nbsp;&nbsp;:&nbsp;&nbsp;$date</p>
+                //             </td>
+                //         </tr></table>
+                //     </body>
+                // </html>
+            // HTML;
         }
     }
 
@@ -128,6 +202,62 @@ class Employees extends CI_Controller
         $this->db->order_by('name', 'asc');
         $records = $this->db->get()->result_array();
         echo json_encode($records);
+    }
+
+    public function readEmployeeOld()
+    {
+        $post = isset($_POST['q']) ? $_POST['q'] : "";
+
+        $this->db->distinct()->select(
+            "TRIM(number) AS number,".
+            "TRIM(name) AS name,".
+            "DATE(date_sign) AS sign,".
+            "DATE(date_expired) AS expired,".
+            "TRIM(division_id) AS division,".
+            "TRIM(departement_id) AS dept,".
+            "TRIM(departement_sub_id) AS sub_dept,".
+            "TRIM(contract_id) AS contract,".
+            "TRIM(position_id) AS position,".
+            "TRIM(group_id) AS group_id,".
+            "TRIM(source_id) AS source,".
+            "TRIM(address) AS address,".
+            "TRIM(place_birth) AS place_birth,".
+            "DATE(birthday) AS birthday,".
+            "TRIM(gender) AS gender,".
+            "TRIM(blood) AS blood,".
+            "TRIM(religion_id) AS religion_id,".
+            "TRIM(marital_id) AS marital_id,".
+            "TRIM(national_id) AS national_id,".
+            "TRIM(tax_id) AS tax_id,".
+            "TRIM(jamsostek) AS jamsostek,".
+            "DATE(jamsostek_date) AS jamsostek_date,".
+            "TRIM(jkn) AS jkn,".
+            "TRIM(jkn_date) AS jkn_date,".
+            "TRIM(jkn_family) AS jkn_family,".
+            "TRIM(telphone) AS telphone,".
+            "TRIM(mobile_phone) AS mobile_phone,".
+            "TRIM(email) AS email,".
+            "TRIM(bank_name) AS bank_name,".
+            "TRIM(bank_no) AS bank_no,".
+            "TRIM(bank_branch) AS bank_branch"
+        )->from("employees")
+            ->where('contract_id !=', 20221119000003)
+            ->where('contract_id !=', 20250704000001)
+            ->where('group_id !=', 20221119000002);
+        if (!empty($post)) {
+            $this->db->group_start()
+                ->like('number', $post)
+                ->or_like('name', $post)
+            ->group_end();
+        }
+        echo json_encode($this->db->order_by("name")->get()->result());
+    }
+
+    public function readGroupFilters()
+    {
+        $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name")->from("groups");
+        if (!$this->input->get('hl')) { $this->db->where("id !=", "20221119000002"); }
+        echo json_encode($this->db->order_by("name")->get()->result());
     }
 
     public function readFulls()
@@ -1445,6 +1575,16 @@ class Employees extends CI_Controller
         $data['warning'] = $warning;
         $data['mutations'] = $mutations;
         $data['service'] = $service;
+        $data['contracts'] = $this->db->distinct()->select(
+             "MAX(a.created_date) AS max_create,"
+            ."COALESCE(TRIM(b.name), '') AS position,"
+            ."COALESCE(TRIM(c.name), '') AS contract,"
+            ."DATE(a.date_expired) AS date,"
+            ."MAX(COALESCE(TRIM(a.attachment), '')) AS attachment"
+        )->from("agreements a")
+            ->join("positions b", "a.position_id = b.id")
+            ->join("contracts c", "a.contract_id = c.id")
+        ->where("a.number", $number)->group_by("b.name, c.name, a.date_expired")->order_by("date", "DESC")->get()->result();
 
         $this->load->view('employee/employee_print_detail', $data);
     }

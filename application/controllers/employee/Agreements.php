@@ -40,6 +40,57 @@ class Agreements extends CI_Controller
         echo json_encode($send);
     }
 
+    public function readEmployees()
+    {
+        $post = isset($_POST['q']) ? $_POST['q'] : "";
+        $send = $this->db->group_start()
+            ->like('number', $post)
+            ->or_like('name', $post)
+        ->group_end()->order_by('name', 'asc')->get('employees')->result();
+        echo json_encode(['rows' => $send, 'total' => count($send)]);
+    }
+
+    public function readDivisions()
+    {
+        $post = isset($_POST['q']) ? $_POST['q'] : "";
+        $send = $this->db->group_start()
+            ->like('id', $post)
+            ->or_like('name', $post)
+        ->group_end()->order_by('name', 'asc')->get('divisions')->result();
+        if (count($send) == 1) { $send[0]->selected = true; }
+        echo json_encode($send);
+    }
+
+    public function readDepartments()
+    {
+        $get = isset($_GET['id']) ? base64_decode($_GET['id']) : '';
+        if (!empty($get)) {
+            $post = isset($_POST['q']) ? $_POST['q'] : "";
+            $send = $this->db->where('division_id', $get)
+            ->group_start()
+                ->like('id', $post)
+                ->or_like('name', $post)
+            ->group_end()->order_by('name', 'asc')->get('departements')->result();
+            if (count($send) == 1) { $send[0]->selected = true; }
+            echo json_encode($send);
+        }
+    }
+
+    public function readDepartmentSubs()
+    {
+        $get = isset($_GET['id']) ? base64_decode($_GET['id']) : '';
+        if (!empty($get)) {
+            $post = isset($_POST['q']) ? $_POST['q'] : "";
+            $send = $this->db->where('departement_id', $get)
+            ->group_start()
+                ->like('id', $post)
+                ->or_like('name', $post)
+            ->group_end()->order_by('name', 'asc')->get('departement_subs')->result();
+            if (count($send) == 1) { $send[0]->selected = true; }
+            echo json_encode($send);
+        }
+    }
+
     //GET DATATABLES
     public function datatables()
     {
@@ -77,30 +128,34 @@ class Agreements extends CI_Controller
         $offset = ($page - 1) * $rows;
         $result = array();
         //Select Query
-        $this->db->select('a.*,
-            b.name as employee_name, 
-            c.name as division_name, 
-            d.name as departement_name, 
-            e.name as departement_sub_name,
-            e.type, 
-            f.name as position_name,
-            g.name as contract_name');
-        $this->db->from('agreements a');
-        $this->db->join('employees b', 'a.number = b.number');
-        $this->db->join('divisions c', 'b.division_id = c.id');
-        $this->db->join('departements d', 'b.departement_id = d.id');
-        $this->db->join('departement_subs e', 'b.departement_sub_id = e.id');
-        $this->db->join('positions f', 'f.id = a.position_id');
-        $this->db->join('contracts g', 'g.id = a.contract_id');
-        $this->db->join('groups h', 'h.id = a.group_id');
-        $this->db->where('a.deleted', 0);
-        $this->db->like('b.departement_id', $aprvDepartement);
+        $this->db->select(
+             "a.*,"
+            ."b.name as employee_name,"
+            ."c.name as division_name,"
+            ."d.name as departement_name,"
+            ."e.name as departement_sub_name,"
+            ."e.type,"
+            ."f.name as position_name,"
+            ."g.name as contract_name,"
+            ."b.division_id,"
+            ."b.departement_id,"
+            ."b.departement_sub_id"
+        )->from('agreements a')
+            ->join('employees b', 'a.number = b.number')
+            ->join('divisions c', 'b.division_id = c.id')
+            ->join('departements d', 'b.departement_id = d.id')
+            ->join('departement_subs e', 'b.departement_sub_id = e.id')
+            ->join('positions f', 'f.id = a.position_id')
+            ->join('contracts g', 'g.id = a.contract_id')
+            ->join('groups h', 'h.id = a.group_id')
+            ->where('a.deleted', 0)
+            ->like('b.departement_id', $aprvDepartement)
+            ->like('b.division_id', $filter_divisions)
+            ->like('b.departement_id', $filter_departements)
+            ->like('b.departement_sub_id', $filter_departement_subs)
+            ->like('b.id', $filter_employees)
+            ->like('a.status', $filter_status);
         $whereExpired;
-        $this->db->like('b.division_id', $filter_divisions);
-        $this->db->like('b.departement_id', $filter_departements);
-        $this->db->like('b.departement_sub_id', $filter_departement_subs);
-        $this->db->like('b.id', $filter_employees);
-        $this->db->like('a.status', $filter_status);
         $this->db->order_by('b.name', 'ASC');
         //Total Data
         $totalRows = $this->db->count_all_results('', false);
@@ -121,24 +176,27 @@ class Agreements extends CI_Controller
             if ($this->form_validation->run() == TRUE) {
                 $post   = $this->input->post();
                 $approval = $this->crud->read('approvals', [], ["table_name" => "agreements"]);
-
                 $attachment = $this->crud->upload('attachment', ['pdf', 'docx'], 'assets/document/agreement/');
+                $postEmployee = [
+                    "employee_name" => $post['employee_name'],
+                    "division_id" => $post['division_id'],
+                    "departement_id" => $post['departement_id'],
+                    "departement_sub_id" => $post['departement_sub_id'],
+                    "position_id" => $post['position_id'],
+                    "group_id" => $post['group_id'],
+                    "contract_id" => $post['contract_id'],
+                    "date_sign" => $post['date_sign'],
+                    "date_expired" => $post['date_expired'],
+                ];
 
-                if ($approval) {
-                    $this->crud->update('agreements', ["number" => $post['number']], ["status" => 1]);
-                    $send   = $this->crud->create('agreements', array_merge($post, array("attachment" => $attachment)));
-                } else {
-                    $this->crud->update('agreements', ["number" => $post['number']], ["status" => 1]);
-                    $send   = $this->crud->create('agreements', array_merge($post, array("attachment" => $attachment)));
-                    $postEmployee = array(
-                        "position_id" => $post['position_id'],
-                        "group_id" => $post['group_id'],
-                        "contract_id" => $post['contract_id'],
-                        "date_sign" => $post['date_sign'],
-                        "date_expired" => $post['date_expired'],
-                    );
-                    $this->crud->update('employees', ["number" => $post['number']], $postEmployee);
-                }
+                unset($post['employee_name']);
+                unset($post['division_id']);
+                unset($post['departement_id']);
+                unset($post['departement_sub_id']);
+
+                $this->crud->update('agreements', ["number" => $post['number']], ["status" => 1]);
+                $send = $this->crud->create('agreements', array_merge($post, array("attachment" => $attachment)));
+                if (empty($approval)) { $this->crud->update('employees', ["number" => $post['number']], $postEmployee); }
                 echo $send;
             } else {
                 show_error(validation_errors());
@@ -156,24 +214,28 @@ class Agreements extends CI_Controller
             $post = $this->input->post();
             $approval = $this->crud->read('approvals', [], ["table_name" => "agreements"]);
             $attachment = $this->crud->upload('attachment', ['pdf', 'docx'], 'assets/document/agreement/');
+            $postEmployee = [
+                "name" => $post['employee_name'],
+                "division_id" => $post['division_id'],
+                "departement_id" => $post['departement_id'],
+                "departement_sub_id" => $post['departement_sub_id'],
+                "position_id" => $post['position_id'],
+                "group_id" => $post['group_id'],
+                "contract_id" => $post['contract_id'],
+                "date_sign" => $post['date_sign'],
+                "date_expired" => $post['date_expired'],
+            ];
 
-            if ($approval) {
-                $this->crud->update('agreements', ["number" => $post['number']], ["status" => 1]);
-                $this->crud->delete('agreements', ["id" => $id]);
-                $send = $this->crud->create('agreements', array_merge($post, array("attachment" => $attachment)));
-            } else {
-                $this->crud->update('agreements', ["number" => $post['number']], ["status" => 1]);
-                $this->crud->delete('agreements', ["id" => $id]);
-                $send = $this->crud->create('agreements', array_merge($post, array("attachment" => $attachment)));
-                $postEmployee = array(
-                    "position_id" => $post['position_id'],
-                    "group_id" => $post['group_id'],
-                    "contract_id" => $post['contract_id'],
-                    "date_sign" => $post['date_sign'],
-                    "date_expired" => $post['date_expired'],
-                );
-                $this->crud->update('employees', ["number" => $post['number']], $postEmployee);
-            }
+            unset($post['employee_name']);
+            unset($post['division_id']);
+            unset($post['departement_id']);
+            unset($post['departement_sub_id']);
+            // die(var_dump($postEmployee));
+            $this->crud->update('agreements', ["number" => $post['number']], ["status" => 1]);
+            $this->crud->delete('agreements', ["id" => $id]);
+            $send = $this->crud->create('agreements', array_merge($post, array("attachment" => $attachment)));
+            if (empty($approval)) { $this->crud->update('employees', ["number" => $post['number']], $postEmployee); }
+            // die($this->db->last_query());
             echo $send;
         } else {
             show_error("Cannot Process your request");
@@ -287,6 +349,7 @@ class Agreements extends CI_Controller
                 <th>Departement</th>
                 <th>Departement Sub</th>
                 <th>Position</th>
+                <th>Employee Type</th>
                 <th>Join Date</th>
                 <th>Exp Date</th>
                 <th>Note</th>
@@ -301,6 +364,7 @@ class Agreements extends CI_Controller
                     <td>' . $data['departement_name'] . '</td>
                     <td>' . $data['departement_sub_name'] . '</td>
                     <td>' . $data['position_name'] . '</td>
+                    <td>' . $data['contract_name'] . '</td>
                     <td>' . $data['date_sign'] . '</td>
                     <td>' . $data['date_expired'] . '</td>
                     <td>' . $data['note'] . '</td>';

@@ -83,13 +83,53 @@
 </div>
 
 <!-- DIALOG SAVE AND UPDATE -->
-<div id="dlg_insert" class="easyui-dialog" title="Add New" data-options="closed: true,modal:true" style="width: 500px; padding:10px; top: 20px;">
+<div id="dlg_insert" class="easyui-dialog" title="Add New" data-options="closed: true,modal:true" style="width: 500px; height: 600px; padding:10px; top: 20px;">
     <form id="frm_insert" method="post" enctype="multipart/form-data" novalidate>
         <fieldset style="width:100%; border:1px solid #d0d0d0; margin-bottom: 10px; border-radius:4px; float: left;">
             <legend><b>Form Data</b></legend>
             <div class="fitem">
-                <span style="width:35%; display:inline-block;">Employee</span>
+                <span style="width:35%; display:inline-block;">Trans Date</span>
+                <input style="width:60%;" name="trans_date" id="trans_date" required="" class="easyui-datebox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Employee ID</span>
                 <input style="width:60%;" name="number" id="number" required="" class="easyui-combogrid">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Name</span>
+                <input style="width:60%;" name="employee_name" id="employee_name" required="" class="easyui-textbox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Date Sign</span>
+                <input style="width:60%;" name="date_sign" id="date_sign" required="" class="easyui-datebox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Date Expired</span>
+                <input style="width:60%;" name="date_expired" id="date_expired" required="" class="easyui-datebox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Duration</span>
+                <input style="width:60%;" name="duration" id="duration" required="" class="easyui-textbox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Division</span>
+                <input style="width:60%;" name="division_id" id="division_id" required="" class="easyui-combobox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Department</span>
+                <input style="width:60%;" name="departement_id" id="departement_id" required="" class="easyui-combobox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Department Sub</span>
+                <input style="width:60%;" name="departement_sub_id" id="departement_sub_id" required="" class="easyui-combobox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Process</span>
+                <input style="width:60%;" name="process" id="process" required="" class="easyui-textbox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Employee Type</span>
+                <input style="width:60%;" name="contract_id" id="contract_id" required="" class="easyui-combobox">
             </div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Position</span>
@@ -100,24 +140,12 @@
                 <input style="width:60%;" name="group_id" id="group_id" required="" class="easyui-combobox">
             </div>
             <div class="fitem">
-                <span style="width:35%; display:inline-block;">Employee Type</span>
-                <input style="width:60%;" name="contract_id" id="contract_id" required="" class="easyui-combobox">
-            </div>
-            <div class="fitem">
-                <span style="width:35%; display:inline-block;">Date Sign</span>
-                <input style="width:60%;" name="date_sign" id="date_sign" data-options="formatter:myformatter,parser:myparser" class="easyui-datebox">
-            </div>
-            <div class="fitem">
-                <span style="width:35%; display:inline-block;">Date Expired</span>
-                <input style="width:60%;" name="date_expired" data-options="formatter:myformatter,parser:myparser" class="easyui-datebox">
-            </div>
-            <div class="fitem">
                 <span style="width:35%; display:inline-block;">Attachment</span>
                 <input style="width:60%;" name="attachment" id="attachment" class="easyui-filebox">
             </div>
             <div class="fitem">
-                <span style="width:35%; display:inline-block;">Note</span>
-                <input style="width:60%; height: 80px;" name="note" multiline="true" class="easyui-textbox">
+                <span style="width:35%; display:inline-block;">Notes</span>
+                <input style="width:60%; height: 80px;" name="note" id="note" multiline="true" class="easyui-textbox">
             </div>
         </fieldset>
     </form>
@@ -129,10 +157,14 @@
 <script>
     //ADD DATA
     function add() {
-        $('#dlg_insert').dialog('open');
         url_save = '<?= base_url('employee/agreements/create') ?>';
+        $('#dlg_insert').dialog('open');
         $('#frm_insert').form('clear');
+        $('#number').combogrid('readonly', false);
+        $('#departement_id').combobox('loadData', []);
+        $('#departement_sub_id').combobox('loadData', []);
         $('#date_sign').datebox('setValue', "<?= date("Y-m-d") ?>");
+        $('#trans_date').datebox('setValue', "<?= date("Y-m-d") ?>");
     }
 
     //EDIT DATA
@@ -141,9 +173,11 @@
         if (row) {
             if (row.status == 0) {
                 if (row.status_check == "" || row.status_check == null) {
-                    $('#dlg_insert').dialog('open');
-                    $('#frm_insert').form('load', row);
                     url_save = '<?= base_url('employee/agreements/update') ?>?id=' + btoa(row.id);
+                    $('#dlg_insert').dialog('open');
+                    $('#number').combogrid('readonly', true);
+                    $('#frm_insert').form('load', row);
+                    $('#duration').textbox('setValue', calculateDuration(row.date_sign, row.date_expired).text);
                 } else {
                     toastr.error("Approval still Checked");
                 }
@@ -287,26 +321,26 @@
         });
 
         //Get Division
-        $('#division_id').combogrid({
-            url: '<?= base_url('employee/divisions/reads') ?>',
-            panelWidth: 420,
-            idField: 'id',
-            textField: 'name',
-            mode: 'remote',
-            fitColumns: true,
-            prompt: "Choose Division",
-            columns: [
-                [{
-                    field: 'number',
-                    title: 'Division No',
-                    width: 80
-                }, {
-                    field: 'name',
-                    title: 'Division Name',
-                    width: 250
-                }, ]
-            ]
-        });
+        // $('#division_id').combogrid({
+        //     url: '<?= base_url('employee/divisions/reads') ?>',
+        //     panelWidth: 420,
+        //     idField: 'id',
+        //     textField: 'name',
+        //     mode: 'remote',
+        //     fitColumns: true,
+        //     prompt: "Choose Division",
+        //     columns: [
+        //         [{
+        //             field: 'number',
+        //             title: 'Division No',
+        //             width: 80
+        //         }, {
+        //             field: 'name',
+        //             title: 'Division Name',
+        //             width: 250
+        //         }, ]
+        //     ]
+        // });
 
         //Get Division
         $('#filter_divisions').combobox({
@@ -413,10 +447,10 @@
         });
 
         $('#number').combogrid({
-            url: '<?= base_url('employee/employees/reads') ?>',
+            url: '<?= base_url('employee/agreements/readEmployees') ?>',
             panelWidth: 450,
             idField: 'number',
-            textField: 'name',
+            textField: 'number',
             mode: 'remote',
             fitColumns: true,
             prompt: 'Choose Employee',
@@ -431,8 +465,108 @@
                     width: 200
                 }]
             ],
+            onSelect: function (index, row) { $('#employee_name').textbox('setValue', row.name); }
+        });
+
+        $('#trans_date').datebox({
+            formatter: myformatter,
+            parser: myparser,
+            editable: false
+        });
+
+        $('#date_sign').datebox({
+            formatter: myformatter,
+            parser: myparser,
+            editable: false,
+            onSelect: function (date) {
+                var format = date.getFullYear()+'-'+(date.getMonth() + 1)+'-'+date.getDate();
+                $('#duration').textbox(
+                    'setValue',
+                    calculateDuration(format, $('#date_expired').datebox('getValue')).text
+                );
+
+                if (format >= $('#date_expired').datebox('getValue'))
+                    { toastr.warning('Please select date sign < date expired!', 'Warning'); }
+            }
+        });
+
+        $('#date_expired').datebox({
+            formatter: myformatter,
+            parser: myparser,
+            editable: false,
+            onSelect: function (date) {
+                var format = date.getFullYear()+'-'+(date.getMonth() + 1)+'-'+date.getDate();
+                $('#duration').textbox(
+                    'setValue',
+                    calculateDuration($('#date_sign').datebox('getValue'), format).text
+                );
+
+                if ($('#date_sign').datebox('getValue') >= format)
+                    { toastr.warning('Please select date sign < date expired!', 'Warning'); }
+            }
+        });
+
+        $('#division_id').combobox({
+            url: '<?= base_url('employee/agreements/readDivisions') ?>',
+            valueField: 'id',
+            textField: 'name',
+            prompt: 'Choose Division',
+            onSelect: function (rec) {
+                $('#departement_id').combobox('reload', '<?= base_url('employee/agreements/readDepartments') ?>?id='+window.btoa(rec.id));
+            },
+            onLoadSuccess: function (data) {
+                var get = $(this).combobox('getValue');
+                if (get != '') { if (!data.some(value => get == value.id)) { $(this).combobox('clear'); } }
+            }
+        });
+
+        $('#departement_id').combobox({
+            valueField: 'id',
+            textField: 'name',
+            prompt: 'Choose Department',
+            onSelect: function (rec) {
+                $('#departement_sub_id').combobox('reload', '<?= base_url('employee/agreements/readDepartmentSubs') ?>?id='+window.btoa(rec.id));
+            },
+            onLoadSuccess: function (data) {
+                var get = $(this).combobox('getValue');
+                if (get != '') { if (!data.some(value => get == value.id)) { $(this).combobox('clear'); } }
+            }
+        });
+
+        $('#departement_sub_id').combobox({
+            valueField: 'id',
+            textField: 'name',
+            prompt: 'Choose Department Sub',
+            onLoadSuccess: function (data) {
+                var get = $(this).combobox('getValue');
+                if (get != '') { if (!data.some(value => get == value.id)) { $(this).combobox('clear'); } }
+            }
         });
     });
+
+    function calculateDuration(sign, expired) {
+        var text = '';
+        var start = new Date(sign);
+        var end = new Date(expired);
+        var time = parseInt((end - start) / (1000 * 60 * 60 * 24));
+
+        if (sign < expired) {
+            var year = end.getFullYear() - start.getFullYear();
+            var month = end.getMonth() - start.getMonth();
+            var day = end.getDate() - start.getDate();
+
+            if (day < 0) {
+                month--;
+                day += new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+            }
+
+            if (month < 0) { year--; month += 12; }
+
+            text = year+' year '+month+' month '+day+' day';
+        }
+
+        return {text: text, time: time};
+    }
 
     function FormatterDate(val) {
         if (val == "0000-00-00") {

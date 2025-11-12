@@ -769,9 +769,11 @@
 	var agreement_select_dept = [];
 	var agreement_allowance = [];
 	var agreement_agreement = [];
+	var agreement_templates = [];
 	var agreement_employee = [];
 	var agreement_salary = [];
 	var agreement_setup = [];
+	var template_contract = '';
 	function formAgreement() {
 		$.ajax({
 			url: '<?= base_url('home/formAgreement'); ?>',
@@ -784,6 +786,7 @@
 				agreement_select_dept = result.departement;
 				agreement_allowance = result.allowance;
 				agreement_agreement = result.agreement;
+				agreement_templates = result.templates;
 				agreement_employee = result.employee;
 				agreement_salary = result.salary;
 				agreement_setup = result.setup;
@@ -872,14 +875,18 @@
 					onSelect: function (rec) {
 						agreement_setup_salary_req = true;
 
-						if (['20221119000003','20221119000006'].includes(rec.id)) { agreement_setup_salary_req = false; }
+						if (['MjAyMjExMTkwMDAwMDM=','MjAyMjExMTkwMDAwMDY='].includes(window.btoa(rec.id))) { agreement_setup_salary_req = false; }
 
-						$('#component_salary').combobox('textbox').validatebox({required: agreement_setup_salary_req});
 						$('#amount').numberbox('textbox').validatebox({required: agreement_setup_salary_req});
 						$('#bpjs').numberbox('textbox').validatebox({required: agreement_setup_salary_req});
-						$('#component_salary').combobox('validate');
 						$('#amount').numberbox('validate');
 						$('#bpjs').numberbox('validate');
+
+						template_contract = getTemplateAgreement($('#position_agreement').combobox('getValue'), rec.id);
+						setTimeout(function () {
+							is_contract = ['MjAyMjExMTkwMDAwMDE=', 'MjAyMjExMTkwMDAwMDI=', 'MjAyMzAxMTIwMDAwMDE=', 'MjAyMzAxMjQwMDAwMDE=', 'MjAyNDAxMDQwMDAwMDE='].includes(window.btoa(rec.id));
+							$('#btnSaveAgreement .l-btn-text').html('Save'+((is_contract) ? ' and Print Contract' : ''));
+						}, 0);
 					}
 				});
 
@@ -887,7 +894,8 @@
 					data: result.position,
 					textField: 'name',
 					valueField: 'id',
-					editable: false
+					editable: false,
+					onSelect: function (rec) { template_contract = getTemplateAgreement(rec.id, $('#emp_type').combobox('getValue')); }
 				});
 
 				$('#group').combobox({
@@ -912,17 +920,22 @@
 		});
 	}
 
+	function getTemplateAgreement(position, contract) {
+		var get_template = agreement_templates.find(value => value.position == position && value.contracts.includes(contract));
+		return (get_template != undefined) ? get_template.template : '';
+	}
+
 	var agreement_id = '';
 	var is_contract = false;
-	var template_contract = '';
 	function viewHistory(row) {
 		var data = JSON.parse(window.atob(row));
-		template_contract = data.template_contract;
 		is_contract = parseInt(data.is_contract) != 0;
 		var emp = agreement_employee.find(obj => obj.number == data.emp);
 		var setups = agreement_setup.filter(obj => obj.employee == data.emp);
 		var agreements = agreement_agreement.find(obj => obj.employee == data.emp);
+		template_contract = getTemplateAgreement(agreements.position, agreements.type);
 		agreement_id = data.id;
+
 
 		$('#emp_id').textbox('setValue', emp.number);
 		$('#emp_name').textbox('setValue', emp.name);
@@ -970,6 +983,7 @@
 		$('#dlg_form_agreement').dialog({
 			buttons:[{
 				text: 'Save'+((is_contract) ? ' and Print Contract' : ''),
+				id: 'btnSaveAgreement',
 				iconCls: 'icon-ok',
 				handler: function () {
 					var trans_date = $('#trans_date').datebox('getValue');
@@ -1007,7 +1021,7 @@
 		            	if (allow != '' && amount != NaN) { data_allowances.push({allow: allow, amount: amount}); }
 		            }
 
-		            if (agreement_setup_salary_req) { arr.push(component); arr.push(amount); arr.push(bpjs); }
+		            if (agreement_setup_salary_req) { arr.push(amount); arr.push(bpjs); }
 
 					if (arr.includes('')) { toastr.warning('Please fill in the required input form!', 'Warning'); }
 					else {
@@ -1055,17 +1069,17 @@
 										$.messager.progress('close');
 										if (result.stat != 'ok') { toastr.warning('Failed upload!', 'Warning'); }
 										else {
-											send.attachment = result.attachment;
-											if (is_contract && template_contract == '') { validateContract(send); }
-											else { saveAgreement(send); }
+											send.attachment = window.btoa(result.attachment);
+											if (is_contract && template_contract == '') { setTimeout(function () { validateContract(send); }, 0); }
+											else { setTimeout(function () { saveAgreement(send); }, 0); }
 										}
 									},
 									error: function() { $.messager.progress('close'); toastr.error('Failed upload!', 'Error'); }
 								});
 							}
 						} else {
-							if (is_contract && template_contract == '') { validateContract(send); }
-							else { saveAgreement(send); }
+							if (is_contract && template_contract == '') { setTimeout(function () { validateContract(send); }, 0); }
+							else { setTimeout(function () { saveAgreement(send); }, 0); }
 						}
 					}
 				}

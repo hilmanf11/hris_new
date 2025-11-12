@@ -596,6 +596,14 @@ if ($employee->image_profile == "" || $employee->image_profile == null) {
 
             </div>
 
+            <!-- Contract Information -->
+
+            <div title="Contract">
+
+                <table id="dgContract" class="easyui-datagrid" style="width:100%;"></table>
+
+            </div>
+
         </div>
 
     </div>
@@ -646,6 +654,33 @@ if ($employee->image_profile == "" || $employee->image_profile == null) {
 
         });
 
+        $('#dgContract').datagrid({
+            url:'<?= base_url('employee/employee_harian_lepas/readContract/' . $employee->number) ?>',
+            columns: [[
+                {field: 'position', title: 'Position', width: 200, halign: 'center'},
+                {field: 'contract', title: 'Employee Type', width: 200, halign: 'center'},
+                {field: 'date', title: 'Expired Date', width: 100, halign: 'center', align: 'center'},
+                {field: 'attachment', title: 'Attachment', width: 100, halign: 'center', align: 'center', formatter: function (value, row, index) { return (value == '') ? '' : '<a href="javascript:;" class="easyui-linkbutton" onclick="download_attachment('+"'"+window.btoa(value)+"'"+')"><i class="fa fa-download"></i> Download</a>'; }}
+            ]],
+            onLoadSuccess: function () { $('.easyui-linkbutton').linkbutton(); }
+        });
     });
+
+    function download_attachment(attachment) {
+        var name = window.atob(attachment);
+        var ext = '.'+name.split('.')[1];
+        var date = new Date();
+        var y = date.getFullYear();
+        var m = (date.getMonth()+1).toString().padStart(2, '0');
+        var d = (date.getDate()).toString().padStart(2, '0');
+        var a = document.createElement('a');
+
+        a.href = '<?= base_url($loc) ?>'+name;
+        a.download = 'attachment_'+y+m+d+ext;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
 
 </script>

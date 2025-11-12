@@ -93,6 +93,54 @@ class Employee_harian_lepas extends CI_Controller
         echo json_encode($records);
     }
 
+    public function readEmployeeOld()
+    {
+        $post = isset($_POST['q']) ? $_POST['q'] : "";
+
+        $this->db->distinct()->select(
+            "TRIM(number) AS number,".
+            "TRIM(name) AS name,".
+            "DATE(date_sign) AS sign,".
+            "DATE(date_expired) AS expired,".
+            "TRIM(division_id) AS division,".
+            "TRIM(departement_id) AS dept,".
+            "TRIM(departement_sub_id) AS sub_dept,".
+            "TRIM(contract_id) AS contract,".
+            "TRIM(position_id) AS position,".
+            "TRIM(group_id) AS group_id,".
+            "TRIM(source_id) AS source,".
+            "TRIM(address) AS address,".
+            "TRIM(place_birth) AS place_birth,".
+            "DATE(birthday) AS birthday,".
+            "TRIM(gender) AS gender,".
+            "TRIM(blood) AS blood,".
+            "TRIM(religion_id) AS religion_id,".
+            "TRIM(marital_id) AS marital_id,".
+            "TRIM(national_id) AS national_id,".
+            "TRIM(tax_id) AS tax_id,".
+            "TRIM(jamsostek) AS jamsostek,".
+            "DATE(jamsostek_date) AS jamsostek_date,".
+            "TRIM(jkn) AS jkn,".
+            "TRIM(jkn_date) AS jkn_date,".
+            "TRIM(jkn_family) AS jkn_family,".
+            "TRIM(telphone) AS telphone,".
+            "TRIM(mobile_phone) AS mobile_phone,".
+            "TRIM(email) AS email,".
+            "TRIM(bank_name) AS bank_name,".
+            "TRIM(bank_no) AS bank_no,".
+            "TRIM(bank_branch) AS bank_branch"
+        )->from("employees")
+            ->where_in('contract_id', [20221119000003, 20250704000001])
+            ->where('group_id', 20221119000002);
+        if (!empty($post)) {
+            $this->db->group_start()
+                ->like('number', $post)
+                ->or_like('name', $post)
+            ->group_end();
+        }
+        echo json_encode($this->db->order_by("name")->get()->result());
+    }
+
     public function readFulls()
     {
         $post = isset($_POST['q']) ? $_POST['q'] : "";
@@ -143,6 +191,22 @@ class Employee_harian_lepas extends CI_Controller
     public function readCarrer($number)
     {
         $reads = $this->crud->reads("employee_carrers", [], ["number" => $number]);
+        echo json_encode($reads);
+    }
+
+    public function readContract($number)
+    {
+        $reads = $this->db->distinct()->select(
+             "MAX(a.created_date) AS max_create,"
+            ."COALESCE(TRIM(b.name), '') AS position,"
+            ."COALESCE(TRIM(c.name), '') AS contract,"
+            ."DATE(a.date_expired) AS date,"
+            ."MAX(COALESCE(TRIM(a.attachment), '')) AS attachment"
+        )->from("agreements a")
+            ->join("positions b", "a.position_id = b.id")
+            ->join("contracts c", "a.contract_id = c.id")
+        ->where("a.number", $number)->group_by("b.name, c.name, a.date_expired")->order_by("date", "DESC")->get()->result();
+        // die($this->db->last_query());
         echo json_encode($reads);
     }
 

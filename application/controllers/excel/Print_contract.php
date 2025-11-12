@@ -83,11 +83,11 @@ class Print_contract extends CI_Controller
                 ."COALESCE(h.amount, 0) AS tunj_else,"
                 ."COALESCE(TRIM(i.attachment), '') AS template"
             )->from("agreements a")
-                ->join("employees b", "a.number = b.number")
-                ->join("departements c", "b.departement_id = c.id")
-                ->join("departement_subs d", "b.departement_sub_id = d.id")
-                ->join("positions e", "a.position_id = e.id")
-                ->join("setup_salaries f", "b.id = f.employee_id")
+                ->join("employees b", "a.number = b.number", "LEFT")
+                ->join("departements c", "b.departement_id = c.id", "LEFT")
+                ->join("departement_subs d", "b.departement_sub_id = d.id", "LEFT")
+                ->join("positions e", "a.position_id = e.id", "LEFT")
+                ->join("setup_salaries f", "b.id = f.employee_id", "LEFT")
                 ->join("(SELECT DISTINCT TRIM(employee_id) AS emp, amount FROM setup_allowances WHERE allowance_id = '20230221000001') g", "b.id = g.emp", "LEFT")
                 ->join("(SELECT DISTINCT TRIM(employee_id) AS emp, SUM(amount) AS amount FROM setup_allowances WHERE allowance_id != '20230221000001' GROUP BY employee_id) h", "b.id = h.emp", "LEFT")
                 ->join("master_contract i", "a.position_id = i.position_id AND FIND_IN_SET(a.contract_id, i.contracts)", "LEFT")
@@ -150,9 +150,9 @@ class Print_contract extends CI_Controller
                                     if ($cari == '<employee:address>') { $value = str_replace($cari, $get->address, $value); }
                                     if ($cari == '<salaries:amount>') { $value = str_replace($cari, number_format(intval($get->salary), 0, ',', '.'), $value); }
                                     if ($cari == '<allowance:amount>') { $value = str_replace($cari, number_format(intval($get->tunj), 0, ',', '.'), $value); }
-                                    if ($cari == '<allowance:amount_else>') { $value = str_replace($cari, number_format(intval($get->tunj_else), 0, ',', '.'), $value); }
-                                    if ($cari == '<sum:<salaries:amount>+<allowance:amount>+<allowance:amount_else>>')
-                                        { $value = str_replace($cari, number_format(intval($get->salary) + intval($get->tunj) + intval($get->tunj_else), ',', '.'), $value); }
+                                    if ($cari == '<allowance:amount_else>')
+                                        { $value = str_replace($cari, number_format(intval($get->tunj_else), 0, ',', '.'), $value); }
+                                    if ($cari == '<sum:salaries>') { $value = str_replace($cari, number_format(intval($get->salary) + intval($get->tunj) + intval($get->tunj_else), 0, ',', '.'), $value); }
 
                                     $sheet->setCellValueExplicit($cell->getCoordinate(), $value, DataType::TYPE_STRING);
                                     if ($cari == '<contract:no>') { $title = $value; }

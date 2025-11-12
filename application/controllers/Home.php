@@ -203,8 +203,7 @@ class Home extends CI_Controller
             ."DATE(a.date_sign) AS date_join,"
             ."DATE(a.date_expired) AS expired,"
             ."COALESCE(TRIM(a.note),'') AS note,"
-            ."COALESCE(TRIM(b.contract_id), '') IN ('20221119000001', '20221119000002', '20230112000001', '20230124000001', '20240104000001') AS is_contract,"
-            ."COALESCE(TRIM(h.attachment),'') AS template_contract"
+            ."COALESCE(TRIM(b.contract_id), '') IN ('20221119000001', '20221119000002', '20230112000001', '20230124000001', '20240104000001') AS is_contract"
         )->from("agreements a")
             ->join("employees b", "a.number = b.number")
             ->join("divisions c", "b.division_id = c.id")
@@ -212,7 +211,6 @@ class Home extends CI_Controller
             ->join("departement_subs e", "b.departement_sub_id = e.id")
             ->join("positions f", "a.position_id = f.id")
             ->join("contracts g", "a.contract_id = g.id")
-            ->join("master_contract h", "a.position_id = h.position_id AND FIND_IN_SET(a.contract_id, h.contracts)", "LEFT")
         ->where("a.status", '0')
         ->where("b.contract_id !=", '20221119000005')
         ->group_start()
@@ -349,6 +347,7 @@ class Home extends CI_Controller
             "agreement" => [],
             "allowance" => [],
             "component" => [],
+            "templates" => [],
             "division" => [],
             "employee" => [],
             "position" => [],
@@ -454,6 +453,21 @@ class Home extends CI_Controller
                 "employee" => $row->employee,
                 "amount" => $row->amount,
                 "bpjs" => $row->bpjs
+            ]);
+        }
+
+        $this->db->distinct()->select(
+            "TRIM(position_id) AS position,".
+            "TRIM(contracts) AS contracts,".
+            "TRIM(attachment) AS template"
+        )->from("master_contract")->order_by("position, contracts");
+        $get = $this->db->get()->result_object();
+        // die($this->db->last_query());
+        foreach ($get as $index => $row) {
+            array_push($result['templates'], [
+                "position" => $row->position,
+                "contracts" => explode(",", $row->contracts),
+                "template" => $row->template
             ]);
         }
 
@@ -570,7 +584,7 @@ class Home extends CI_Controller
 
             if (!$stat) {
                 // $result['stat'] = $this->db->error()['message'];
-                // $result['stat'] = $this->db->last_query();
+                $result['stat'] = $this->db->last_query();
                 $this->db->trans_rollback();
 
                 if (!empty($attachment)) {
