@@ -79,7 +79,7 @@ class Master_contract extends CI_Controller
             $result['attachment'] = $this->crud->upload('attachment', ['xls', 'xlsx'], $this->location);
         } else {
             $post = $this->input->post();
-            $send_data = ['attachment' => base64_decode($post['attachment'])];
+            $send_data = ['attachment' => str_replace(base_url($this->location), '', base64_decode($post['attachment']))];
 
             $this->db->trans_start();
 
