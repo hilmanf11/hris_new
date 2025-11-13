@@ -745,7 +745,7 @@ class Employees extends CI_Controller
         if ($this->input->post()) {
             $id   = base64_decode($this->input->get('id'));
             $post = $this->input->post();
-
+            unset($post['regis_bf']);
             $image_id = $this->crud->upload('image_id', ['png', 'jpg', 'jpeg'], 'assets/image/employee/id/', ["id" => $id], "employees", "image_id");
             $image_profile = $this->crud->upload('image_profile', ['png', 'jpg', 'jpeg'], 'assets/image/employee/profile/', ["id" => $id], "employees", "image_profile");
             $post_final = array_merge($post, ["image_id" => $image_id, "image_profile" => $image_profile]);
