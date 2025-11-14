@@ -225,7 +225,7 @@
             url: '<?= base_url('employee/employees/readFulls') ?>',
             panelWidth: 450,
             idField: 'id',
-            textField: 'id',
+            textField: 'number',
             mode: 'remote',
             fitColumns: true,
             prompt: 'Choose All',
