@@ -60,10 +60,11 @@
                         textField: 'name', 
                         mode: 'remote',
                         fitColumns: true,
-                        panelWidth: 500,
+                        panelWidth: 700,
                         columns: [[
                             {field:'name',title:'Training Name',width:200},
-                            {field:'induction',title:'Induction',width:200}
+                            {field:'induction',title:'Induction',width:200},
+                            {field:'trainer_name',title:'Trainer Name',width:200}
                     ]]">
                 </div>
                 <div class="fitem" style="display: flex">

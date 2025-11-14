@@ -369,9 +369,10 @@ class Master_form_test extends CI_Controller {
     public function readsTrainings()
 	{
 		$this->db->start_cache();
-		$this->db->select('a.*, b.trainingActivity as name');
+		$this->db->select('a.*, b.trainingActivity as name, c.trainer_name');
 		$this->db->from('lnd_schedule_training a');
 		$this->db->join('lnd_training_activity b', 'b.id = a.trainingName', 'left');
+        $this->db->join('lnd_schedule_trainers c', 'a.id = c.training_id', 'left');
 		$this->db->stop_cache();
 		$res = $this->db->get()->result_array();
 		$this->db->flush_cache(); // Hapus cache query

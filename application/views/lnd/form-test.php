@@ -238,7 +238,7 @@
             }],
             columns: [
                 [{
-                    field: 'id',
+                    field: 'number',
                     title: 'Employee ID',
                     width: 120
                 }, {

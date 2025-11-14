@@ -54,6 +54,10 @@ class Request_training extends CI_Controller {
         $rows   = isset($rows) ? intval($rows) : 10;
         $offset = ($page - 1) * $rows;
 
+        $this->db->distinct()->select("TRIM(departement_id) AS dept, access")->from("users")->where("username", $this->session->username);
+        $get = $this->db->get()->row();
+        $login_dept = ($get->access == '1') ? $get->dept : '';
+
         // Query Builder
         $this->db->start_cache(); // Cache query sebelum count_all_results
 
@@ -103,6 +107,11 @@ class Request_training extends CI_Controller {
         $this->db->join('employees employeeApprover', 'u.number = employeeApprover.number', 'left');
         $this->db->join('users userReject', 'rth.approved_by = userReject.username', 'left');
         $this->db->join('departements departementsCreator', 'lrtt.departement = departementsCreator.name', 'left');
+        $this->db->join('users c_user', 'a.createdBy = c_user.username', 'left');
+
+        if (!empty($login_dept)) {
+            $this->db->where('c_user.departement_id', $login_dept);
+        }
 
         if (!empty($suggestTrainingDate)) {
             $this->db->where('a.suggestDateTraining', $suggestTrainingDate);
