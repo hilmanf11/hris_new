@@ -19,14 +19,18 @@
             }">Allowance</th>
             <th rowspan="2" data-options="field:'amount',width:100,halign:'center', align:'right',editor:'numberbox', formatter:numberformat">Amount</th>
             <th rowspan="2" data-options="field:'description',width:300,halign:'center'">Description</th>
-            <th colspan="2" data-options="field:'',width:100,halign:'center'"> Created</th>
-            <th colspan="2" data-options="field:'',width:100,halign:'center'"> Updated</th>
+            <th colspan="3" data-options="field:'',width:100,halign:'center'">Approval</th>
+            <th colspan="2" data-options="field:'',width:100,halign:'center'">Created</th>
+            <th colspan="2" data-options="field:'',width:100,halign:'center'">Updated</th>
         </tr>
         <tr>
-            <th data-options="field:'created_by',width:100,align:'center'"> By</th>
-            <th data-options="field:'created_date',width:150,align:'center'"> Date</th>
-            <th data-options="field:'updated_by',width:100,align:'center'"> By</th>
-            <th data-options="field:'updated_date',width:150,align:'center'"> Date</th>
+            <th data-options="field:'approved',width:100,align:'center',styler:styleApproval,formatter:formatApproval">Status</th>
+            <th data-options="field:'approved_',width:100,align:'center',formatter:formatApprove">By</th>
+            <th data-options="field:'approved_date',width:150,align:'center'">Date</th>
+            <th data-options="field:'created_by',width:100,align:'center'">By</th>
+            <th data-options="field:'created_date',width:150,align:'center'">Date</th>
+            <th data-options="field:'updated_by',width:100,align:'center'">By</th>
+            <th data-options="field:'updated_date',width:150,align:'center'">Date</th>
         </tr>
     </thead>
 </table>
@@ -588,5 +592,21 @@
         });
 
         return "<b>" + formatter.format(value) + "</b>";
+    }
+
+    function styleApproval(value, row, index) {
+        var ret = '';
+        if (row.approved != null) { ret = 'background: #'+((row.approved == '2') ? '53D636' : 'FF5F5F')+'; color:white;'; }
+        return ret;
+    }
+
+    function formatApproval(value, row, index) {
+        var ret = '';
+        if (row.approved != null) { ret = (row.approved == '2') ? 'Approved' : 'Checked'; }
+        return ret;
+    }
+
+    function formatApprove(value, row, index) {
+        return (row.approved_to == '') ? row.approved_by : '';
     }
 </script>

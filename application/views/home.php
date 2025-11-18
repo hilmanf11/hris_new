@@ -883,10 +883,6 @@
 						$('#bpjs').numberbox('validate');
 
 						template_contract = getTemplateAgreement($('#position_agreement').combobox('getValue'), rec.id);
-						setTimeout(function () {
-							is_contract = ['MjAyMjExMTkwMDAwMDE=', 'MjAyMjExMTkwMDAwMDI=', 'MjAyMzAxMTIwMDAwMDE=', 'MjAyMzAxMjQwMDAwMDE=', 'MjAyNDAxMDQwMDAwMDE='].includes(window.btoa(rec.id));
-							$('#btnSaveAgreement .l-btn-text').html('Save'+((is_contract) ? ' and Print Contract' : ''));
-						}, 0);
 					}
 				});
 
@@ -920,16 +916,18 @@
 		});
 	}
 
+	var is_contract = false;
 	function getTemplateAgreement(position, contract) {
 		var get_template = agreement_templates.find(value => value.position == position && value.contracts.includes(contract));
-		return (get_template != undefined) ? get_template.template : '';
+		is_contract = get_template != undefined;
+
+		$('#btnSaveAgreement .l-btn-text').html('Save'+((is_contract) ? ' and Print Contract' : ''));
+		return (is_contract) ? get_template.template : '';
 	}
 
 	var agreement_id = '';
-	var is_contract = false;
 	function viewHistory(row) {
 		var data = JSON.parse(window.atob(row));
-		is_contract = parseInt(data.is_contract) != 0;
 		var emp = agreement_employee.find(obj => obj.number == data.emp);
 		var setups = agreement_setup.filter(obj => obj.employee == data.emp);
 		var agreements = agreement_agreement.find(obj => obj.employee == data.emp);
@@ -1070,21 +1068,22 @@
 										if (result.stat != 'ok') { toastr.warning('Failed upload!', 'Warning'); }
 										else {
 											send.attachment = window.btoa(result.attachment);
-											if (is_contract && template_contract == '') { setTimeout(function () { validateContract(send); }, 0); }
-											else { setTimeout(function () { saveAgreement(send); }, 0); }
+											validateFormContract(send);
 										}
 									},
 									error: function() { $.messager.progress('close'); toastr.error('Failed upload!', 'Error'); }
 								});
 							}
-						} else {
-							if (is_contract && template_contract == '') { setTimeout(function () { validateContract(send); }, 0); }
-							else { setTimeout(function () { saveAgreement(send); }, 0); }
-						}
+						} else { validateFormContract(send); }
 					}
 				}
 			}]
 		}).dialog('open');
+	}
+
+	function validateFormContract(data) {
+		if (is_contract && template_contract == '') { setTimeout(function () { validateContract(data); }, 0); }
+		else { setTimeout(function () { saveAgreement(data); }, 0); }
 	}
 
 	function validateContract(data) {
@@ -3648,6 +3647,158 @@
 						}]
 					],
 				}).datagrid('enableFilter');
+			} else if (table == "setup_allowances") {
+
+				$('#dg_approval').datagrid({
+
+					singleSelect: true,
+
+					rownumbers: true,
+
+					url: '<?= base_url('approvals/approvalSetupAllowances/') ?>' + approved_to + "/" + approved_by,
+
+					columns: [
+
+						[{
+
+							field: 'employee_number',
+
+							width: 120,
+
+							halign: 'center',
+
+							title: "Employee ID",
+
+						}, {
+
+							field: 'employee_name',
+
+							width: 200,
+
+							halign: 'center',
+
+							title: "Employee Name",
+
+						}, {
+
+							field: 'division_name',
+
+							width: 150,
+
+							halign: 'center',
+
+							title: "Division",
+
+						}, {
+
+							field: 'departement_name',
+
+							width: 150,
+
+							halign: 'center',
+
+							title: "Departement",
+
+						}, {
+
+							field: 'departement_sub_name',
+
+							width: 150,
+
+							halign: 'center',
+
+							title: "Departement Sub",
+
+						}, {
+
+							field: 'allowance',
+
+							width: 150,
+
+							halign: 'center',
+
+							title: "Allowance",
+
+						}, {
+
+							field: 'amount',
+
+							width: 150,
+
+							halign: 'center',
+
+							title: "Amount",
+
+						}, {
+
+							field: 'created_by',
+
+							width: 100,
+
+							halign: 'center',
+
+							title: "Created By",
+
+						}, {
+
+							field: 'created_date',
+
+							width: 200,
+
+							halign: 'center',
+
+							title: "Created Date",
+
+						}, {
+
+							field: 'updated_by',
+
+							width: 100,
+
+							halign: 'center',
+
+							title: "Updated By",
+
+						}, {
+
+							field: 'updated_date',
+
+							width: 200,
+
+							halign: 'center',
+
+							title: "Updated Date",
+
+						}, {
+
+							field: 'action',
+
+							width: 80,
+
+							align: 'center',
+
+							title: "Action",
+
+							formatter: function(val, row) {
+
+								var approve = "approve('" + row.id + "','" + table + "')";
+
+								var disapprove = "disapprove('" + row.id + "','" + table + "')";
+
+								var a = '<a class="btn btn-success w-50" style="pointer-events: visible; opacity:1;" onclick="' + approve + '"><i class="fa fa-check"></i></a>';
+
+								var b = '<a class="btn btn-danger w-50" style="pointer-events: visible; opacity:1;" onclick="' + disapprove + '"><i class="fa fa-times"></i></a>';
+
+								return a + " " + b;
+
+							}
+
+						}]
+
+					],
+
+				}).datagrid('enableFilter');
+
 			}
 
 		}

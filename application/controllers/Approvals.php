@@ -823,8 +823,22 @@ class Approvals extends CI_Controller
 		$lnd_request_training_approvals_history = $this->db->get()->result_object();
 
 
+        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
 
-        $totalRows = (count($cash_carries) + count($payrolls) + count($setup_salaries) + count($permits) + count($change_days) + count($lnd_request_training_approvals_history));
+        $this->db->from('setup_allowances a');
+
+        $this->db->join('users b', 'a.approved_by = b.username');
+
+        $this->db->join('users c', 'a.approved_to = c.username');
+
+        $this->db->where('a.approved_to', $this->session->username);
+
+        $this->db->group_by('a.approved_by');
+
+        $setup_allowances = $this->db->get()->result_object();
+        // die($this->db->last_query());
+
+        $totalRows = (count($cash_carries) + count($payrolls) + count($setup_salaries) + count($permits) + count($change_days) + count($lnd_request_training_approvals_history) + count($setup_allowances));
 
         if ($totalRows > 0) {
 
@@ -968,6 +982,22 @@ class Approvals extends CI_Controller
 		$lnd_request_training_approvals_history = $this->db->get()->result_object();
 
 
+        //Setup Allowances
+
+        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
+
+        $this->db->from('setup_allowances a');
+
+        $this->db->join('users b', 'a.approved_by = b.username');
+
+        $this->db->join('users c', 'a.approved_to = c.username');
+
+        $this->db->where('a.approved_to', $this->session->username);
+
+        $this->db->group_by('a.approved_by');
+
+        $setup_allowances = $this->db->get()->result_object();
+
 
         if (count($cash_carries) > 0) {
 
@@ -1044,6 +1074,17 @@ class Approvals extends CI_Controller
 				$this->approvalMessage($val->avatar, $val->fullname, $val->approved_to, $val->approved_by, "lnd_request_training_approvals_history");
 			}
 		}
+
+        if(count($setup_allowances) > 0) {
+
+            foreach ($setup_allowances as $setup_allowance) {
+
+                $this->approvalMessage($setup_allowance->avatar, $setup_allowance->fullname, $setup_allowance->approved_to, $setup_allowance->approved_by, "setup_allowances");
+
+            }
+
+        }
+
 
     }
 
@@ -1914,6 +1955,60 @@ class Approvals extends CI_Controller
 
 		die(json_encode($records));
 	}
+
+    public function approvalSetupAllowances($approved_to, $approved_by)
+    {
+        
+        $this->db->select('a.*,
+
+                c.name as division_name,
+
+                d.name as departement_name,
+
+                e.name as departement_sub_name,
+
+                b.number as employee_number,
+
+                b.name as employee_name,
+
+                f.name as fullname,
+
+                h.name as allowance
+
+            ');
+
+        $this->db->from('setup_allowances a');
+
+        $this->db->join('employees b', 'a.employee_id = b.id');
+
+        $this->db->join('divisions c', 'b.division_id = c.id');
+
+        $this->db->join('departements d', 'b.departement_id = d.id');
+
+        $this->db->join('departement_subs e', 'b.departement_sub_id = e.id');
+
+        $this->db->join('users f', "a.approved_by = f.username");
+
+        $this->db->join('allowances h', 'a.allowance_id = h.id', 'left');
+
+        $this->db->where('b.deleted', 0);
+
+        $this->db->where('b.status', 0);
+
+        $this->db->where('a.approved_to', $approved_to);
+
+        $this->db->where('a.approved_by', $approved_by);
+
+        $this->db->group_by('a.employee_id');
+
+        $this->db->order_by('b.name', 'ASC');
+
+        $records = $this->db->get()->result_array();
+
+
+
+        die(json_encode($records));
+    }
 
 }
 
