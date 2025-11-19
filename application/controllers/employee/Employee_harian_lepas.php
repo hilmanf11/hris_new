@@ -98,45 +98,56 @@ class Employee_harian_lepas extends CI_Controller
         $post = isset($_POST['q']) ? $_POST['q'] : "";
 
         $this->db->distinct()->select(
-            "TRIM(number) AS number,".
-            "TRIM(name) AS name,".
-            "DATE(date_sign) AS sign,".
-            "DATE(date_expired) AS expired,".
-            "TRIM(division_id) AS division,".
-            "TRIM(departement_id) AS dept,".
-            "TRIM(departement_sub_id) AS sub_dept,".
-            "TRIM(contract_id) AS contract,".
-            "TRIM(position_id) AS position,".
-            "TRIM(group_id) AS group_id,".
-            "TRIM(source_id) AS source,".
-            "TRIM(address) AS address,".
-            "TRIM(place_birth) AS place_birth,".
-            "DATE(birthday) AS birthday,".
-            "TRIM(gender) AS gender,".
-            "TRIM(blood) AS blood,".
-            "TRIM(religion_id) AS religion_id,".
-            "TRIM(marital_id) AS marital_id,".
-            "TRIM(national_id) AS national_id,".
-            "TRIM(tax_id) AS tax_id,".
-            "TRIM(jamsostek) AS jamsostek,".
-            "DATE(jamsostek_date) AS jamsostek_date,".
-            "TRIM(jkn) AS jkn,".
-            "TRIM(jkn_date) AS jkn_date,".
-            "TRIM(jkn_family) AS jkn_family,".
-            "TRIM(telphone) AS telphone,".
-            "TRIM(mobile_phone) AS mobile_phone,".
-            "TRIM(email) AS email,".
-            "TRIM(bank_name) AS bank_name,".
-            "TRIM(bank_no) AS bank_no,".
-            "TRIM(bank_branch) AS bank_branch"
-        )->from("employees")->where('status', 0);
+            "TRIM(a.number) AS number,".
+            "TRIM(a.name) AS name,".
+            "DATE(a.date_sign) AS sign,".
+            "DATE(a.date_expired) AS expired,".
+            "TRIM(a.division_id) AS division,".
+            "TRIM(a.departement_id) AS dept,".
+            "TRIM(a.departement_sub_id) AS sub_dept,".
+            "TRIM(a.contract_id) AS contract,".
+            "TRIM(a.position_id) AS position,".
+            "TRIM(a.group_id) AS group_id,".
+            "TRIM(a.source_id) AS source,".
+            "TRIM(a.address) AS address,".
+            "TRIM(a.place_birth) AS place_birth,".
+            "DATE(a.birthday) AS birthday,".
+            "TRIM(a.gender) AS gender,".
+            "TRIM(a.blood) AS blood,".
+            "TRIM(a.religion_id) AS religion_id,".
+            "TRIM(a.marital_id) AS marital_id,".
+            "TRIM(a.national_id) AS national_id,".
+            "TRIM(a.tax_id) AS tax_id,".
+            "TRIM(a.jamsostek) AS jamsostek,".
+            "DATE(a.jamsostek_date) AS jamsostek_date,".
+            "TRIM(a.jkn) AS jkn,".
+            "TRIM(a.jkn_date) AS jkn_date,".
+            "TRIM(a.jkn_family) AS jkn_family,".
+            "TRIM(a.telphone) AS telphone,".
+            "TRIM(a.mobile_phone) AS mobile_phone,".
+            "TRIM(a.email) AS email,".
+            "TRIM(a.bank_name) AS bank_name,".
+            "TRIM(a.bank_no) AS bank_no,".
+            "TRIM(a.bank_branch) AS bank_branch,".
+            "COALESCE(a.status, 0) AS status,".
+            "COALESCE(TRIM(b.id), '') AS resign"
+        )->from("employees a")->join("resignations b", "a.id = b.employee_id", "left");
         if (!empty($post)) {
             $this->db->group_start()
-                ->like('number', $post)
-                ->or_like('name', $post)
+                ->like("a.number", $post)
+                ->or_like("a.name", $post)
             ->group_end();
         }
-        echo json_encode($this->db->order_by("name")->get()->result());
+
+        $data = [];
+        foreach ($this->db->order_by("name")->get()->result() as $key => $row) {
+            $push = $row->status == '0';
+
+            if (!$push) { $push = !empty($row->resign); }
+
+            if ($push) { array_push($data, $row); }
+        }
+        echo json_encode($data);
     }
 
     public function readGroupFilters()
