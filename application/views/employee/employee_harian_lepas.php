@@ -154,7 +154,7 @@
                 </div>
                 <div class="fitem" id="div_emp_old">
                     <span style="width:35%; display:inline-block;">Employee ID Old</span>
-                    <input style="width:60%;" id="emp_old" required="" class="easyui-combobox">
+                    <input style="width:60%;" id="emp_old" class="easyui-combobox">
                 </div>
                 <div class="fitem" hidden>
                     <span style="width:35%; display:inline-block;">Candidate ID</span>
@@ -170,7 +170,7 @@
                 </div>
                 <div class="fitem">
                     <span style="width:35%; display:inline-block;">Sign Date</span>
-                    <input style="width:60%;" name="date_sign" id="date_sign" required="" data-options="onSelect:onChangeDate,formatter:myformatter,parser:myparser, editable: false" class="easyui-datebox">
+                    <input style="width:60%;" name="date_sign" id="date_sign" required="" data-options="{onSelect: onChangeDate, formatter: myformatter, parser: myparser, editable: false}" class="easyui-datebox">
                 </div>
                 <div class="fitem">
                     <span style="width:35%; display:inline-block;">Fit For Services</span>
@@ -498,6 +498,12 @@
 <iframe id="printout" src="" style="width: 100%;" hidden></iframe>
 
 <script>
+    var url_division = '<?= base_url('employee/divisions/reads') ?>';
+    var url_departement = '<?= base_url('employee/departements/reads') ?>';
+    var url_departement_sub = '<?= base_url('employee/departement_subs/reads') ?>';
+    var url_group = '<?= base_url('employee/employee_harian_lepas/readGroupFilters') ?>';
+    var url_source = '<?= base_url('employee/sources/reads') ?>';
+
     //GENERATE ID
     function generate_id() {
         var departement_id = $("#departement_id").combobox('getValue');
@@ -519,6 +525,7 @@
             });
         }
     }
+
     //ADD DATA
     function add() {
         $('#dlg_insert').dialog('open');
@@ -535,7 +542,7 @@
         $("#position_id").combogrid("enable");
         $("#group_id").combobox("enable");
         $("#blood").radiobutton({checked: true});
-        $("#gender").radiobutton({checked: true});
+        $("#gender_male").radiobutton({checked: true});
         $("#regis_bf_no").radiobutton({checked: true});
         $("#jkn_family").combobox("setValue", "1");
         $("#form_status_date").hide();
@@ -548,9 +555,6 @@
         regiteredBFNo();
     }
 
-    var url_division = '<?= base_url('employee/divisions/reads') ?>';
-    var url_departement = '<?= base_url('employee/departements/reads') ?>';
-    var url_departement_sub = '<?= base_url('employee/departement_subs/reads') ?>';
     //EDIT DATA
     function update() {
         var row = $('#dg').datagrid('getSelected');
@@ -1976,7 +1980,7 @@
                 handler: function() {
                     $('#frm_insert').form('submit', {
                         url: url_save,
-                        onSubmit: function() {
+                        onSubmit: function(param) {
                             return $(this).form('validate');
                         },
                         success: function(result) {
@@ -2407,18 +2411,18 @@
         });
 
         $('#group_id').combobox({
-            url: '<?php echo base_url('employee/groups/reads?hl=1'); ?>',
+            url: url_group,
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose Group',
-            onSelect: function(group) {
-                $('#source_id').combobox({
-                    url: '<?php echo base_url('employee/sources/reads'); ?>/' + group.id,
-                    valueField: 'id',
-                    textField: 'name',
-                    prompt: 'Choose Source'
-                });
-            }
+            onSelect: function(group) { $('#source_id').combobox('reload', url_source+'/'+group.id); }
+        });
+
+        $('#source_id').combobox({
+            url: url_source,
+            valueField: 'id',
+            textField: 'name',
+            prompt: 'Choose Source'
         });
 
         $('#marital_id').combogrid({
@@ -2479,6 +2483,10 @@
                     $('#div_division').prependTo('#div_second');
                     $('#label_number').text('Employee ID New');
                     $('#div_emp_old').show();
+                    $('#emp_old').combogrid('options').required = true;
+                    $('#emp_old').combogrid('textbox').validatebox('options').required = true;
+                    $('#emp_old').combogrid('textbox').validatebox('validate');
+                    $('#group_id').combobox('reload', url_group+'?old=1');
                 }
             }
         });
@@ -2488,7 +2496,13 @@
             label: 'No',
             value: 'No',
             labelPosition: 'after',
-            onChange: function (checked) { if (checked) { regiteredBFNo() } }
+            onChange: function (checked) { if (checked) {
+                $('#emp_old').combogrid('options').required = false;
+                $('#emp_old').combogrid('textbox').validatebox('options').required = false;
+                $('#emp_old').combogrid('textbox').validatebox('validate');
+                $('#group_id').combobox('reload', url_group);
+                regiteredBFNo();
+            } }
         });
 
         $('#emp_old').combogrid({

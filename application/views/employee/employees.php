@@ -504,7 +504,6 @@
     var url_departement = '<?= base_url('employee/departements/reads') ?>';
     var url_departement_sub = '<?= base_url('employee/departement_subs/reads') ?>';
     var url_source = '<?= base_url('employee/sources/reads') ?>';
-    var url_group = '<?= base_url('employee/employees/readGroupFilters') ?>';
 
     //GENERATE ID
     function generate_id() {
@@ -542,7 +541,7 @@
         $("#departement_sub_id").combobox("enable");
         $("#contract_id").combobox("enable");
         $("#position_id").combogrid("enable");
-        $("#group_id").combobox('reload', url_group).combobox("enable");
+        $("#group_id").combobox("enable");
         $("#blood").radiobutton({checked: true});
         $("#gender_male").radiobutton({checked: true});
         // $(".status_active").radiobutton({checked: true});
@@ -582,7 +581,7 @@
                 $("#departement_sub_id").combobox("disable");
                 $("#contract_id").combobox("disable");
                 $("#position_id").combogrid("disable");
-                $("#group_id").combobox('reload', url_group).combobox("disable");
+                $("#group_id").combobox("disable");
 
                 $("#division_id").combobox('setValue', row.division_id);
                 $("#departement_id").combobox('setValue', row.departement_id);
@@ -2386,7 +2385,7 @@
         });
 
         $('#group_id').combobox({
-            url: url_group,
+            url: '<?= base_url('employee/employees/readGroupFilters') ?>',
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose Group',
@@ -2461,7 +2460,6 @@
                     $('#emp_old').combogrid('options').required = true;
                     $('#emp_old').combogrid('textbox').validatebox('options').required = true;
                     $('#emp_old').combogrid('textbox').validatebox('validate');
-                    $('#group_id').combobox('reload', url_group+'?hl=true');
                 }
             }
         });
@@ -2475,7 +2473,6 @@
                 $('#emp_old').combogrid('options').required = false;
                 $('#emp_old').combogrid('textbox').validatebox('options').required = false;
                 $('#emp_old').combogrid('textbox').validatebox('validate');
-                $('#group_id').combobox('reload', url_group);
                 regiteredBFNo();
             } }
         });

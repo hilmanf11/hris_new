@@ -129,15 +129,20 @@ class Employee_harian_lepas extends CI_Controller
             "TRIM(bank_name) AS bank_name,".
             "TRIM(bank_no) AS bank_no,".
             "TRIM(bank_branch) AS bank_branch"
-        )->from("employees")
-            ->where_in('contract_id', [20221119000003, 20250704000001])
-            ->where('group_id', 20221119000002);
+        )->from("employees")->where('status', 0);
         if (!empty($post)) {
             $this->db->group_start()
                 ->like('number', $post)
                 ->or_like('name', $post)
             ->group_end();
         }
+        echo json_encode($this->db->order_by("name")->get()->result());
+    }
+
+    public function readGroupFilters()
+    {
+        $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name")->from("groups");
+        if (!isset($_GET['old'])) { $this->db->where_in("id", ["20221119000002", "20251024000001"]); }
         echo json_encode($this->db->order_by("name")->get()->result());
     }
 
@@ -624,7 +629,7 @@ class Employee_harian_lepas extends CI_Controller
         if ($this->input->post()) {
             $id   = base64_decode($this->input->get('id'));
             $post = $this->input->post();
-
+            unset($post['regis_bf']);
             $image_id = $this->crud->upload('image_id', ['png', 'jpg', 'jpeg'], 'assets/image/employee/id/', ["id" => $id], "employees", "image_id");
             $image_profile = $this->crud->upload('image_profile', ['png', 'jpg', 'jpeg'], 'assets/image/employee/profile/', ["id" => $id], "employees", "image_profile");
             $post_final = array_merge($post, ["image_id" => $image_id, "image_profile" => $image_profile]);

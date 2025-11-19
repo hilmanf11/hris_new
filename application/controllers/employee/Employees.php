@@ -241,9 +241,9 @@ class Employees extends CI_Controller
             "TRIM(bank_no) AS bank_no,".
             "TRIM(bank_branch) AS bank_branch"
         )->from("employees")
-            ->where('contract_id !=', 20221119000003)
-            ->where('contract_id !=', 20250704000001)
-            ->where('group_id !=', 20221119000002);
+            ->where_not_in('contract_id', [20221119000003, 20250704000001])
+            ->where('group_id !=', 20221119000002)
+            ->where('status', 0);
         if (!empty($post)) {
             $this->db->group_start()
                 ->like('number', $post)
@@ -256,7 +256,8 @@ class Employees extends CI_Controller
     public function readGroupFilters()
     {
         $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name")->from("groups");
-        if (!$this->input->get('hl')) { $this->db->where("id !=", "20221119000002"); }
+        // if ($this->input->get('hl')) { $this->db->where_in("id", ["20221119000002", "20251024000001"]); }
+        // else { $this->db->where_not_in("id", ["20221119000002", "20251024000001"]); }
         echo json_encode($this->db->order_by("name")->get()->result());
     }
 
