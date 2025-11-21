@@ -28,6 +28,12 @@ class Attandance_summary extends CI_Controller
         }
     }
 
+    public function readGroupFilters()
+    {
+        $post = isset($_POST['q']) ? $_POST['q'] : "";
+        echo json_encode($this->crud->reads('groups', ["name" => $post]));
+    }
+
     public function print($option = "")
     {
         if ($option == "excel") {

@@ -356,7 +356,7 @@
 
                                 $('#filter_group').combobox({
 
-                                    url: '<?php echo base_url('employee/groups/reads'); ?>?division_id=' + division.id + '&departement_id=' + departement.id + '&departement_sub_id=' + departement_sub.id,
+                                    url: '<?php echo base_url('report/attandance_summary/readGroupFilters'); ?>?division_id=' + division.id + '&departement_id=' + departement.id + '&departement_sub_id=' + departement_sub.id,
 
                                     valueField: 'id',
 
@@ -504,7 +504,7 @@
 
         $('#filter_group').combobox({
 
-            url: '<?php echo base_url('employee/groups/reads'); ?>',
+            url: '<?php echo base_url('report/attandance_summary/readGroupFilters'); ?>',
 
             valueField: 'id',
 
