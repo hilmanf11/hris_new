@@ -258,7 +258,7 @@ class Payroll_harian_lepas extends CI_Controller
                     l.name as shift_name_2,
                     l.days,
                     100000 as salary,
-                    p.bpjs,
+                    COALESCE(p.bpjs, 0) AS bpjs,
                     q.number as marital,
                     q.ter_type,
                     a.tax_id
