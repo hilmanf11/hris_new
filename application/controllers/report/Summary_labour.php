@@ -392,7 +392,7 @@ class Summary_labour extends CI_Controller
             $html .= '<br><br><table id="customers" style="width:100%; page-break-inside: avoid;">
                 <tr>
                     <td style="border:none;"></td>
-                    <th style="text-align:center;">Disetujui</th>
+                    <th style="text-align:center;" colspan="2">Disetujui</th>
                     <th style="text-align:center;">Diketahui</th>
                     <th style="text-align:center;" colspan="2">Diperiksa</th>
                     <th style="text-align:center;">Dibuat</th>
@@ -404,10 +404,12 @@ class Summary_labour extends CI_Controller
                     <td style="text-align:center;"></td>
                     <td style="text-align:center;"></td>
                     <td style="text-align:center;"></td>
+                    <td style="text-align:center;"></td>
                 </tr>
                 <tr>
                     <td style="border:none;"></td>
                     <td style="text-align:center;">Kinenta Harsono</td>
+                    <td style="text-align:center;">Amsyuharrasmi</td>
                     <td style="text-align:center;">Maya Evilia</td>
                     <td style="text-align:center;">Rizki Andri S</td>
                     <td style="text-align:center;">Nia Nurazizah</td>
@@ -416,6 +418,7 @@ class Summary_labour extends CI_Controller
                 <tr>
                     <td style="border:none;"></td>
                     <th style="text-align:center;">BOD</th>
+                    <th style="text-align:center;">GENERAL MANAGER</th>
                     <th style="text-align:center;">Leader FAT Cost Control</th>
                     <th style="text-align:center;">Asst Manager HRD-GA</th>
                     <th style="text-align:center;">Leader HR</th>

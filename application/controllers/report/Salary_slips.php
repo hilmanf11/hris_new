@@ -1106,7 +1106,7 @@ class Salary_slips extends CI_Controller
 
             // Query for regular payrolls
 
-            $query = $this->db->query("SELECT a.*, b.bank_branch, b.bank_no, b.national_id, b.tax_id, i.name as marital_name, b.email, d.ter as ter_persentase, 'REGULAR' as payroll_type
+            $query = $this->db->query("SELECT a.*, b.bank_branch, b.bank_no, b.national_id, b.tax_id, i.name as marital_name, b.email, d.ter as ter_persentase, 'REGULAR' as payroll_type, b.jkn, b.jamsostek AS bpjs_tk
 
             FROM payrolls a
 
@@ -1142,7 +1142,7 @@ class Salary_slips extends CI_Controller
 
             // Query for daily workers (payroll_harian_lepas)
 
-            $query_daily = $this->db->query("SELECT a.*, b.bank_branch, b.bank_no, b.national_id, b.tax_id, i.name as marital_name, b.email, d.ter as ter_persentase, 'DAILY' as payroll_type
+            $query_daily = $this->db->query("SELECT a.*, b.bank_branch, b.bank_no, b.national_id, b.tax_id, i.name as marital_name, b.email, d.ter as ter_persentase, 'DAILY' as payroll_type, b.jkn, b.jamsostek AS bpjs_tk
 
             FROM payroll_harian_lepas a
 
@@ -1584,14 +1584,6 @@ class Salary_slips extends CI_Controller
 
                                             </tr>
 
-                                        </table>
-
-                                    </div>
-
-                                    <div style="float:left; width:50%;">
-
-                                        <table style="width:100%; margin-bottom: 5px; font-size: 12px;">
-
                                             <tr>
 
                                                 <th style="text-align:left; width: 30%;">National ID</th>
@@ -1602,6 +1594,14 @@ class Salary_slips extends CI_Controller
 
                                             </tr>
 
+                                        </table>
+
+                                    </div>
+
+                                    <div style="float:left; width:50%;">
+
+                                        <table style="width:100%; margin-bottom: 5px; font-size: 12px;">
+
                                             <tr>
 
                                                 <th style="text-align:left;">Tax ID</th>
@@ -1609,6 +1609,26 @@ class Salary_slips extends CI_Controller
                                                 <th style="text-align:left;">:</th>
 
                                                 <th style="text-align:left;">' . $record['tax_id'] . '</th>
+
+                                            </tr>
+
+                                            <tr>
+
+                                                <th style="text-align:left;">JKN No</th>
+
+                                                <th style="text-align:left;">:</th>
+
+                                                <th style="text-align:left;">' . $record['jkn'] . '</th>
+
+                                            </tr>
+
+                                            <tr>
+
+                                                <th style="text-align:left;">BPJS TK</th>
+
+                                                <th style="text-align:left;">:</th>
+
+                                                <th style="text-align:left;">' . $record['bpjs_tk'] . '</th>
 
                                             </tr>
 

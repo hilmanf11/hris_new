@@ -772,7 +772,7 @@ class Payroll_account_cc extends CI_Controller
 
                         <tr>
 
-                            <th rowspan="2" style="text-align:center;">APPROVED</th>
+                            <th rowspan="2" colspan="2" style="text-align:center;">APPROVED</th>
 
                             <th colspan="3" style="text-align:center;">CONFIRM OK</th>
 
@@ -791,6 +791,8 @@ class Payroll_account_cc extends CI_Controller
                         </tr>
 
                         <tr>
+
+                            <td style="height:60px;" width="100"></td>
 
                             <td style="height:60px;" width="100"></td>
 
@@ -816,11 +818,15 @@ class Payroll_account_cc extends CI_Controller
 
                             <td>&nbsp;</td>
 
+                            <td>&nbsp;</td>
+
                         </tr>
 
                         <tr>
 
                             <th style="text-align:center;">BOD</th>
+
+                            <th style="text-align:center;">GENERAL MANAGER</th>
 
                             <th style="text-align:center;">LEADER</th>
 
