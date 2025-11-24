@@ -78,7 +78,7 @@ class Employee_harian_lepas extends CI_Controller
         $this->db->select('*');
         $this->db->from('employees');
         $this->db->where_in('contract_id', [20221119000003, 20250704000001]);
-        $this->db->where('group_id', 20221119000002);
+        $this->db->where_in('group_id', [20221119000002, 20251124000001]);
         $this->db->where('status', $status);
         if ($get) {
             $this->db->like($get);
@@ -153,7 +153,7 @@ class Employee_harian_lepas extends CI_Controller
     public function readGroupFilters()
     {
         $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name")->from("groups");
-        if (!isset($_GET['old'])) { $this->db->where_in("id", ["20221119000002", "20251024000001"]); }
+        if (!isset($_GET['old'])) { $this->db->where_in("id", ["20221119000002", "20251124000001"]); }
         echo json_encode($this->db->order_by("name")->get()->result());
     }
 
@@ -229,20 +229,21 @@ class Employee_harian_lepas extends CI_Controller
     public function readGroups()
     {
         $post = isset($_POST['q']) ? $_POST['q'] : "";
-        $send = $this->crud->reads('groups', [], ["id" => "20221119000002"]);
-        echo json_encode($send);
+
+        $this->db->select('*')->from('groups')->where_in('id', [20221119000002, 20251124000001]);
+        if (!empty($post)) { $this->db->like('name', $post); }
+
+        echo json_encode($this->db->get()->result_object());
     }
 
     public function readContracts()
     {
         $post = isset($_POST['q']) ? $_POST['q'] : "";
+
+        $this->db->select('*')->from('contracts')->where_in('id', [20221119000003, 20250704000001]);
+        if (!empty($post)) { $this->db->like('name', $post); }
         
-        $this->db->select('*');
-        $this->db->from('contracts');
-        $this->db->where_in('id', [20221119000003, 20250704000001]);
-        $send = $this->db->get()->result_object();
-        
-        echo json_encode($send);
+        echo json_encode($this->db->get()->result_object());
     }
 
     //GET DATE SERVICE
@@ -443,7 +444,7 @@ class Employee_harian_lepas extends CI_Controller
         $this->db->join('shifts j', 'f.shift_id = j.id', 'left');
         $this->db->where('a.deleted', 0);
         $this->db->where_in('a.contract_id', [20221119000003, 20250704000001]);
-        $this->db->where('a.group_id', 20221119000002);
+        $this->db->where_in('a.group_id', [20221119000002, 20251124000001]);
         if($filter_from_join != ""  && $filter_to_join != ""){
             $this->db->where("a.date_sign between '$filter_from_join' and '$filter_to_join'");
         }
@@ -1170,7 +1171,7 @@ class Employee_harian_lepas extends CI_Controller
         $this->db->join('shifts n', 'f.shift_id = n.id', 'left');
         $this->db->where('a.deleted', 0);
         $this->db->where_in('a.contract_id', [20221119000003, 20250704000001]);
-        $this->db->where('a.group_id', 20221119000002);
+        $this->db->where_in('a.group_id', [20221119000002, 20251124000001]);
         if($filter_from_join != ""  && $filter_to_join != ""){
             $this->db->where("a.date_sign between '$filter_from_join' and '$filter_to_join'");
         }

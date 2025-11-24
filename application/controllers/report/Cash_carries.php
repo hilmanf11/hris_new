@@ -58,7 +58,15 @@ class Cash_carries extends CI_Controller
 
     }
 
+    public function readGroups()
+    {
+        $post = isset($_POST['q']) ? $_POST['q'] : "";
 
+        $this->db->select('*')->from('groups')->where_not_in('id', [20221119000002, 20251124000001]);
+        if (!empty($post)) { $this->db->like('name', $post); }
+
+        echo json_encode($this->db->get()->result_object());
+    }
 
     //GET DATATABLES
 

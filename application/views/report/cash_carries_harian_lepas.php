@@ -651,7 +651,7 @@
 
         $("#filter_group").combobox({
 
-            url: '<?= base_url('employee/groups/reads?hl=t') ?>',
+            url: '<?= base_url('report/cash_carries_harian_lepas/readGroups') ?>',
 
             valueField: 'id',
 
