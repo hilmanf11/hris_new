@@ -501,6 +501,8 @@
     var url_division = '<?= base_url('employee/divisions/reads') ?>';
     var url_departement = '<?= base_url('employee/departements/reads') ?>';
     var url_departement_sub = '<?= base_url('employee/departement_subs/reads') ?>';
+    var url_contract = '<?= base_url('employee/employee_harian_lepas/readContractFilters') ?>';
+    var url_position = '<?= base_url('employee/employee_harian_lepas/readPositionFilters') ?>';
     var url_group = '<?= base_url('employee/employee_harian_lepas/readGroupFilters') ?>';
     var url_source = '<?= base_url('employee/sources/reads') ?>';
 
@@ -2256,7 +2258,7 @@
         });
 
         $('#filter_positions').combogrid({
-            url: '<?= base_url('employee/positions/reads') ?>',
+            url: url_position,
             panelWidth: 300,
             idField: 'id',
             textField: 'name',
@@ -2404,7 +2406,7 @@
         });
 
         $('#contract_id').combobox({
-            url: '<?php echo base_url('employee/contracts/reads'); ?>',
+            url: url_contract,
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose Employee Type',
@@ -2447,7 +2449,7 @@
         });
 
         $('#position_id').combogrid({
-            url: '<?= base_url('employee/positions/reads') ?>',
+            url: url_position,
             panelWidth: 300,
             idField: 'id',
             textField: 'name',
@@ -2486,6 +2488,8 @@
                     $('#emp_old').combogrid('options').required = true;
                     $('#emp_old').combogrid('textbox').validatebox('options').required = true;
                     $('#emp_old').combogrid('textbox').validatebox('validate');
+                    $('#contract_id').combobox('reload', url_contract+'?old=1');
+                    $('#position_id').combogrid('grid').datagrid('reload', url_position+'?old=1');
                     $('#group_id').combobox('reload', url_group+'?old=1');
                 }
             }
@@ -2500,7 +2504,6 @@
                 $('#emp_old').combogrid('options').required = false;
                 $('#emp_old').combogrid('textbox').validatebox('options').required = false;
                 $('#emp_old').combogrid('textbox').validatebox('validate');
-                $('#group_id').combobox('reload', url_group);
                 regiteredBFNo();
             } }
         });
@@ -2563,6 +2566,9 @@
     });
 
     function regiteredBFNo() {
+        $('#contract_id').combobox('reload', url_contract);
+        $('#position_id').combogrid('grid').datagrid('reload', url_position);
+        $('#group_id').combobox('reload', url_group);
         $('#div_division').appendTo('#div_first');
         $('#label_number').text('Employee ID');
         $('#div_emp_old').hide();

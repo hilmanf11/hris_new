@@ -263,11 +263,24 @@ class Employees extends CI_Controller
         echo json_encode($data);
     }
 
-    public function readGroupFilters()
+    public function readContracts()
+    {
+        $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name")->from("contracts");
+        if ($this->input->get('regis_no')) { $this->db->where_not_in("id", [20221119000003, 20250704000001]); }
+        echo json_encode($this->db->order_by("name")->get()->result());
+    }
+
+    public function readPositions()
+    {
+        $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name, TRIM(level) AS level")->from("positions");
+        if ($this->input->get('regis_no')) { $this->db->where("id !=", 20230922000001); }
+        echo json_encode($this->db->order_by("name")->get()->result());
+    }
+
+    public function readGroups()
     {
         $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name")->from("groups");
-        // if ($this->input->get('hl')) { $this->db->where_in("id", ["20221119000002", "20251024000001"]); }
-        // else { $this->db->where_not_in("id", ["20221119000002", "20251024000001"]); }
+        if ($this->input->get('regis_no')) { $this->db->where_not_in("id", [20221119000002, 20251124000001]); }
         echo json_encode($this->db->order_by("name")->get()->result());
     }
 
@@ -340,14 +353,7 @@ class Employees extends CI_Controller
         echo json_encode($reads);
     }
 
-    public function readGroups()
-    {
-        $post = isset($_POST['q']) ? $_POST['q'] : "";
-        $send = $this->crud->reads('groups', [], ["id !=" => "20221119000002"]);
-        echo json_encode($send);
-    }
-
-    public function readContracts()
+    public function readContractFilters()
     {
         $post = isset($_POST['q']) ? $_POST['q'] : "";
         

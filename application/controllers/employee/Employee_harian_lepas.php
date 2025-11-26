@@ -150,10 +150,24 @@ class Employee_harian_lepas extends CI_Controller
         echo json_encode($data);
     }
 
+    public function readContractFilters()
+    {
+        $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name")->from("contracts");
+        if (!isset($_GET['old'])) { $this->db->where_in("id", [20221119000003, 20250704000001]); }
+        echo json_encode($this->db->order_by("name")->get()->result());
+    }
+
+    public function readPositionFilters()
+    {
+        $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name, TRIM(level) AS level")->from("positions");
+        if (!isset($_GET['old'])) { $this->db->where_in("id", [20230922000001, 20221119000007]); }
+        echo json_encode($this->db->order_by("name")->get()->result());
+    }
+
     public function readGroupFilters()
     {
         $this->db->distinct()->select("TRIM(id) AS id, TRIM(name) AS name")->from("groups");
-        if (!isset($_GET['old'])) { $this->db->where_in("id", ["20221119000002", "20251124000001"]); }
+        if (!isset($_GET['old'])) { $this->db->where_in("id", [20221119000002, 20251124000001]); }
         echo json_encode($this->db->order_by("name")->get()->result());
     }
 

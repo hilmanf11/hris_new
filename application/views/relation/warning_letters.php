@@ -28,6 +28,8 @@
 
             <th rowspan="2" data-options="field:'remarks',width:200,halign:'center'">Remarks</th>
 
+            <th rowspan="2" data-options="field:'attachment',width:155,halign:'center',align:'center',formatter:formatBtnAttachment">Attachment</th>
+
             <th colspan="3" data-options="field:'',width:100,halign:'center'"> Approval</th>
 
             <th colspan="2" data-options="field:'',width:100,halign:'center'"> Created</th>
@@ -225,6 +227,14 @@
                 <span style="width:35%; display:inline-block;">Remarks</span>
 
                 <input style="width:60%; height: 50px;" name="remarks" class="easyui-textbox" multiline="true">
+
+            </div>
+
+            <div class="fitem">
+
+                <span style="width:35%; display:inline-block;">Attachment</span>
+
+                <input style="width:60%;" name="attachment" id="attachment" class="easyui-filebox">
 
             </div>
 
@@ -495,55 +505,36 @@
         //SAVE DATA
 
         $('#dlg_insert').dialog({
-
             buttons: [{
-
                 text: 'Save',
-
                 iconCls: 'icon-ok',
-
                 handler: function() {
+                    var msg = '';
+                    var input = $('#attachment').next().find('input[type=file]')[0];
 
-                    $('#frm_insert').form('submit', {
+                    if (input.files && input.files.length > 0) {
+                        var file = input.files[0];
+                        if (!['pdf', 'xls', 'xlsx'].includes(file.name.split('.').pop().toLowerCase()))
+                            { msg = 'No file types allowed! Only PDF, XLS, and XLSX.'; }
+                        else if (file.size > (2 * 1024 * 1024))
+                            { msg = 'The file size is too large! Maximum 2MB.'; }
 
-                        url: url_save,
-
-                        onSubmit: function() {
-
-                            return $(this).form('validate');
-
-                        },
-
-                        success: function(result) {
-
-                            var result = eval('(' + result + ')');
-
-
-
-                            if (result.theme == "success") {
-
-                                toastr.success(result.message, result.title);
-
-                            } else {
-
-                                toastr.error(result.message, result.title);
-
-                            }
-
-
-
-                            $('#dlg_insert').dialog('close');
-
-                            $('#dg').datagrid('reload');
-
-                        }
-
-                    });
-
+                        if (msg == '') {
+                            $.ajax({
+                                url: '<?= base_url('relation/warning_letters/upload'); ?>',
+                                data: new FormData($('#frm_insert')[0]),
+                                type: 'POST',
+                                dataType: 'json',
+                                processData: false,
+                                contentType: false,
+                                beforeSend: function () { $.messager.progress({title:'Process Upload', msg:'Please wait...'}); },
+                                success: function (result) { $.messager.progress('close'); saveInput(result); },
+                                error: function() { $.messager.progress('close'); toastr.error('Failed upload!', 'Error'); }
+                            });
+                        } else { toastr.warning(msg, 'Warning'); }
+                    } else { saveInput(); }
                 }
-
             }]
-
         });
 
 
@@ -784,7 +775,24 @@
 
     });
 
+    function saveInput(upload = '') {
+        $('#frm_insert').form('submit', {
+            url: url_save,
+            onSubmit: function(param) {
+                if (upload != '') { param['attachment'] = upload; }
+                return $(this).form('validate');
+            },
+            success: function(result) {
+                var result = eval('(' + result + ')');
 
+                if (result.theme == "success") { toastr.success(result.message, result.title); }
+                else { toastr.error(result.message, result.title); }
+
+                $('#dlg_insert').dialog('close');
+                $('#dg').datagrid('reload');
+            }
+        });
+    }
 
     //CELLSTYLE STATUS
 
@@ -855,6 +863,24 @@
     };
 
 
+    //Formatter Attachment
+    function formatBtnAttachment(value, row, index) { return (value == '' || value == null) ? '' : '<a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="btnAttachment('+"'"+window.btoa(value)+"'"+')"><i class="fa fa-download"></i> Download</a>'; }
+    function btnAttachment(file) {
+        var name = window.atob(file);
+        var ext = '.'+name.split('.')[1];
+        var date = new Date();
+        var y = date.getFullYear();
+        var m = (date.getMonth()+1).toString().padStart(2, '0');
+        var d = (date.getDate()).toString().padStart(2, '0');
+        var a = document.createElement('a');
+
+        a.href = '<?= base_url($location) ?>'+name;
+        a.download = 'warning_letter_'+y+m+d+ext;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
 
     //Format Datepicker
 

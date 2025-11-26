@@ -504,6 +504,9 @@
     var url_departement = '<?= base_url('employee/departements/reads') ?>';
     var url_departement_sub = '<?= base_url('employee/departement_subs/reads') ?>';
     var url_source = '<?= base_url('employee/sources/reads') ?>';
+    var url_contract = '<?php echo base_url('employee/employees/readContracts'); ?>'
+    var url_position = '<?= base_url('employee/employees/readPositions') ?>'
+    var url_group = '<?= base_url('employee/employees/readGroups') ?>';
 
     //GENERATE ID
     function generate_id() {
@@ -2175,7 +2178,7 @@
         });
 
         $('#filter_contracts').combobox({
-            url: '<?php echo base_url('employee/employees/readContracts'); ?>',
+            url: url_contract+'?regis_no=1',
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose All',
@@ -2188,7 +2191,7 @@
         });
 
         $('#filter_groups').combobox({
-            url: '<?php echo base_url('employee/employees/readGroups'); ?>',
+            url: url_group+'?regis_no=1',
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose All',
@@ -2255,7 +2258,7 @@
         });
 
         $('#filter_positions').combogrid({
-            url: '<?= base_url('employee/positions/reads') ?>',
+            url: url_position+'?regis_no=1',
             panelWidth: 300,
             idField: 'id',
             textField: 'name',
@@ -2378,14 +2381,35 @@
         });
 
         $('#contract_id').combobox({
-            url: '<?php echo base_url('employee/contracts/reads'); ?>',
+            url: url_contract,
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose Employee Type',
         });
 
+        $('#position_id').combogrid({
+            url: url_position,
+            panelWidth: 300,
+            idField: 'id',
+            textField: 'name',
+            mode: 'remote',
+            fitColumns: true,
+            prompt: 'Choose Position',
+            columns: [
+                [{
+                    field: 'name',
+                    title: 'Name',
+                    width: 200
+                }, {
+                    field: 'level',
+                    title: 'Level',
+                    width: 80
+                }]
+            ]
+        });
+
         $('#group_id').combobox({
-            url: '<?= base_url('employee/employees/readGroupFilters') ?>',
+            url: url_group,
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose Group',
@@ -2420,27 +2444,6 @@
             ],
         });
 
-        $('#position_id').combogrid({
-            url: '<?= base_url('employee/positions/reads') ?>',
-            panelWidth: 300,
-            idField: 'id',
-            textField: 'name',
-            mode: 'remote',
-            fitColumns: true,
-            prompt: 'Choose Position',
-            columns: [
-                [{
-                    field: 'name',
-                    title: 'Name',
-                    width: 200
-                }, {
-                    field: 'level',
-                    title: 'Level',
-                    width: 80
-                }]
-            ]
-        });
-
         $('#religion_id').combobox({
             url: '<?php echo base_url('employee/religions/reads'); ?>',
             valueField: 'id',
@@ -2460,6 +2463,9 @@
                     $('#emp_old').combogrid('options').required = true;
                     $('#emp_old').combogrid('textbox').validatebox('options').required = true;
                     $('#emp_old').combogrid('textbox').validatebox('validate');
+                    $('#contract_id').combobox('reload', url_contract);
+                    $('#position_id').combogrid('grid').datagrid('reload', url_position);
+                    $('#group_id').combobox('reload', url_group);
                 }
             }
         });
@@ -2545,6 +2551,9 @@
     });
 
     function regiteredBFNo() {
+        $('#contract_id').combobox('reload', url_contract+'?regis_no=1');
+        $('#position_id').combogrid('grid').datagrid('reload', url_position+'?regis_no=1');
+        $('#group_id').combobox('reload', url_group+'?regis_no=1');
         $('#div_division').appendTo('#div_first');
         $('#label_number').text('Employee ID');
         $('#div_emp_old').hide();

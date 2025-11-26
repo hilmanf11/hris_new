@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 class Warning_letters extends CI_Controller
 
 {
+    public $location = 'assets/document/relation/warning_letter/';
 
     public function __construct()
 
@@ -62,7 +63,7 @@ class Warning_letters extends CI_Controller
 
             $this->load->view('template/header', $data);
 
-            $this->load->view('relation/warning_letters');
+            $this->load->view('relation/warning_letters', ['location' => $this->location]);
 
         } else {
 
@@ -289,6 +290,12 @@ class Warning_letters extends CI_Controller
     }
 
 
+    public function upload()
+    {
+        if (!is_dir($this->location)) { mkdir($this->location, 0777, true); }
+        echo json_encode($this->crud->upload('attachment', ['pdf', 'xlsx', 'xls'], $this->location));
+    }
+
 
     //CREATE DATA
 
@@ -302,9 +309,12 @@ class Warning_letters extends CI_Controller
 
                 $post   = $this->input->post();
 
-                $warning_letters = $this->crud->reads("warning_letters", [], ["employee_id" => $post['employee_id'], "warning_letter" => $post['warning_letter']]);
-
-
+                $warning_letters = $this->crud->reads("warning_letters", [], [
+                    "DATE(NOW()) <= DATE_ADD(issue_date, INTERVAL 6 MONTH)" => NULL,
+                    "employee_id" => $post['employee_id'],
+                    "warning_letter" => $post['warning_letter']
+                ]);
+                // die($this->db->last_query());
 
                 if(count($warning_letters) > 0){
 
@@ -454,7 +464,7 @@ class Warning_letters extends CI_Controller
 
         $records = $this->db->get()->result_array();
 
-
+        // die($this->db->last_query());
 
         $html = '<html><head><title>Print Data</title></head><style>body {font-family: Arial, Helvetica, sans-serif;}#customers {border-collapse: collapse;width: 100%;font-size: 12px;}#customers td, #customers th {border: 1px solid #ddd;padding: 2px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 2px;padding-bottom: 2px;text-align: left;color: black;}.pink-bg {background-color: #FFDCDC !important;}.orange-bg {background-color: #FFA500 !important;}</style><body>
 
@@ -524,6 +534,8 @@ class Warning_letters extends CI_Controller
 
                 <th>Remarks</th>
 
+                <th>Attachment</th>
+
             </tr>';
 
         $no = 1;
@@ -551,6 +563,7 @@ class Warning_letters extends CI_Controller
                             <td>' . $data['issue_date'] . '</td>
                             <td>' . $data['violation_name'] . '</td>
                             <td>' . $data['remarks'] . '</td>
+                            <td>' . ((empty($data['attachment'])) ? '' : '<a href="' . base_url($this->location) . $data['attachment']) . '">Download</a>' . '</td>
                         </tr>';
 
             $no++;
@@ -737,21 +750,31 @@ class Warning_letters extends CI_Controller
             $sheet->getStyle('B2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
             
             // Print info on the right (like float right in print) - size 9, merge right di table terkanan
-            $sheet->setCellValue('J3', 'Print Date ' . date("d M Y H:m:s"));
-            $sheet->getStyle('J3')->getFont()->setSize(9);
-            $sheet->getStyle('J3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            $sheet->setCellValue('K3', 'Print Date ' . date("d M Y H:m:s"));
+            $sheet->getStyle('K3')->getFont()->setSize(9);
+            $sheet->getStyle('K3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
             
-            $sheet->setCellValue('J4', 'Print By ' . $this->session->username);
-            $sheet->getStyle('J4')->getFont()->setSize(9);
-            $sheet->getStyle('J4')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            $sheet->setCellValue('K4', 'Print By ' . $this->session->username);
+            $sheet->getStyle('K4')->getFont()->setSize(9);
+            $sheet->getStyle('K4')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
             
             // Add empty row
-            $sheet->mergeCells('A5:J5');
+            $sheet->mergeCells('A5:K5');
             $sheet->setCellValue('A5', '');
             
             // Set headers
             $headers = [
-                'No', 'Employee ID', 'Employee Name', 'Division', 'Departement', 'Departement Sub', 'Warning Letter', 'Issue Date', 'Violation', 'Remarks'
+                'No',
+                'Employee ID',
+                'Employee Name',
+                'Division',
+                'Departement',
+                'Departement Sub',
+                'Warning Letter',
+                'Issue Date',
+                'Violation',
+                'Remarks',
+                'Attachment'
             ];
             $rowStart = 6; // Start from row 6 after header
             
@@ -779,6 +802,8 @@ class Warning_letters extends CI_Controller
                 $sheet->setCellValue('H' . $row, $data['issue_date']);
                 $sheet->setCellValue('I' . $row, $data['violation_name']);
                 $sheet->setCellValue('J' . $row, $data['remarks']);
+                $sheet->setCellValue('K' . $row, (!empty($data['attachment'])) ? 'Download' : '');
+                if (!empty($data['attachment'])) { $sheet->getCell('K' . $row)->getHyperlink()->setUrl($this->location.$data['attachment']); }
                 $backgroundColor = null;
                 if ($data['employee_status'] == 1) {
                     $backgroundColor = 'FFDCDC';
@@ -786,14 +811,18 @@ class Warning_letters extends CI_Controller
                     $backgroundColor = 'FFA500';
                 }
                 if ($backgroundColor) {
-                    $sheet->getStyle('A' . $row . ':J' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($backgroundColor);
+                    $sheet->getStyle('A' . $row . ':K' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($backgroundColor);
                 }
                 // Add borders to data row
-                $sheet->getStyle('A' . $row . ':J' . $row)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                $sheet->getStyle('A' . $row . ':K' . $row)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+                if (!empty($data['attachment']))
+                    { $sheet->getStyle('K' . $row)->applyFromArray(['font' => ['color' => ['rgb' => '0000FF'], 'underline' => true]]); }
+
                 $row++;
             }
 
-            foreach (range('A', 'J') as $column) {
+            foreach (range('A', 'K') as $column) {
                 $sheet->getColumnDimension($column)->setAutoSize(true);
             }
 

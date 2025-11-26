@@ -459,6 +459,25 @@ class Cash_carries extends CI_Controller
     }
 
 
+    public function readEmployees()
+    {
+        $get = $this->input->get();
+        $post = isset($_POST['q']) ? $_POST['q'] : "";
+        $departement_id = ($this->crud->read("users", [], ["id" => $this->session->id]) == "0") ? "" : $this->session->departement_id;
+
+        $this->db->distinct()->select("*")->from("employees")
+        ->where_not_in("group_id", [20221119000002, 20251124000001])
+        ->like("departement_id", $departement_id);
+        if ($get) { $this->db->like($get); }
+        if (!empty($post)) {
+            $this->db->group_start()
+                ->like("number", $post)
+                ->or_like("name", $post)
+            ->group_end();
+        }
+        echo json_encode($this->db->order_by("name")->get()->result_array());
+    }
+
 
     //GET DATATABLES
 
@@ -643,6 +662,13 @@ class Cash_carries extends CI_Controller
             $total = 0;
 
             foreach ($records as $record) {
+                $record['amount'] = $this->readOvertimePrice(
+                    $record['employee_id'],
+                    $record['trans_date'],
+                    $this->convertHour($record['trans_date'], $record['start'], $record['end'], $record['employee_id'], $record['break'])['duration_hour'],
+                    $record['meal']
+                );
+
                 $this->db->select('*');
                 $this->db->from('attandances');
                 $this->db->where('number', $record['employee_number']);

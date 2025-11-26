@@ -736,7 +736,7 @@
 
                         options: {
 
-                            url: '<?= base_url('employee/employees/readEmployees?departement_id=') ?>' + departement_id,
+                            url: '<?= base_url('attandance/cash_carries/readEmployees?departement_id=') ?>' + departement_id,
 
                             required: true,
 
@@ -1910,7 +1910,7 @@
 
                                 $('#filter_employee').combogrid({
 
-                                    url: '<?= base_url('employee/employees/readEmployees?departement_sub_id=') ?>' + departement_sub.id,
+                                    url: '<?= base_url('attandance/cash_carries/readEmployees?departement_sub_id=') ?>' + departement_sub.id,
 
                                     panelWidth: 450,
 
@@ -1976,7 +1976,7 @@
 
         $('#filter_employee').combogrid({
 
-            url: '<?= base_url('employee/employees/readEmployees') ?>',
+            url: '<?= base_url('attandance/cash_carries/readEmployees') ?>',
 
             panelWidth: 450,
 
