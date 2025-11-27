@@ -149,11 +149,14 @@ class Resignations extends CI_Controller
                 b.number as employee_number, 
                 b.date_sign,
                 b.gender,
+                b.jkn,
+                b.jamsostek,
                 d.name as division_name, 
                 e.name as departement_name, 
                 f.name as departement_sub_name, 
                 c.name as reason_name,
-                g.name as contract_name');
+                g.name as contract_name,
+                h.name as position_name');
             $this->db->from('resignations a');
             $this->db->join('employees b', 'a.employee_id = b.id');
             $this->db->join('reason_resignations c', 'a.reason_resignation_id = c.id');
@@ -161,6 +164,7 @@ class Resignations extends CI_Controller
             $this->db->join('departements e', 'b.departement_id = e.id');
             $this->db->join('departement_subs f', 'b.departement_sub_id = f.id');
             $this->db->join('contracts g', 'b.contract_id = g.id');
+            $this->db->join('positions h', 'b.position_id = h.id');
             $this->db->where('a.deleted', 0);
             $this->db->where('a.resign_date >=', $filter_from);
             $this->db->where('a.resign_date <=', $filter_to);
@@ -177,6 +181,7 @@ class Resignations extends CI_Controller
             $this->db->limit($rows, $offset);
             //Get Data Array
             $records = $this->db->get()->result_array();
+            // die($this->db->last_query());
             //Mapping Data
             $data  = array();
             foreach ($records as $record) {
@@ -335,10 +340,14 @@ class Resignations extends CI_Controller
     //PRINT & EXCEL DATA
     public function print($option = "")
     {
+        $format_cell_text = NULL;
         if ($option == "excel") {
             $format  = date("Ymd");
             header("Content-type: application/vnd-ms-excel");
             header("Content-Disposition: attachment; filename=data_resignations_$format.xls");
+            $format_cell_text = <<<HTML
+                style="mso-number-format:'\@';"
+            HTML;
         }
 
         $filter_from = $this->input->get('filter_from');
@@ -360,11 +369,14 @@ class Resignations extends CI_Controller
             b.number as employee_number, 
             b.date_sign,
             b.gender,
+            b.jkn,
+            b.jamsostek,
             d.name as division_name, 
             e.name as departement_name, 
             f.name as departement_sub_name, 
             c.name as reason_name,
-            g.name as contract_name');
+            g.name as contract_name,
+            h.name as position_name');
         $this->db->from('resignations a');
         $this->db->join('employees b', 'a.employee_id = b.id');
         $this->db->join('reason_resignations c', 'a.reason_resignation_id = c.id');
@@ -372,6 +384,7 @@ class Resignations extends CI_Controller
         $this->db->join('departements e', 'b.departement_id = e.id');
         $this->db->join('departement_subs f', 'b.departement_sub_id = f.id');
         $this->db->join('contracts g', 'b.contract_id = g.id');
+        $this->db->join('positions h', 'b.position_id = h.id');
         $this->db->where('a.deleted', 0);
         $this->db->where('a.resign_date >=', $filter_from);
         $this->db->where('a.resign_date <=', $filter_to);
@@ -414,7 +427,10 @@ class Resignations extends CI_Controller
                 <th>Division</th>
                 <th>Departement</th>
                 <th>Departement Sub</th>
+                <th>Position</th>
                 <th>Employee Type</th>
+                <th>JKN No</th>
+                <th>BPJS TK</th>
                 <th>Gender</th>
                 <th>Resign Type</th>
                 <th>Join Date</th>
@@ -428,12 +444,15 @@ class Resignations extends CI_Controller
         foreach ($records as $data) {
             $html .= '  <tr>
                             <td>' . $no . '</td>
-                            <td>' . $data['employee_number'] . '</td>
+                            <td '.$format_cell_text.'>' . $data['employee_number'] . '</td>
                             <td>' . $data['employee_name'] . '</td>
                             <td>' . $data['division_name'] . '</td>
                             <td>' . $data['departement_name'] . '</td>
                             <td>' . $data['departement_sub_name'] . '</td>
+                            <td>' . $data['position_name'] . '</td>
                             <td>' . $data['contract_name'] . '</td>
+                            <td '.$format_cell_text.'>' . $data['jkn'] . '</td>
+                            <td '.$format_cell_text.'>' . $data['jamsostek'] . '</td>
                             <td>' . $data['gender'] . '</td>
                             <td>' . $data['resign_type'] . '</td>
                             <td>' . $data['date_sign'] . '</td>
