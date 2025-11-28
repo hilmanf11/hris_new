@@ -249,7 +249,28 @@ class Form_test extends CI_Controller {
         $employee_id = $this->input->get('employee_id');
         $test_type = $this->input->get('test_type');
 
-        $has_completed = $this->FormTestModel->check_employee_test_status($test_id, $employee_id, $test_type);
+        // $has_completed = $this->FormTestModel->check_employee_test_status($test_id, $employee_id, $test_type);
+        $this->db->select(
+            "COALESCE(b.score_post_test, 0) AS post,".
+            "COALESCE(b.score_pre_test, 0) AS pre,".
+            "COALESCE(d.passing_grade, 0) AS grade,".
+            "b.createdTime AS create"
+        )->from("lnd_training_history a")
+            ->join("lnd_test_form_detail b", "b.test_id = a.id", "left")
+            ->join("lnd_master_form_test c", "c.id = a.test_id", "left")
+            ->join("lnd_schedule_training d", "d.id = c.training_name", "left")
+        ->where("a.test_id", $test_id)->where("a.employee_id", $employee_id)->where("b.type_training", $test_type)->order_by("create", "desc");
+        $get = $this->db->get()->result();
+
+        $has_completed = false;
+        if (!empty($get)) {
+            $has_completed = count($get) > 1;
+            if (!$has_completed) {
+                $has_completed = (
+                    ($test_type == 'POST_TEST') ? floatval($get[0]->post) : floatval($get[0]->pre)
+                ) >= floatval($get[0]->grade);
+            }
+        }
 
         if ($has_completed) {
             $response = [

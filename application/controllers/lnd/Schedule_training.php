@@ -45,7 +45,7 @@ class Schedule_training extends CI_Controller {
     }
 
     public function datatables()
-    {
+    {;
         // Ambil parameter dari request
 		$trainingName = $this->input->get('trainingName', true); // Sanitize input GET
 		$registerDate = $this->input->get('registerDate', true); // Sanitize input GET
@@ -63,10 +63,15 @@ class Schedule_training extends CI_Controller {
         $offset = ($page - 1) * $rows;
 		// Query Builder
         $this->db->start_cache(); // Cache query sebelum count_all_results
-        $this->db->select('a.*, a.id as id_training, b.*, rt.trainer as trainer_type, e.name, e.id as departementId, COALESCE(ta.id, rt.id) as trainingActivityId, COALESCE(ta.trainingActivity, rt.trainingActivities) as trainingActivity, st.trainer_name, st.trainer_id, st.trainer_id as trainingTrainerId');
+        $this->db->select("a.*, a.id as id_training, b.*, rt.trainer as trainer_type,
+            CASE
+                WHEN (LENGTH(a.trainee) - LENGTH(REPLACE(a.trainee, TRIM(','), '')) + 1) > 10 THEN 'All Department'
+                ELSE GROUP_CONCAT(DISTINCT e.name SEPARATOR ',')
+            END AS name,
+            e.id as departementId, COALESCE(ta.id, rt.id) as trainingActivityId, COALESCE(ta.trainingActivity, rt.trainingActivities) as trainingActivity, st.trainer_name, st.trainer_id, st.trainer_id as trainingTrainerId", FALSE);
         $this->db->from('lnd_schedule_training a');
         $this->db->join('lnd_schedule_training_dates b', 'a.id = b.training_id', 'left');
-		$this->db->join('departements e', 'e.id = a.trainee', 'left');
+		$this->db->join('departements e', 'FIND_IN_SET(e.id, a.trainee) > 0', 'left');
 		$this->db->join('lnd_request_training rt', 'rt.id = a.trainingName', 'left');
 		$this->db->join('lnd_training_activity ta', 'ta.id = a.trainingName', 'left');
 		$this->db->join('lnd_schedule_trainers st', 'a.id = st.training_id', 'left');
@@ -98,9 +103,11 @@ class Schedule_training extends CI_Controller {
 //        $totalRows = $this->db->count_all_results();
         
         // Ambil data dengan limit dan offset
+        $this->db->group_by('a.id');
         $this->db->order_by('a.induction', 'ASC');
         $this->db->limit($rows, $offset);
         $records = $this->db->get()->result_array();
+        // die($this->db->last_query());
         $this->db->flush_cache(); // Hapus cache query
 
 		$grouped = [];
@@ -470,10 +477,11 @@ class Schedule_training extends CI_Controller {
     {
 		$post = isset($_POST['q']) ? $_POST['q'] : "";
 
-		$departements = $this->crud->query("SELECT dep.id, dep.name, divs.name as division 
-		FROM departements dep
-		JOIN divisions divs ON dep.division_id = divs.id WHERE dep.name LIKE '%$post%'");
-        echo json_encode($departements);
+        if (!isset($_GET['dept'])) { $get = $this->crud->query("SELECT dep.id, dep.name, divs.name as division FROM departements dep
+        JOIN divisions divs ON dep.division_id = divs.id WHERE dep.name LIKE '%$post%'"); }
+        else { $get = [["id" => "New MP/Mutasi", "name" => "New MP/Mutasi"]]; }
+
+        echo json_encode($get);
     }
 
 	public function readsTrainingActivity()
@@ -706,14 +714,17 @@ class Schedule_training extends CI_Controller {
 		    a.id as id_training, 
 		    GROUP_CONCAT(DISTINCT st.trainer_name SEPARATOR ', ') as trainers, 
 		    GROUP_CONCAT(DISTINCT b.training_date SEPARATOR ', ') as training_dates, 
-		    COALESCE(e.name, a.category) as trainee_name, 
+		    CASE
+                WHEN (LENGTH(a.trainee) - LENGTH(REPLACE(a.trainee, TRIM(','), '')) + 1) > 10 THEN 'All Department'
+                ELSE GROUP_CONCAT(DISTINCT COALESCE(e.name, a.category) SEPARATOR ',')
+            END AS trainee_name, 
 		    e.id as departementId, 
 		    COALESCE(ta.id,rt.id) as trainingActivityId, 
 		    COALESCE(ta.trainingActivity,rt.trainingActivities) as trainingActivity
 		");
 		$this->db->from('lnd_schedule_training a');
 		$this->db->join('lnd_schedule_training_dates b', 'a.id = b.training_id', 'left');
-		$this->db->join('departements e', 'e.id = a.trainee', 'left');
+		$this->db->join('departements e', 'FIND_IN_SET(e.id, a.trainee) > 0', 'left');
 		$this->db->join('lnd_training_activity ta', 'ta.id = a.trainingName', 'left');
 		$this->db->join('lnd_request_training rt', 'rt.id = a.trainingName', 'left');
 		$this->db->join('lnd_schedule_trainers st', 'a.id = st.training_id', 'left');

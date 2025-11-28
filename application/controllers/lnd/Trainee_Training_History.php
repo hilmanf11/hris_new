@@ -138,11 +138,13 @@ class Trainee_Training_History extends CI_Controller {
 			$header .= "<th width='180' rowSpan='2'>Trainer Name</th>";
 			$header .= "<th width='180' rowSpan='2'>Training Date</th>";
 			$header .= "<th width='180' rowSpan='2'>Location</th>";
-			$header .= "<th width='160' colSpan='2' style='text-align: center'>Score</th>"; // Colspan 2 untuk 2 sub-kolom
+			$header .= "<th width='160' colSpan='4' style='text-align: center'>Score</th>"; // Colspan 4 untuk 4 sub-kolom
 			$header .= "</tr>";
 			$header .= "<tr>";
 			$header .=  "       <th width='80' style='text-align: center'>Pre-Test</th> ";
+			$header .=  "       <th width='80' style='text-align: center'>Remedial Pre-Test</th> ";
 			$header .=  "       <th width='80' style='text-align: center'>Post-Test</th>";
+			$header .=  "       <th width='80' style='text-align: center'>Remedial Post-Test</th>";
 			$header .=  "       </tr></thead>";
 			// --------------------------------------------------------
 
@@ -256,8 +258,11 @@ class Trainee_Training_History extends CI_Controller {
 					$this->db->select("
 						lta.trainingActivity AS training_name,
 						MAX(lth.trainer) AS trainer,
-						MAX(ltd.score_pre_test) AS score_pre_test,
-						MAX(ltd.score_post_test) AS score_post_test,
+						CONCAT('[',GROUP_CONCAT(CASE
+							WHEN ltd.type_training = 'POST_TEST' THEN CONCAT('{\"type\":\"POST_TEST\",\"score\":',ltd.score_post_test,'}')
+							WHEN ltd.type_training = 'PRE_TEST' THEN CONCAT('{\"type\":\"PRE_TEST\",\"score\":',ltd.score_pre_test,'}')
+							ELSE NULL
+						END ORDER BY ltd.test_date SEPARATOR ','),']') AS score_test,
 						DATE_FORMAT(MAX(ltd.test_date), '%Y-%m-%d') AS test_date,
 						'PT. PIRANTI TEKNIK INDONESIA' as location 
 					", false); 
@@ -281,12 +286,21 @@ class Trainee_Training_History extends CI_Controller {
 					// KLAUSA GROUP BY DIPERBAIKI: Hanya berdasarkan ID Tes/Pelatihan
 					$this->db->group_by('lth.test_id'); 
 					$this->db->order_by('test_date DESC');
-
-					$query = $this->db->get();
-					$history_training = $query->result_array();
+					$history_training = $this->db->get()->result_array();
+					// die($this->db->last_query());
 
 					if (count($history_training) > 0) {
 						foreach ($history_training as $traine) {
+							$scores = ['POST_TEST' => [], 'PRE_TEST' => []];
+							foreach (json_decode($traine['score_test'], true) as $key => $value)
+								{ array_push($scores[$value['type']], $value['score']); }
+
+							for ($i=0; $i <= 2 - count($scores['POST_TEST']); $i++)
+								{ array_push($scores['POST_TEST'], null); }
+
+							for ($i=0; $i <= 2 - count($scores['PRE_TEST']); $i++)
+								{ array_push($scores['PRE_TEST'], null); }
+
 							// DATA TRAINING DITAMPILKAN DALAM SATU BARIS
 							$html .= "<tr>
 									<td>" . $no . "</td>
@@ -294,8 +308,10 @@ class Trainee_Training_History extends CI_Controller {
 									<td style='mso-number-format:\@;width:100px'>" . htmlspecialchars($traine['trainer']) . "</td>
 									<td style='mso-number-format:\@;width:100px'>" . htmlspecialchars($traine['test_date']) . "</td>
 									<td style='mso-number-format:\@;width:100px'>PT. PIRANTI TEKNIK INDONESIA</td>
-									<td style='mso-number-format:\@;width:80px; text-align: center'>" . (isset($traine['score_pre_test']) ? $traine['score_pre_test'] : '0.00') . "</td>
-									<td style='mso-number-format:\@;width:80px; text-align: center'>" . (isset($traine['score_post_test']) ? $traine['score_post_test'] : '0.00') . "</td>
+									<td style='mso-number-format:\@;width:80px; text-align: center'>" . $scores['PRE_TEST'][0] . "</td>
+									<td style='mso-number-format:\@;width:80px; text-align: center'>" . $scores['PRE_TEST'][1] . "</td>
+									<td style='mso-number-format:\@;width:80px; text-align: center'>" . $scores['POST_TEST'][0] . "</td>
+									<td style='mso-number-format:\@;width:80px; text-align: center'>" . $scores['POST_TEST'][1] . "</td>
 								</tr>";
 							$no++;
 						}

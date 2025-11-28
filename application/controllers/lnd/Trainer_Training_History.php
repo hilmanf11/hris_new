@@ -89,7 +89,7 @@ class Trainer_Training_History extends CI_Controller {
 			$this->db->group_by('b.users_id_to');
 			$this->db->order_by('a.name', 'ASC');
 			$records = $this->db->get()->result_array();
-
+			// die($this->db->last_query());
 			if(empty($records)) {
 				die('<h3 style="color:red;">DATA NOT FOUND</h3>');
 			}
@@ -293,22 +293,24 @@ class Trainer_Training_History extends CI_Controller {
 
 				$this->db->order_by('lta.trainingActivity'); // Mengurutkan berdasarkan nama pelatihan
 				$query = $this->db->get();
+				// die($this->db->last_query());
 				$history_training = $query->result_array();
 
 				if (count($history_training) > 0) { 
 					foreach ($history_training as $training) {
 						$result_feedback = array();
 						if (!empty($training['history_feedback_id'])) {
-							$feedback_query = $this->db->select('b.json_response')
-														->from('lnd_training_history a')
-														->join('lnd_feedback_history b', "a.history_feedback_id = b.id", "left")
-														->join('lnd_detail_trainer_history c', 'a.id=c.training_history_id', 'left')
-														->join('lnd_test_form_detail d', 'a.id=d.test_id', 'left')
-														->where('c.trainer_name', $dataEmployee['employee_id'])
-														->where('d.test_completed_date IS NOT NULL')
-														->get();
-							$feedback_result = $feedback_query->result_array();
-
+							$this->db->select('b.json_response, b.createdBy, MIN(b.createdTime) AS datetime')
+								->from('lnd_training_history a')
+								->join('lnd_feedback_history b', "a.history_feedback_id = b.id", "left")
+								->join('lnd_detail_trainer_history c', 'a.id=c.training_history_id', 'left')
+								->join('lnd_test_form_detail d', 'a.id=d.test_id', 'left')
+								->where('c.trainer_name', $dataEmployee['employee_id'])
+								->where('DATE(b.createdTime)', $training['test_date'])
+								->where('d.test_completed_date IS NOT NULL')
+							->group_by('b.json_response, b.createdBy');
+							$feedback_result = $this->db->get()->result_array();
+							// die($this->db->last_query());
 							// Inisialisasi array untuk menyimpan data per question
 							$question_data = array();
 
@@ -335,7 +337,7 @@ class Trainer_Training_History extends CI_Controller {
 									}
 								}
 							}
-
+							// die(json_encode($question_data));
 							// Hitung rata-rata untuk setiap question dan buat JSON result
 							foreach ($question_data as $question => $data) {
 								$average_score = ($data['count'] > 0) ? round(array_sum($data['points']) / $data['count'], 2) : 0;

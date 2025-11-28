@@ -119,11 +119,7 @@
             </div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Category</span>
-                <select style="width:60%;" name="category" id="category" required="" class="easyui-combobox" panelHeight="auto">
-                    <option value="New">New</option>
-                    <option value="Mutasi">Mutasi</option>
-                    <option value="Departement">Departement</option>
-                </select>             
+                <input style="width:60%;" name="category" id="category" required="" class="easyui-combobox" panelHeight="auto">
             </div>
             <div id="trainers-wrapper">
                 <div class="fitem" id="trainerRow_1">
@@ -134,9 +130,10 @@
                 </div>
             </div>
 			
-            <div class="fitem" id="trainee-container">
+            <div class="fitem">
                 <span style="width:35%; display:inline-block;">Trainee</span>
-                <input style="width:60%;" name="trainee" id="trainee" required="" class="easyui-textbox">
+                <input style="width:30%;" name="trainee" id="trainee" required class="easyui-combogrid">
+                <input style="width:30%;" name="passing_grade" id="passing_grade" required="" class="easyui-numberbox">
             </div>
             <div class="fitem">
                 <span style="width:35%; display:inline-block;">Remarks</span>
@@ -181,13 +178,13 @@
         var clipboard = new ClipboardJS('.btn-copy');
 
         clipboard.on('success', function(e) {
-            console.log('Teks berhasil disalin:', e.text);
+            // console.log('Teks berhasil disalin:', e.text);
             toastr.success("Link berhasil disalin ke clipboard!"); // Tetap gunakan toastr
             e.clearSelection();
         });
 
         clipboard.on('error', function(e) {
-            console.error('Gagal menyalin teks:', e.action);
+            // console.error('Gagal menyalin teks:', e.action);
             toastr.error("Gagal menyalin link.");
         });
         
@@ -303,7 +300,7 @@
 
     function update() {
         var row = $('#dg').datagrid('getSelected');
-        console.log("#row", row);
+        // console.log("#row", row);
         
         if (row) {
             $('#dlg_insert').dialog('open');
@@ -387,19 +384,21 @@
         $('#category').combobox('setValue', row.category);
 
 		$('#trainer_hidden').val(row.trainer)
+
+        var trainee = $('#trainee')
+        var grid = trainee.combogrid('grid');
+        var rows = grid.datagrid('getRows');
+
+        trainee.combogrid('clear');
+        row.trainee.split(', ').forEach(function (value, key) {
+            grid.datagrid('checkRow', rows.findIndex(val => val.name == value && val.id == row.departementId));
+        });
         // Setup trainingName combogrid with existing values
         // Note: The actual trainer type from the training data will be retrieved in onLoadSuccess/onSelect of trainingName combogrid
         setupTrainingNameComboGrid(
             row.induction,
             row.trainingActivityId, 
             row.trainingName 
-        );
-
-        // Setup trainee combogrid if 'Departement'
-        setupTraineeCombogridTraineeType(
-            row.category,
-            row.departementId, 
-            row.trainee
         );
     }
     
@@ -486,7 +485,7 @@
         const trainerIds = (row.trainingTrainerId || '').split(',').map(id => id.trim()).filter(Boolean);
         const wrapper = $('#trainers-wrapper');
 
-		console.log("#trainerType", trainerType);
+		// console.log("#trainerType", trainerType);
 		
 
         wrapper.empty(); // Clear existing trainers
@@ -609,44 +608,9 @@
         }
     }
 
-    function setupTraineeCombogridTraineeType(value, selectedTraineeId, selectedTraineeName) {
-        if (value === 'Departement') {
-            $('#trainee').combogrid({
-                url: '<?= base_url('lnd/schedule_training/readsDepartements') ?>',
-                panelWidth: 450,
-                idField: 'id',
-                textField: 'name',
-                mode: 'remote',
-                fitColumns: true,
-                prompt: 'Choose Department Name',
-                icons: [{
-                    iconCls: 'icon-clear',
-                    handler: function(e) {
-                        $(e.data.target).combogrid('clear').combogrid('textbox').focus();
-                    }
-                }],
-                columns: [[
-                    { field: 'division', title: 'Division Name', width: 120 },
-                    { field: 'name', title: 'Department Name', width: 120 }
-                ]],
-                onLoadSuccess: function () {
-                    if (selectedTraineeId && selectedTraineeName) {
-                        $('#trainee').combogrid('setValue', selectedTraineeId);
-                        $('#trainee').combogrid('setText', selectedTraineeName);
-                    }
-                }
-            });
-        } else {
-            if($('#trainee').data('combogrid')) {
-                $('#trainee').combogrid('setValue', "New/Mutasi").combogrid('disable');
-                $('#trainee').combogrid('setText', "New/Mutasi").combogrid('disable');
-            }
-        }
-    }
-
     function generateQR() {
         var row = $('#dg').datagrid('getSelected');
-        console.log("#row", row);
+        // console.log("#row", row);
         
         if (row) {
             getDetailData(row.id_training);
@@ -660,7 +624,7 @@
         fetch(url)
         .then(response => response.json())
         .then(response => {
-            console.log("#res", response);
+            // console.log("#res", response);
             
             if (response.code === 200) {
                 $('#dlg_qr').dialog('open');
@@ -677,7 +641,7 @@
                     correctLevel: QRCode.CorrectLevel['M']
                 });
 
-                console.log("#pre", url, url_post);
+                // console.log("#pre", url, url_post);
                 
 
                 $('#qrcode-posttest').empty();
@@ -694,7 +658,7 @@
             }
         })
         .catch(error => {
-            console.error("Error fetching data:", error);
+            // console.error("Error fetching data:", error);
         });
     }
 
@@ -712,13 +676,13 @@
         var clipboard = new ClipboardJS(inputId);
 
         clipboard.on('success', function(e) {
-            console.log('Teks berhasil disalin:', e.text);
+            // console.log('Teks berhasil disalin:', e.text);
             toastr.success("Link berhasil disalin ke clipboard!"); // Tetap gunakan toastr
             e.clearSelection();
         });
 
         clipboard.on('error', function(e) {
-            console.error('Gagal menyalin teks:', e.action);
+            // console.error('Gagal menyalin teks:', e.action);
             toastr.error("Gagal menyalin link.");
         });
 
@@ -769,7 +733,7 @@
                             }
                         })
                         .catch(error => {
-                            console.error('Terjadi kesalahan:', error);
+                            // console.error('Terjadi kesalahan:', error);
                             toastr.success("Something Wrong", 'error');
                         });
                     }
@@ -812,7 +776,7 @@
         })
         .catch(error => {
             toastr.error('Something Error', 'Error');
-            console.error('Terjadi kesalahan:', error);
+            // console.error('Terjadi kesalahan:', error);
         });
     }
 
@@ -890,9 +854,10 @@
 
                         // Set the value of the hidden input
                         $('#training_dates_json').val(JSON.stringify(trainingDates));
+                        $('#trainee').combogrid('setValue', $('#trainee').combogrid('getValues').join(','));
 
                         let formData = $('#frm_insert').serialize();
-						console.log("#formData", formData);
+						// console.log("#formData", formData);
 						
                         sendDataToServer(formData);
                     }
@@ -900,62 +865,55 @@
             }]
         });
 
+        var url_trainee = '<?= base_url('lnd/schedule_training/readsDepartements') ?>';
         $('#category').combobox({
-            onSelect: function (record) {
-                const value = record.value;
+            data: [{val: 'New'}, {val: 'Mutasi'}, {val: 'Departement'}],
+            valueField: 'val',
+            textField: 'val',
+            onSelect: function (record) { $('#trainee').combogrid('grid').datagrid('reload', url_trainee+((record.val == 'Departement') ? '' : '?dept=no')); }
+        });
 
-                // Clear and rebuild the #trainee input
-                let html = '';
-                if (value === 'New' || value === 'Mutasi') {
-                    html = `
-                        <span style="width:35%; display:inline-block;">Trainee</span>
-                        <input style="width:60%;" name="trainee" id="trainee" value="New MP/Mutasi" required class="easyui-textbox" disabled>
-                    `;
-                } else if (value === 'Departement') {
-                    html = `
-                        <span style="width:35%; display:inline-block;">Trainee</span>
-                        <input style="width:60%;" name="trainee" id="trainee" required class="easyui-combobox">
-                    `;
+        $('#trainee').combogrid({
+            url: '',
+            panelWidth: 450,
+            idField: 'id',
+            textField: 'name',
+            mode: 'remote',
+            multiple: true,
+            fitColumns: true,
+            checkOnSelect: true,
+            selectOnCheck: true,
+            prompt: 'Choose Department Name',
+            icons: [{
+                iconCls: 'icon-clear',
+                handler: function(e) { $(e.data.target).combogrid('clear').combogrid('textbox').focus(); }
+            }],
+            columns: [[
+                { field: 'ck', checkbox: true },
+                { field: 'division', title: 'Division Name', width: 120 },
+                { field: 'name', title: 'Department Name', width: 120 }
+            ]],
+            onCheckAll: function () { $('#trainee').combogrid('setText', 'All Department'); },
+            onSelect: function (index, row) { selectTrainee(index); },
+            onLoadSuccess: function (data) {
+                var trainee = $('#trainee');
+                var grid = trainee.combogrid('grid');
+                if (data.total == 1) {
+                    grid.datagrid('checkRow', 0);
+                    trainee.combogrid('disable');
                 }
-
-                // Replace the content inside the container
-                $('#trainee-container').html(html);
-
-                // Re-parse the newly added element
-                $.parser.parse('#trainee-container');
-
-                // If Departement selected, initialize combobox
-                if (value === 'Departement') {
-                    $('#trainee').combogrid({
-                        url: '<?= base_url('lnd/schedule_training/readsDepartements') ?>',
-                        panelWidth: 450,
-                        idField: 'id',
-                        textField: 'name',
-                        mode: 'remote',
-                        fitColumns: true,
-                        prompt: 'Choose Department Name',
-                        icons: [{
-                            iconCls: 'icon-clear',
-                            handler: function(e) {
-                                $(e.data.target).combogrid('clear').combogrid('textbox').focus();
-                            }
-                        }],
-                        columns: [
-                            [
-                                {
-                                    field: 'division',
-                                    title: 'Division Name',
-                                    width: 120
-                                },
-                                {
-                                    field: 'name',
-                                    title: 'Department Name',
-                                    width: 120
-                                }]
-                        ],
-                    });
+                else {
+                    grid.datagrid('uncheckAll');
+                    trainee.combogrid('clear').combogrid('enable');
                 }
             }
+        });
+
+        $('#passing_grade').numberbox({
+            prompt: 'Passing Grade',
+            precision: 0,
+            max: 100,
+            min: 80
         });
 
         // Handle change on induction combobox (to update Training Name Combogrid URL)
@@ -972,6 +930,18 @@
         });
         bindDatePickers();
     });
+
+    function selectTrainee(index) {
+        var trainee = $('#trainee');
+        var grid = trainee.combogrid('grid');
+        var chekeds = grid.datagrid('getChecked');
+        var count = grid.datagrid('getRows').length;
+
+        if (chekeds.length > 10 && chekeds.length != count) {
+            grid.datagrid('uncheckRow', index).datagrid('unselectRow', index);
+            toastr.warning("You can only select a maximum of 10 departments!", "Information");
+        }
+    }
 
     /**
      * Fungsi ini menghasilkan definisi kolom untuk kalender/tabel.
@@ -1347,7 +1317,7 @@
         });
 
         $("#printout").contents().find('html').html("<center><br><br><br><b style='font-size:20px;'>Please Wait...</b></center>");
-        $("#printout").attr('src', '<?= base_url('employee/departements/print') ?>' + params);
+        $("#printout").attr('src', '<?= base_url('lnd/schedule_training/print') ?>' + params);
     }
 
     //UPLOAD DATA
@@ -1368,7 +1338,7 @@
             handler: function() {
                 $('#frm_upload').form('submit', {
                     url: '<?= base_url('lnd/schedule_training/upload') ?>',
-                    onSubmit: function() {
+                    onSubmit: function(param) {
                         if ($(this).form('validate') == false) {
                             return $(this).form('validate');
                         } else {
@@ -1387,7 +1357,7 @@
                         });
 
                         var json = eval('(' + result + ')');
-                        console.log("#json", json);
+                        // console.log("#json", json);
 
                         requestData(json.total, json);
 
@@ -1408,7 +1378,7 @@
                                     cache: false,
                                     dataType: "json",
                                     success: function(result) {
-                                        console.log(result);
+                                        // console.log(result);
                                         if (result.theme == "success") {
                                             $('#p_success').html(success);
                                             var title = "<b style='color: green;'>" + result.title + "</b> | " + result.message;
@@ -1435,7 +1405,7 @@
                                         $("#p_remarks").append(title + "<br>");
                                     },
                                     fail: function(jqXHR, textStatus) {
-                                        console.log("#textStatus", textStatus, jqXHR);
+                                        // console.log("#textStatus", textStatus, jqXHR);
 
                                         if (textStatus == "error") {
                                             Swal.fire({
