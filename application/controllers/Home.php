@@ -343,6 +343,7 @@ class Home extends CI_Controller
     public function formAgreement()
     {
         $result = [
+            "access" => ['allowance' => false, 'salary' => false],
             "departement_sub" => [],
             "employee_type" => [],
             "departement" => [],
@@ -377,7 +378,7 @@ class Home extends CI_Controller
             ."COALESCE(TRIM(b.departement_id), '') AS dept,"
             ."COALESCE(TRIM(b.departement_sub_id), '') AS sub_dept,"
             ."TRIM(a.process) AS process,"
-            ."COALESCE(TRIM(b.contract_id), '') AS type,"
+            ."COALESCE(TRIM(a.contract_id), '') AS type,"
             ."TRIM(a.position_id) AS position,"
             ."TRIM(a.group_id) AS group_id,"
             ."TRIM(a.note) AS note"
@@ -473,6 +474,13 @@ class Home extends CI_Controller
             ]);
         }
 
+        $this->db->distinct()->select("TRIM(menus_id) AS menu, v_edit AS access")->from("setting_users")
+            ->where_in("menus_id", ['20221202000006', '20221202000008'])
+            ->where("users_id", $this->session->username)
+        ->order_by("menu");
+        foreach ($this->db->get()->result_object() as $index => $row)
+            { $result["access"][($row->menu == '20221202000006') ? 'allowance' : 'salary'] = $row->access == '1'; }
+
         echo json_encode($result);
     }
 
@@ -544,44 +552,51 @@ class Home extends CI_Controller
             } else { $result['stat'] = 'Failed update employee!'; }
 
             if ($stat) {
-                if ($this->db->where('employee_id', $get['id'])->get('setup_allowances')->num_rows() > 0) {
-                    $this->crud->delete('setup_allowances', ['employee_id' => $get['id']]);
-                    $stat = $this->db->where('employee_id', $get['id'])->get('setup_allowances')->num_rows() == 0;
+                if (isset($post['allowances'])) {
+                    if ($this->db->where('employee_id', $get['id'])->get('setup_allowances')->num_rows() > 0) {
+                        $this->crud->delete('setup_allowances', ['employee_id' => $get['id']]);
+                        $stat = $this->db->where('employee_id', $get['id'])->get('setup_allowances')->num_rows() == 0;
+                    }
                 }
             } else { $result['stat'] = 'Failed delete allowance!'; }
 
             if ($stat) {
-                foreach (json_decode($post['allowances']) as $key => $value) {
-                    $data = [
-                        "employee_id" => $get['id'],
-                        "allowance_id" => $value->allow,
-                        "amount" => $value->amount
-                    ];
-                    $this->crud->create('setup_allowances', $data);
-                    $stat = $this->db->where($data)->get('setup_allowances')->num_rows() > 0;
-                    if (!$stat) { break; }
+                if (isset($post['allowances'])) {
+                    foreach (json_decode($post['allowances']) as $key => $value) {
+                        $data = [
+                            "employee_id" => $get['id'],
+                            "allowance_id" => $value->allow,
+                            "amount" => $value->amount
+                        ];
+                        $this->crud->create('setup_allowances', $data);
+                        $stat = $this->db->where($data)->get('setup_allowances')->num_rows() > 0;
+                        if (!$stat) { break; }
+                    }
                 }
             } else { $result['stat'] = 'Failed insert allowance!'; }
 
             if ($stat) {
-                $data = [
-                    "salary_component_id" => $post['component'],
-                    "amount" => $post['amount'],
-                    "bpjs" => $post['bpjs']
-                ];
+                if (isset($post['component']) && isset($post['amount']) && isset($post['bpjs'])) {
+                    $data = [
+                        "salary_component_id" => $post['component'],
+                        "amount" => $post['amount'],
+                        "bpjs" => $post['bpjs']
+                    ];
 
-                $get_id = $this->db->distinct()->select('TRIM(id) AS id')->from('setup_salaries')
-                ->where('employee_id', $emp_id)->get()->row();
+                    $get_id = $this->db->distinct()->select('TRIM(id) AS id')->from('setup_salaries')
+                    ->where('employee_id', $emp_id)->get()->row();
 
-                if (isset($get_id->id)) {
-                    $this->crud->update('setup_salaries', ["id" => $get_id->id], $data);
-                    $this->db->where("id", $get_id->id);
-                } else {
-                    $this->crud->create('setup_salaries', $data);
-                    $this->db->where($data);
+                    if (isset($get_id->id)) {
+                        $this->crud->update('setup_salaries', ["id" => $get_id->id], $data);
+                        $this->db->where("id", $get_id->id);
+                    } else {
+                        $data["employee_id"] = $emp_id;
+                        $this->crud->create('setup_salaries', $data);
+                        $this->db->where($data);
+                    }
+
+                    $stat = $this->db->get('setup_salaries')->num_rows() > 0;
                 }
-
-                $stat = $this->db->get('setup_salaries')->num_rows() > 0;
             } else { $result['stat'] = 'Failed save salary!'; }
 
             if (!$stat) {

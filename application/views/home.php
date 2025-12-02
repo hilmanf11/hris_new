@@ -511,12 +511,12 @@
 				</fieldset></td>
 			</tr>
 			<tr>
-				<td style="width: 50%; vertical-align: top;"><fieldset>
+				<td style="width: 50%; vertical-align: top;"><fieldset class="field_setup_agreement">
 					<legend>Setup Allowances</legend>
 					<table id="tb_allowance" style="width: 100%;"></table><br>
-					<a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="btnAddAllowance()"><i class="fa fa-plus"></i> <span id="add">Add Allowance</span></a>
+					<a href="javascript:;" id="btnAddAllowance" class="easyui-linkbutton" data-options="plain:true" onclick="btnAddAllowance()"><i class="fa fa-plus"></i> <span id="add">Add Allowance</span></a>
 				</fieldset></td>
-				<td style="width: 50%; vertical-align: top;"><fieldset>
+				<td style="width: 50%; vertical-align: top;"><fieldset class="field_setup_agreement">
 					<legend>Setup Salary</legend>
 					<table style="width: 100%;">
 						<tr>
@@ -765,6 +765,7 @@
 
 	var agreement_setup_salary_req = true;
 	var agreement_select_sub_dept = [];
+	var agreement_setup_access = true;
 	var agreement_select_salary = [];
 	var agreement_select_dept = [];
 	var agreement_allowance = [];
@@ -782,6 +783,8 @@
 			dataType: 'json',
 			success: function (result) {
 				var now = new Date();
+
+				agreement_setup_access = result.access.allowance && result.access.salary;
 				agreement_select_sub_dept = result.departement_sub;
 				agreement_select_dept = result.departement;
 				agreement_allowance = result.allowance;
@@ -873,9 +876,39 @@
 					valueField: 'id',
 					editable: false,
 					onSelect: function (rec) {
-						agreement_setup_salary_req = true;
+            			var all_tr = $('#tb_allowance tr');
+						agreement_setup_salary_req = false;
 
-						if (['MjAyMjExMTkwMDAwMDM=','MjAyMjExMTkwMDAwMDY='].includes(window.btoa(rec.id))) { agreement_setup_salary_req = false; }
+						if (window.btoa(rec.id) != 'MjAyMjExMTkwMDAwMDE=') { $('.field_setup_agreement').hide(); }
+						else {
+							var stat_access = (agreement_setup_access) ? 'enable' : 'disable';
+
+							if (agreement_setup_access) { agreement_setup_salary_req = true; }
+
+							$('.field_setup_agreement').show();
+							$('#btnAddAllowance').linkbutton(stat_access);
+							$('#component_salary').combobox(stat_access);
+							$('#amount').numberbox(stat_access);
+							$('#bpjs').numberbox(stat_access);
+						}
+
+	            		for (var i = 0; i < all_tr.length; i++) {
+	            			var row = all_tr[i];
+	            			var allow_combo = $($(row).find('.easyui-combobox'));
+	            			var allow_number = $($(row).find('.easyui-numberbox'));
+
+            				if (allow_combo.combobox('getValue') == '' ||
+            					allow_number.numberbox('getValue') == '')
+            					{ $($(row).find('.easyui-linkbutton')).click(); }
+            				else {
+        						allow_combo.combobox((agreement_setup_salary_req) ? 'enable' : 'disable')
+        							.combobox('textbox').validatebox({required: agreement_setup_salary_req});
+        						allow_number.numberbox((agreement_setup_salary_req) ? 'enable' : 'disable')
+        							.numberbox('textbox').validatebox({required: agreement_setup_salary_req});
+            					allow_combo.combobox('validate');
+								allow_number.numberbox('validate');
+            				}
+	            		}
 
 						$('#amount').numberbox('textbox').validatebox({required: agreement_setup_salary_req});
 						$('#bpjs').numberbox('textbox').validatebox({required: agreement_setup_salary_req});
@@ -933,7 +966,6 @@
 		var agreements = agreement_agreement.find(obj => obj.employee == data.emp);
 		template_contract = getTemplateAgreement(agreements.position, agreements.type);
 		agreement_id = data.id;
-
 
 		$('#emp_id').textbox('setValue', emp.number);
 		$('#emp_name').textbox('setValue', emp.name);
@@ -1009,6 +1041,8 @@
 					var allowances = $('#tb_allowance tr');
 					var data_allowances = [];
 
+		            if (agreement_setup_salary_req) { arr.push(amount); arr.push(bpjs); }
+
 					for (var i = 0; i < allowances.length; i++) {
 						var allow = $(allowances[i]).find('.easyui-combobox').combobox('getValue');
 						var amount = parseInt($(allowances[i]).find('.easyui-numberbox').numberbox('getValue'));
@@ -1018,8 +1052,6 @@
 
 		            	if (allow != '' && amount != NaN) { data_allowances.push({allow: allow, amount: amount}); }
 		            }
-
-		            if (agreement_setup_salary_req) { arr.push(amount); arr.push(bpjs); }
 
 					if (arr.includes('')) { toastr.warning('Please fill in the required input form!', 'Warning'); }
 					else {
@@ -1037,12 +1069,15 @@
 							emp_type: window.btoa(emp_type),
 							position_agreement: window.btoa(position_agreement),
 							group: window.btoa(group),
-							notes: window.btoa($('#notes').textbox('getValue')),
-							allowances: window.btoa(JSON.stringify(data_allowances)),
-							component: window.btoa(component),
-							amount: window.btoa(amount),
-							bpjs: window.btoa(bpjs),
+							notes: window.btoa($('#notes').textbox('getValue'))
 						};
+
+						if (agreement_setup_salary_req) {
+							send.allowances = window.btoa(JSON.stringify(data_allowances));
+							send.component = window.btoa(component);
+							send.amount = window.btoa(amount);
+							send.bpjs = window.btoa(bpjs);
+						}
 
 						if ($('#attachment').filebox('getValue') != '') {
 							var file = $('#attachment').next().find('input[type=file]')[0].files[0];
@@ -2913,6 +2948,7 @@
 						}]
 					],
 				}).datagrid('enableFilter');
+
 			} else if (table == "setup_salaries") {
 
 				$('#dg_approval').datagrid({
@@ -3647,6 +3683,7 @@
 						}]
 					],
 				}).datagrid('enableFilter');
+
 			} else if (table == "setup_allowances") {
 
 				$('#dg_approval').datagrid({
