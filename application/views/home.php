@@ -996,12 +996,19 @@
 		for (var i = 0; i < all_tr.length; i++) {
 			var setup = setups[i];
 			var elem = $(all_tr[i]);
+			var elem_allow = elem.find('.easyui-combobox');
 			var elem_amount = elem.find('.easyui-numberbox');
 			var get = agreement_allowance.find(obj => obj.id == setup.id);
 
-			$(elem.find('.easyui-combobox')).combobox('setValue', setup.id);
+			$(elem_allow).combobox('setValue', setup.id);
+			if (!agreement_setup_salary_req) {
+				$(elem_allow).combobox('disable');
+				$(elem.find('.easyui-linkbutton')).linkbutton('disable');
+			}
+
 			$(elem_amount).numberbox('setValue', setup.amount).numberbox('disable');
-			if (get.amount != undefined) { if (get.amount == '0') { $(elem_amount).numberbox('enable'); } }
+			if (get.amount != undefined && agreement_setup_salary_req)
+				{ if (get.amount == '0') { $(elem_amount).numberbox('enable'); } }
 		}
 
 		agreement_select_salary = agreement_salary.find(obj => obj.employee == data.emp);
@@ -1202,7 +1209,7 @@
 			var input1 = $('<input class="easyui-combobox allows" style="width: 190px;" required>');
 			var input2 = $('<input class="easyui-numberbox" style="width: 100px;" required>');
 			var btnDelete = $('<a href="javascript:void(0)" class="easyui-linkbutton"></a>').linkbutton({plain: true, iconCls: 'icon-clear'});
-	        btnDelete.on("click", function () { row.remove(); });
+			if (agreement_setup_salary_req) { btnDelete.on("click", function () { row.remove(); }); }
 
 			row.append($('<td>').append(input1));
 			row.append($('<td>').append(input2));
