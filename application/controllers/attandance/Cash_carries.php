@@ -581,7 +581,7 @@ class Cash_carries extends CI_Controller
 
             $this->db->where('b.contract_id !=', 20250704000001);
 
-            $this->db->where('b.group_id !=', 20221119000002);
+            $this->db->where_not_in('b.group_id', [20221119000002, 20251124000001]);
 
             $this->db->where('b.status', 0);
 
@@ -2046,7 +2046,7 @@ class Cash_carries extends CI_Controller
 
         $this->db->where('b.contract_id !=', 20221119000003);
         $this->db->where('b.contract_id !=', 20250704000001);
-        $this->db->where('b.group_id !=', 20221119000002);
+        $this->db->where_not_in('b.group_id', [20221119000002, 20251124000001]);
 
         $this->db->where('b.status', 0);
 

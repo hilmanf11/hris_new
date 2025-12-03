@@ -597,7 +597,7 @@ class Cash_carries_harian_lepas extends CI_Controller
             $this->db->where('a.deleted', 0);
 
             $this->db->where_in('b.contract_id', [20221119000003, 20250704000001]);
-            $this->db->where_in('b.group_id', [20221119000002]);
+            $this->db->where_in('b.group_id', [20221119000002, 20251124000001]);
 
             $this->db->like('b.departement_id', $aprvDepartement);
 
@@ -667,7 +667,7 @@ class Cash_carries_harian_lepas extends CI_Controller
 
             $records = $this->db->get()->result_array();
 
-
+            // die($this->db->last_query());
 
             $datas = [];
 
@@ -2048,7 +2048,7 @@ class Cash_carries_harian_lepas extends CI_Controller
         $this->db->where('b.deleted', 0);
 
         $this->db->where_in('b.contract_id', [20221119000003, 20250704000001]);
-        $this->db->where_in('b.group_id', [20221119000002]);
+        $this->db->where_in('b.group_id', [20221119000002, 20251124000001]);
 
         $this->db->where('b.status', 0);
 
