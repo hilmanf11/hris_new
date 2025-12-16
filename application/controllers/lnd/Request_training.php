@@ -62,7 +62,7 @@ class Request_training extends CI_Controller {
         $this->db->start_cache(); // Cache query sebelum count_all_results
 
         // Tambahkan DISTINCT pada select
-        $this->db->select('DISTINCT
+        $this->db->distinct()->select('DISTINCT
             a.*,
             DATE_FORMAT(a.suggestDateTraining, "%Y-%m-%d") as suggestDate,
             a.status as statusTraining,
