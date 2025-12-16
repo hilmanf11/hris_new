@@ -6,6 +6,7 @@
             <th rowspan="2" data-options="field:'image_profile',width:35,halign:'center',formatter:FormatterImage">Foto</th>
             <th rowspan="2" data-options="field:'print',width:75,align:'center', formatter:btnPrint">Print Detail</th>
             <th rowspan="2" data-options="field:'details',width:50,halign:'center',formatter:FormatterDetail">Detail</th>
+            <th rowspan="2" data-options="field:'id',width:50,halign:'center',formatter:FormatterCard">ID Card</th>
             <th rowspan="2" data-options="field:'number',width:120,halign:'center'">Employee ID</th>
             <th rowspan="2" data-options="field:'name',width:200,halign:'center'">Fullname</th>
             <th rowspan="2" data-options="field:'division_name',width:150,halign:'center'">Division</th>
@@ -496,6 +497,7 @@
 
 <!-- PDF -->
 <iframe id="printout" src="" style="width: 100%;" hidden></iframe>
+<iframe id="printidcard" src="" style="width: 100%;" hidden></iframe>
 
 <script>
     var url_division = '<?= base_url('employee/divisions/reads') ?>';
@@ -2594,6 +2596,10 @@
         return '<a class="button-green" style="width:100%;" href="<?= base_url('employee/employee_harian_lepas/details/') ?>' + row.id + '/<?= $id_menu ?>"><i class="fa fa-user"></i></a>';
     };
 
+    function FormatterCard(value, row, index) {
+        return '<a class="btn btn-info w-100" style="width: 100%; pointer-events: visible; opacity: 1;" href="#" onClick="print_employee_card('+"'"+window.btoa(row.id)+"'"+')"><i class="fa fa-id-card-clip"></i></a>';
+    }
+
     function btnPrint(val, row) {
         var print = "print_employee_detail('" + row.number + "')";
         return '<a class="btn btn-primary w-100" onClick="' + print + '" style="pointer-events: visible; opacity:1;"><i class="fa fa-print"></i></a>';
@@ -2601,6 +2607,11 @@
 
     function print_employee_detail(employee_number) {
         window.open("<?= base_url('employee/employee_harian_lepas/print_employee_detail/') ?>" + window.btoa(employee_number), "_blank", "width=1200,height=600");
+    }
+
+    function print_employee_card(id) {
+        $("#printidcard").attr("src", "<?= base_url('employee/employees/cards/') ?>"+id);
+        setTimeout(function () { $("#printidcard").attr("src", ""); }, 1000);
     }
 
     function FormatterDate(val) {

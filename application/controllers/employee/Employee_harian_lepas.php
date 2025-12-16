@@ -58,6 +58,86 @@ class Employee_harian_lepas extends CI_Controller
         }
     }
 
+    //ID CARD
+    public function cards($id)
+    {
+        if (empty($this->session->username)) { redirect('error_session'); }
+        else {
+            $id = base64_decode($id);
+            $img = base_url('assets/image/users/default.png');
+
+            $this->db->distinct()->select(
+                "TRIM(a.image_profile) AS img,".
+                "TRIM(a.name) AS name,".
+                "COALESCE(TRIM(b.name), '') AS dept,".
+                "TRIM(c.name) AS sub_dept,".
+                "TRIM(d.name) AS position,".
+                "DATE(a.date_sign) AS date,".
+                "TRIM(a.number) AS nik,".
+                "TRIM(a.division_id) AS division"
+            )->from("employees a")
+                ->join("departements b", "a.departement_id = b.id")
+                ->join("departement_subs c", "a.departement_sub_id = c.id")
+                ->join("positions d", "a.position_id = d.id")
+            ->where("a.id", $id);
+            $get = $this->db->get()->row();
+
+            // $temp = 'bri';
+            $temp = ($get->division == '20240531000001') ? 'ki' : 'bei';
+            $img_card = base_url('template/id_card_'.$temp.'.png');
+            $date = date('d/m/Y', strtotime($get->date));
+            if (!empty($get->img)) { $img = $get->img; }
+
+            $loc = 'assets/image/qrcode/employee_harian_lepas/';
+            if (!is_dir(FCPATH.$loc)) { mkdir($loc, 0777, true); }
+            $path = $loc.'qr_'.$get->nik.'.png';
+            $this->ciqrcode->generate([
+                'data' => "Name: ".ucfirst($get->name).
+                    "\nEmployee ID: ".$get->nik.
+                    "\nDepartment: ".strtoupper($get->dept).
+                    "\nPosition: ".strtoupper($get->position),
+                'savename' => FCPATH.$path,
+                'level' => 'H',
+                'size' => 2
+            ]);
+            $qrcode = base_url($path);
+            // $print = '';
+            $print = 'onload="window.print()"';
+
+            echo <<<HTML
+                <html>
+                    <head>
+                        <title>ID Card - $get->name</title>
+                        <style>body { font-family: "Cambria", Georgia, serif; }</style>
+                    </head>
+                    <body $print>
+                        <div style="width: 10.4cm; height: 8.8cm; position: relative;" valign="top">
+                            <img src="$img_card" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: -1;">
+                            <table style="width: 100%; height: 100%;">
+                                <tr><td colspan="2" align="center" valign="middle" style="height: 154px;">
+                                    <img src="$img" style="border-radius: 50%; width: 90px; height: 87px; margin-top: 14px;">
+                                </td><td style="width: 52%;" rowspan="6"></td></tr>
+                                <tr><td colspan="2" style="padding-left: 13px; height: 37px;">
+                                    <p style="margin: 0; font-size: 9pt; font-weight: bold;">{$get->name}</p>
+                                    <p style="margin: 0; font-size: 5pt;">Dept: {$get->dept}-{$get->sub_dept}</p>
+                                </td></tr>
+                                <tr>
+                                    <td style="width: 24%; padding-left: 13px; height: 85px;" rowspan="3">
+                                        <img src="$qrcode" style="width: 76px; height: 81px;">
+                                    </td>
+                                    <td style="width: 24%; height: 31px; font-size: 6pt; padding-left: 9px; padding-top: 15px;">{$get->position}</td>
+                                </tr>
+                                <tr><td style="height: 20px; font-size: 6pt; padding-left: 9px; padding-top: 6px;">$date</td></tr>
+                                <tr><td style="height: 29px; font-size: 6pt; padding-left: 9px; padding-top: 1px;">{$get->nik}</td></tr>
+                                <tr><td colspan="3">&nbsp;</td></tr>
+                            </table>
+                        </div>
+                    </body>
+                </html>
+            HTML;
+        }
+    }
+
     //GET DATA
     public function reads($status = 0)
     {
@@ -434,70 +514,75 @@ class Employee_harian_lepas extends CI_Controller
         $rows   = isset($rows) ? intval($rows) : 10;
         $offset = ($page - 1) * $rows;
         $result = array();
-        //Select Query
-        $this->db->select('a.*,
-                c.name as division_name, 
-                d.name as departement_name, 
-                e.name as departement_sub_name,
-                e.proses,
-                e.sub_proses,
-                (case when a.job_type is null then e.type else a.job_type end) as type, 
-                g.name as position_name,
-                h.name as contract_name,
-                i.resign_date,
-                (CASE WHEN i.resign_date IS NOT NULL THEN LAST_DAY(i.resign_date) ELSE NULL END) as cutoff_date,
-                j.name as shift_name');
-        $this->db->from('employees a');
-        $this->db->join('divisions c', 'c.id = a.division_id');
-        $this->db->join('departements d', 'd.id = a.departement_id');
-        $this->db->join('departement_subs e', 'e.id = a.departement_sub_id');
-        $this->db->join('positions g', 'g.id = a.position_id', 'left');
-        $this->db->join('contracts h', 'h.id = a.contract_id', 'left');
-        $this->db->join('resignations i', 'a.id = i.employee_id', 'left');
-        $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
-        $this->db->join('shifts j', 'f.shift_id = j.id', 'left');
-        $this->db->where('a.deleted', 0);
-        $this->db->where_in('a.contract_id', [20221119000003, 20250704000001]);
-        $this->db->where_in('a.group_id', [20221119000002, 20251124000001]);
-        if($filter_from_join != ""  && $filter_to_join != ""){
-            $this->db->where("a.date_sign between '$filter_from_join' and '$filter_to_join'");
-        }
-        if($filter_resign == "1"){
-            $this->db->where("i.resign_date is not null");
-        }
-        if ($filter_status == "") {
-            $this->db->where('a.status', 0);
-        } else {
-            $this->db->like('a.status', $filter_status);
-        }
-        $this->db->like('a.departement_id', $aprvDepartement);
-        $whereService1;
-        $whereService2;
-        $whereExpired;
-        $this->db->like("a.division_id", $filter_divisions);
-        $this->db->like("a.departement_id", $filter_departements);
-        $this->db->like("a.departement_sub_id", $filter_departement_subs);
-        $this->db->like("a.id", $filter_employees);
-        $this->db->like("a.position_id", $filter_positions);
-        $this->db->like("a.contract_id", $filter_contracts);
-        $this->db->like("a.group_id", $filter_groups);
-        $this->db->like("a.religion_id", $filter_religions);
-        $this->db->like("a.marital_id", $filter_maritals);
-        if($filter_shift != ""){
-            $this->db->like("j.id", $filter_shift);
-        }
-        $this->db->order_by('a.name', 'ASC');
-        //Total Data
-        $totalRows = $this->db->count_all_results('', false);
-        //Limit 1 - 10
-        $this->db->limit($rows, $offset);
-        //Get Data Array
-        $records = $this->db->get()->result_array();
+        $data = array();
+        $totalRows = 0;
 
-        //Mapping Data
-        $data  = array();
-        foreach ($records as $record) {
-            $data[] =  array_merge($record, array("service" => $this->readService($record['date_sign'])));
+        if ($filter_resign != "1" || $filter_status != "0") {
+            //Select Query
+            $this->db->select('a.*,
+                    c.name as division_name, 
+                    d.name as departement_name, 
+                    e.name as departement_sub_name,
+                    e.proses,
+                    e.sub_proses,
+                    (case when a.job_type is null then e.type else a.job_type end) as type, 
+                    g.name as position_name,
+                    h.name as contract_name,
+                    i.resign_date,
+                    (CASE WHEN i.resign_date IS NOT NULL THEN LAST_DAY(i.resign_date) ELSE NULL END) as cutoff_date,
+                    j.name as shift_name');
+            $this->db->from('employees a');
+            $this->db->join('divisions c', 'c.id = a.division_id');
+            $this->db->join('departements d', 'd.id = a.departement_id');
+            $this->db->join('departement_subs e', 'e.id = a.departement_sub_id');
+            $this->db->join('positions g', 'g.id = a.position_id', 'left');
+            $this->db->join('contracts h', 'h.id = a.contract_id', 'left');
+            $this->db->join('resignations i', 'a.id = i.employee_id', 'left');
+            $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
+            $this->db->join('shifts j', 'f.shift_id = j.id', 'left');
+            $this->db->where('a.deleted', 0);
+            $this->db->where_in('a.contract_id', [20221119000003, 20250704000001]);
+            $this->db->where_in('a.group_id', [20221119000002, 20251124000001]);
+            if($filter_from_join != ""  && $filter_to_join != ""){
+                $this->db->where("a.date_sign between '$filter_from_join' and '$filter_to_join'");
+            }
+            if($filter_resign == "1"){
+                $this->db->where("i.resign_date is not null");
+            }
+            if ($filter_status == "") {
+                $this->db->where('a.status', 0);
+            } else {
+                $this->db->like('a.status', $filter_status);
+            }
+            $this->db->like('a.departement_id', $aprvDepartement);
+            $whereService1;
+            $whereService2;
+            $whereExpired;
+            $this->db->like("a.division_id", $filter_divisions);
+            $this->db->like("a.departement_id", $filter_departements);
+            $this->db->like("a.departement_sub_id", $filter_departement_subs);
+            $this->db->like("a.id", $filter_employees);
+            $this->db->like("a.position_id", $filter_positions);
+            $this->db->like("a.contract_id", $filter_contracts);
+            $this->db->like("a.group_id", $filter_groups);
+            $this->db->like("a.religion_id", $filter_religions);
+            $this->db->like("a.marital_id", $filter_maritals);
+            if($filter_shift != ""){
+                $this->db->like("j.id", $filter_shift);
+            }
+            $this->db->order_by('a.name', 'ASC');
+            //Total Data
+            $totalRows = $this->db->count_all_results('', false);
+            //Limit 1 - 10
+            $this->db->limit($rows, $offset);
+            //Get Data Array
+            $records = $this->db->get()->result_array();
+
+            //Mapping Data
+            $data  = array();
+            foreach ($records as $record) {
+                $data[] =  array_merge($record, array("service" => $this->readService($record['date_sign'])));
+            }
         }
 
         $result['total'] = $totalRows;
@@ -1148,70 +1233,73 @@ class Employee_harian_lepas extends CI_Controller
             $whereService2 = "";
         }
 
-        $this->db->select('a.*, 
-                c.number as division_number, 
-                c.name as division_name, 
-                d.number as departement_number, 
-                d.name as departement_name, 
-                e.number as departement_sub_number, 
-                e.name as departement_sub_name,
-                (case when a.job_type is null then e.type else a.job_type end) as type,
-                g.level,
-                g.number as position_number,
-                g.name as position_name,
-                h.number as contract_number,
-                h.name as contract_name,
-                i.number as group_number,
-                i.name as group_name,
-                j.number as religion_number,
-                j.name as religion_name,
-                k.number as marital_number,
-                k.name as marital_name,
-                l.number as source_number,
-                l.name as source_name,
-                n.name as shift_name');
-        $this->db->from('employees a');
-        $this->db->join('divisions c', 'c.id = a.division_id');
-        $this->db->join('departements d', 'd.id = a.departement_id');
-        $this->db->join('departement_subs e', 'e.id = a.departement_sub_id');
-        $this->db->join('positions g', 'g.id = a.position_id', 'left');
-        $this->db->join('contracts h', 'h.id = a.contract_id', 'left');
-        $this->db->join('groups i', 'i.id = a.group_id', 'left');
-        $this->db->join('religions j', 'j.id = a.religion_id', 'left');
-        $this->db->join('maritals k', 'k.id = a.marital_id', 'left');
-        $this->db->join('sources l', 'l.id = a.source_id', 'left');
-        $this->db->join('resignations m', 'a.id = m.employee_id', 'left');
-        $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
-        $this->db->join('shifts n', 'f.shift_id = n.id', 'left');
-        $this->db->where('a.deleted', 0);
-        $this->db->where_in('a.contract_id', [20221119000003, 20250704000001]);
-        $this->db->where_in('a.group_id', [20221119000002, 20251124000001]);
-        if($filter_from_join != ""  && $filter_to_join != ""){
-            $this->db->where("a.date_sign between '$filter_from_join' and '$filter_to_join'");
+        $records = [];
+        if ($filter_resign != "1" || $filter_status != "0") {
+            $this->db->select('a.*, 
+                    c.number as division_number, 
+                    c.name as division_name, 
+                    d.number as departement_number, 
+                    d.name as departement_name, 
+                    e.number as departement_sub_number, 
+                    e.name as departement_sub_name,
+                    (case when a.job_type is null then e.type else a.job_type end) as type,
+                    g.level,
+                    g.number as position_number,
+                    g.name as position_name,
+                    h.number as contract_number,
+                    h.name as contract_name,
+                    i.number as group_number,
+                    i.name as group_name,
+                    j.number as religion_number,
+                    j.name as religion_name,
+                    k.number as marital_number,
+                    k.name as marital_name,
+                    l.number as source_number,
+                    l.name as source_name,
+                    n.name as shift_name');
+            $this->db->from('employees a');
+            $this->db->join('divisions c', 'c.id = a.division_id');
+            $this->db->join('departements d', 'd.id = a.departement_id');
+            $this->db->join('departement_subs e', 'e.id = a.departement_sub_id');
+            $this->db->join('positions g', 'g.id = a.position_id', 'left');
+            $this->db->join('contracts h', 'h.id = a.contract_id', 'left');
+            $this->db->join('groups i', 'i.id = a.group_id', 'left');
+            $this->db->join('religions j', 'j.id = a.religion_id', 'left');
+            $this->db->join('maritals k', 'k.id = a.marital_id', 'left');
+            $this->db->join('sources l', 'l.id = a.source_id', 'left');
+            $this->db->join('resignations m', 'a.id = m.employee_id', 'left');
+            $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
+            $this->db->join('shifts n', 'f.shift_id = n.id', 'left');
+            $this->db->where('a.deleted', 0);
+            $this->db->where_in('a.contract_id', [20221119000003, 20250704000001]);
+            $this->db->where_in('a.group_id', [20221119000002, 20251124000001]);
+            if($filter_from_join != ""  && $filter_to_join != ""){
+                $this->db->where("a.date_sign between '$filter_from_join' and '$filter_to_join'");
+            }
+            if($filter_resign == "1"){
+                $this->db->where("m.resign_date is not null");
+            }
+            $this->db->like('a.status', $filter_status);
+            $this->db->like('a.departement_id', $aprvDepartement);
+            $whereService1;
+            $whereService2;
+            $whereExpired;
+            $this->db->like("a.division_id", $filter_divisions);
+            $this->db->like("a.departement_id", $filter_departements);
+            $this->db->like("a.departement_sub_id", $filter_departement_subs);
+            $this->db->like("a.id", $filter_employees);
+            $this->db->like("a.position_id", $filter_positions);
+            $this->db->like("a.contract_id", $filter_contracts);
+            $this->db->like("a.group_id", $filter_groups);
+            $this->db->like("a.religion_id", $filter_religions);
+            $this->db->like("a.marital_id", $filter_maritals);
+            if($filter_shift != ""){
+                $this->db->like("n.id", $filter_shift);
+            }
+            $this->db->order_by('a.name', 'ASC');
+            $this->db->group_by('a.number', 'ASC');
+            $records = $this->db->get()->result_array();
         }
-        if($filter_resign == "1"){
-            $this->db->where("m.resign_date is not null");
-        }
-        $this->db->like('a.status', $filter_status);
-        $this->db->like('a.departement_id', $aprvDepartement);
-        $whereService1;
-        $whereService2;
-        $whereExpired;
-        $this->db->like("a.division_id", $filter_divisions);
-        $this->db->like("a.departement_id", $filter_departements);
-        $this->db->like("a.departement_sub_id", $filter_departement_subs);
-        $this->db->like("a.id", $filter_employees);
-        $this->db->like("a.position_id", $filter_positions);
-        $this->db->like("a.contract_id", $filter_contracts);
-        $this->db->like("a.group_id", $filter_groups);
-        $this->db->like("a.religion_id", $filter_religions);
-        $this->db->like("a.marital_id", $filter_maritals);
-        if($filter_shift != ""){
-            $this->db->like("n.id", $filter_shift);
-        }
-        $this->db->order_by('a.name', 'ASC');
-        $this->db->group_by('a.number', 'ASC');
-        $records = $this->db->get()->result_array();
 
         $html = '<html><head><title>Print Data</title></head><style>body {font-family: Arial, Helvetica, sans-serif;}#customers {border-collapse: collapse;width: 100%;font-size: 12px;}#customers td, #customers th {border: 1px solid #ddd;padding: 2px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 2px;padding-bottom: 2px;text-align: left;color: black;}</style><body>
         <style> .str{ mso-number-format:\@; } </style>
