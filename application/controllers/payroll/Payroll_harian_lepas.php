@@ -102,7 +102,7 @@ class Payroll_harian_lepas extends CI_Controller
             $this->db->like('b.departement_id', $filter_departement);
             $this->db->like('b.departement_sub_id', $filter_departement_sub);
             $this->db->like('b.id', $filter_employee);
-            $this->db->where_in('b.contract_id', [20221119000003, 20250704000001]);  // Filter untuk kontrak harian lepas
+            $this->db->where_in('b.contract_id', [20221119000003]);  // Filter untuk kontrak harian lepas
             $this->db->where_in('b.group_id', [20221119000002]);  // Filter untuk group tertentu
             // $this->db->like('b.contract_id', $filter_employee_type);
             // $this->db->like('c.group_id', $filter_group);
@@ -280,7 +280,7 @@ class Payroll_harian_lepas extends CI_Controller
                 AND a.departement_id LIKE '%$filter_departement%'
                 AND a.departement_sub_id LIKE '%$filter_departement_sub%'
                 AND a.id LIKE '%$filter_employee%'
-                AND a.contract_id IN (20221119000003, 20250704000001)
+                AND a.contract_id IN (20221119000003)
                 AND a.group_id IN (20221119000002)
                 GROUP BY a.id
                 ORDER BY b.name ASC, c.name ASC, d.name ASC");
@@ -1117,7 +1117,7 @@ class Payroll_harian_lepas extends CI_Controller
             AND b.departement_id LIKE '%$filter_departement%'
             AND b.departement_sub_id LIKE '%$filter_departement_sub%'
             AND a.employee_id LIKE '%$filter_employee%'
-            AND b.contract_id IN (20221119000003, 20250704000001)
+            AND b.contract_id IN (20221119000003)
             AND b.group_id IN (20221119000002)
             GROUP BY a.employee_id
             ORDER BY a.name ASC");
