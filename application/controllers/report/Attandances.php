@@ -650,13 +650,13 @@ class Attandances extends CI_Controller
 
 
 
-                    if (@$shift->start >= @$attandance->time_in) {
-
-                        $status_masuk = "ON TIME";
-
-                    } elseif (@$shift->start == null) {
+                    if (@$shift->start == null) {
 
                         $status_masuk = "UN SETTING";
+
+                    } elseif (@$shift->start >= @$attandance->time_in) {
+
+                        $status_masuk = "ON TIME";
 
                     } elseif (@$shift->start <= @$attandance->time_in) {
 
@@ -775,110 +775,92 @@ class Attandances extends CI_Controller
 
                     }
 
+                    $style_status = '';
+                    if (
+                        empty($attandance->time_in)
+                        && empty($attandance->time_out)
+                        && $holiday != 'Weekend'
+                    ) {
 
-
-                    if (@$attandance->time_in == null && $holiday != 'Weekend') {
 
                         if (@$permit->permit_name != null) {
 
-                            $attandance_status = @strtoupper($permit->permit_name);
-
+                            $attandance_status = strtoupper($permit->permit_name);
                             $style_status = "style='color:black; font-weight:bold;'";
 
-                        } elseif (@$change_day->start != null) {
+                        } elseif (!empty($change_day->start)) {
 
-                            // Cek apakah ada kehadiran di tanggal change days to
-
+                            // Cek kehadiran di tanggal END
                             $this->db->select("date_in, time_in, date_out, time_out");
-
                             $this->db->from('attandances');
-
-                            $this->db->where("date_in = '$change_day->end'");
-
+                            $this->db->where('date_in', $change_day->end);
                             $this->db->where('number', $record['number']);
-
                             $this->db->order_by('date_in', 'asc');
 
                             $attandance_change_day = $this->db->get()->row();
 
-                            
+                            $attandance_status = "ABSENCE";
+                            $style_status = "style='color:red; font-weight:bold;'";
 
-                            if (@$attandance_change_day->time_in != null) {
-
-                                $attandance_status = "";
-
-                                $style_status = "style='color:red; font-weight:bold;'";
-
-                            } else {
-
-                                $attandance_status = "ABSENCE";
-
-                                $style_status = "style='color:red; font-weight:bold;'";
-
+                            if (!empty($attandance_change_day)) {
+                                if (!empty($attandance_change_day->time_in)) {
+                                    $attandance_status = "";
+                                    $style_status = "";
+                                } elseif (!empty($attandance_change_day->time_out)) {
+                                    $attandance_status = "UN CHECK IN";
+                                    $style_status = "style='color:blue; font-weight:bold;'";
+                                }
                             }
 
-                        } elseif (@$change_day_end->end != null) {
+                        } elseif (!empty($change_day_end->end)) {
 
-                            // Cek apakah ada kehadiran di tanggal change days from
-
+                            // Ambil attendance dari tanggal START
                             $this->db->select("date_in, time_in, date_out, time_out");
-
                             $this->db->from('attandances');
-
-                            $this->db->where("date_in = '$change_day_end->start'");
-
+                            $this->db->where('date_in', $change_day_end->start);
                             $this->db->where('number', $record['number']);
-
                             $this->db->order_by('date_in', 'asc');
 
                             $attandance_change_day_from = $this->db->get()->row();
 
-                            
+                            $attandance_status = "ABSENCE";
+                            $style_status = "style='color:red; font-weight:bold;'";
 
-                            if (@$attandance_change_day_from->time_in != null) {
-
+                            if (
+                                !empty($attandance_change_day_from) &&
+                                (
+                                    !empty($attandance_change_day_from->time_in) ||
+                                    !empty($attandance_change_day_from->time_out)
+                                )
+                            ) {
                                 $attandance_status = "";
-
-                                $style_status = "style='color:red; font-weight:bold;'";
-
-                            } else {
-
-                                $attandance_status = "ABSENCE";
-
-                                $style_status = "style='color:red; font-weight:bold;'";
-
+                                $style_status = "";
                             }
 
                         } elseif ($holiday != null) {
 
                             $attandance_status = "";
-
                             $style_status = "style='color:red; font-weight:bold;'";
 
-                        } elseif (@$attandance->time_in == null && @$attandance->time_out != null) {
+                        } elseif (@$attandance->time_out != null) {
 
                             $attandance_status = "UN CHECK IN";
-
                             $style_status = "style='color:blue; font-weight:bold;'";
 
                         } elseif ($record['date_sign'] > $working_date) {
 
                             $attandance_status = "NOT JOIN YET";
-
                             $style_status = "style='color:blue; font-weight:bold;'";
 
                         } elseif (!empty($resignation)) {
 
                             $attandance_status = "RESIGN";
-
                             $style_status = "style='color:red; font-weight:bold;'";
 
                         } else {
 
                             $attandance_status = "ABSENCE";
-
                             $style_status = "style='color:red; font-weight:bold;'";
-
                         }
 
                     } else {
@@ -886,37 +868,53 @@ class Attandances extends CI_Controller
                         if ($holiday == "Weekend") {
 
                             $attandance_status = "";
-
                             $shiftName = "";
 
                         } elseif (@$permit->permit_name != null) {
 
-                            $attandance_status = @strtoupper($permit->permit_name);
-
+                            $attandance_status = strtoupper($permit->permit_name);
                             $shiftName = "";
 
                         } else {
 
-                            $attandance_status = @$status_masuk;
+                            // Tidak ada check-in tapi ada check-out → UN CHECK IN
+                            if (
+                                empty($attandance->time_in)
+                                && !empty($attandance->time_out)
+                            ) {
 
-                            $shiftName = @$shift->name . " - " . @$shift->shift_name;
+                                $attandance_status = "UN CHECK IN";
+                                $style_status = "style='color:blue; font-weight:bold;'";
+                                $shiftName = "";
+
+                            } else {
+
+                                $attandance_status = @$status_masuk;
+                                $shiftName = @$shift->name . " - " . @$shift->shift_name;
+
+                            }
 
                         }
 
+                        // die($status_masuk);
 
+                        // if (@$status_masuk == "LATE") {
 
-                        if (@$status_masuk == "LATE") {
+                        //     $style_status = "style='color:red; font-weight:bold;'";
 
-                            $style_status = "style='color:red; font-weight:bold;'";
+                        // } else if (@$status_masuk == "ON TIME") {
 
-                        } else if (@$status_masuk == "ON TIME") {
+                        //     $style_status = "style='color:green; font-weight:bold;'";
 
-                            $style_status = "style='color:green; font-weight:bold;'";
+                        // } else {
 
-                        } else {
+                        //     $style_status = "style='color:orange; font-weight:bold;'";
 
-                            $style_status = "style='color:orange; font-weight:bold;'";
+                        // }
 
+                        if (empty($style_status)) {
+                            if (@$status_masuk == "LATE") { $style_status = "style='color:red; font-weight:bold;'"; }
+                            elseif (@$status_masuk == "ON TIME") { $style_status = "style='color:green; font-weight:bold;'"; }
                         }
 
                     }
