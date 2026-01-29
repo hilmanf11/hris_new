@@ -346,6 +346,7 @@
 
     <?= $button ?>
 
+    <a href="javascript:;" class="easyui-linkbutton" plain="true" onclick="printcsv()"><i class="fa fa-file"></i> Export to CSV</a>
 </div>
 
 
@@ -376,6 +377,27 @@
 
 </div>
 
+
+<div id="dlg_csv" class="easyui-dialog" title="Export CSV" data-options="closed: true,modal:true" style="width: 400px; padding:10px; top: 20px;">
+    <form id="frm_csv" method="post" novalidate>
+        <fieldset style="width:100%; border:1px solid #d0d0d0; margin-bottom: 10px; border-radius:4px; float: left;">
+            <legend><b>Export CSV</b></legend>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Account No</span>
+                <input style="width:60%;" name="payroll_bank_id" id="payroll_bank_id" required="" class="easyui-combogrid">
+            </div>
+            
+        </fieldset>
+        <div style="text-align:right; padding-top:10px;">
+            <a href="javascript:void(0)"
+               class="easyui-linkbutton"
+               iconCls="icon-file"
+               onclick="exportCSV()">
+                Export CSV
+            </a>
+        </div>
+    </form>
+</div>
 
 
 <!-- PDF -->
@@ -1644,6 +1666,68 @@
 
         }
 
+    }
+
+    function printcsv() {
+        let filter_from = $("#filter_from").combogrid('getValue');
+        let filter_to = $("#filter_to").textbox('getValue');
+
+        if (filter_from == "" || filter_to == "") {
+            toastr.warning("Please Enter Cut Off Period");
+        } else {
+            $('#dlg_csv').dialog('open');    
+    
+            $('#payroll_bank_id').combogrid({
+                url: "<?= base_url('payroll/payroll_account/datatables') ?>",
+                panelWidth: 600,
+                idField: 'id',
+                textField: 'accoun',
+                mode: 'remote',
+                fitColumns: true,
+                prompt: 'Account No',
+                columns: [
+                    [{
+                        field: 'bank',
+                        title: 'Bank',
+                        width: 200
+                    }, {
+                        field: 'account',
+                        title: 'Account No',
+                        width: 200
+                    }]
+                ],
+            });
+        }
+    }
+
+    function exportCSV() {
+        var filter_from = $("#filter_from").combogrid('getValue');
+        var filter_to = $("#filter_to").textbox('getValue');
+        var filter_division = $("#filter_division").combobox('getValue');
+        var filter_departement = $("#filter_departement").combobox('getValue');
+        var filter_departement_sub = $("#filter_departement_sub").combobox('getValue');
+        var filter_employee = $("#filter_employee").combogrid('getValue');
+        var filter_employee_type = $("#filter_employee_type").combobox('getValue');
+        var filter_group = $("#filter_group").combobox('getValues');
+        var filter_status = $("#filter_status").combobox('getValue');
+        var payroll_bank_id = $("#payroll_bank_id").combobox('getValue');
+
+        var url = "?filter_from=" + filter_from +
+            "&filter_to=" + filter_to +
+            "&filter_division=" + filter_division +
+            "&filter_departement=" + filter_departement +
+            "&filter_departement_sub=" + filter_departement_sub +
+            "&filter_employee=" + filter_employee +
+            "&filter_employee_type=" + filter_employee_type +
+            "&filter_status=" + filter_status +
+            "&filter_group=" + filter_group +
+            "&payroll_bank_id=" + payroll_bank_id;
+
+        if (payroll_bank_id == "") {
+            toastr.warning("Please Enter Account No");
+        } else {
+            window.location.assign('<?= base_url('payroll/payrolls/printcsv') ?>' + url);
+        }
     }
 
 </script>
