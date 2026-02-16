@@ -895,7 +895,7 @@ class Cash_carries_harian_lepas extends CI_Controller
 
                                         <th width="100" style="text-align:center;">LEADER HR</th>
 
-                                        <th width="100" style="text-align:center;">PAYROLL STAFF</th>
+                                        <th width="100" style="text-align:center;">HR-GENERALIST</th>
 
                                     </tr>
 
@@ -1218,7 +1218,7 @@ class Cash_carries_harian_lepas extends CI_Controller
                                 <td style="text-align:center;font-weight:bold;">Maya Evilia</td>
                                 <td style="text-align:center;font-weight:bold;">Rizki Andri S</td>
                                 <td style="text-align:center;font-weight:bold;">Nia Nurazizah</td>
-                                <td style="text-align:center;font-weight:bold;">Jihan Maharani</td>
+                                <td style="text-align:center;font-weight:bold;">Winda Nuraeni Azizah</td>
                             </tr>
                              <tr>
                                 <td style="text-align:center;">BOD</td>
@@ -1226,7 +1226,7 @@ class Cash_carries_harian_lepas extends CI_Controller
                                 <td style="text-align:center;">Leader FAT Cost Control</td>
                                 <td style="text-align:center;">Asst Manager HRD-GA</td>
                                 <td style="text-align:center;">Leader HR</td>
-                                <td style="text-align:center;">Staff HR-Payroll</td>
+                                <td style="text-align:center;">HR-GENERALIST</td>
                             </tr>
                         </table>
                     </center>';

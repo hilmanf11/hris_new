@@ -515,7 +515,7 @@ class Summary_payrolls extends CI_Controller
                             <th style="text-align:center;">LEADER</th>
                             <th style="text-align:center;">ASSISTANT MANAGER</th>
                             <th style="text-align:center;">LEADER</th>
-                            <th style="text-align:center;">PAYROLL STAFF</th>
+                            <th style="text-align:center;">HR-GENERALIST</th>
                         </tr>
                     </table>
                 </center><br><br><br>';
@@ -793,7 +793,7 @@ class Summary_payrolls extends CI_Controller
                             <td style="text-align:center;">Maya Evilia</td>
                             <td style="text-align:center;">Rizki Andri S</td>
                             <td style="text-align:center;">Nia Nurazizah</td>
-                            <td style="text-align:center;">Jihan Maharani</td>
+                            <td style="text-align:center;">Winda Nuraeni Azizah</td>
                         </tr>
                         <tr>
                             <td style="border:none;"></td>
@@ -802,7 +802,7 @@ class Summary_payrolls extends CI_Controller
                             <th style="text-align:center;">Leader FAT Cost Control</th>
                             <th style="text-align:center;">Asst Manager HRD-GA</th>
                             <th style="text-align:center;">Leader HR</th>
-                            <th style="text-align:center;">HR-Payroll</th>
+                            <th style="text-align:center;">HR-Generalist</th>
                         </tr>
                     </table><br>';
                 } else {

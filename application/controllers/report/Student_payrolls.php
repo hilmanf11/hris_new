@@ -415,7 +415,7 @@ class Student_payrolls extends CI_Controller
                                                 <th style="text-align:center;">LEADER</th>
                                                 <th style="text-align:center;">ASSISTANT MANAGER</th>
                                                 <th style="text-align:center;">LEADER</th>
-                                                <th style="text-align:center;">PAYROLL STAFF</th>
+                                                <th style="text-align:center;">HR-GENERALIST</th>
                                             </tr>
                                         </table>
                                     </center>';
@@ -602,7 +602,7 @@ class Student_payrolls extends CI_Controller
                                         <th style="text-align:center;">LEADER</th>
                                         <th style="text-align:center;">ASSISTANT MANAGER</th>
                                         <th style="text-align:center;">LEADER</th>
-                                        <th style="text-align:center;">PAYROLL STAFF</th>
+                                        <th style="text-align:center;">HR-GENERALIST</th>
                                     </tr>
                                 </table>
                             </center>';

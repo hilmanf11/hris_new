@@ -413,7 +413,7 @@ class Summary_labour extends CI_Controller
                     <td style="text-align:center;">Maya Evilia</td>
                     <td style="text-align:center;">Rizki Andri S</td>
                     <td style="text-align:center;">Nia Nurazizah</td>
-                    <td style="text-align:center;">Jihan Maharani</td>
+                    <td style="text-align:center;">Winda Nuraeni Azizah</td>
                 </tr>
                 <tr>
                     <td style="border:none;"></td>

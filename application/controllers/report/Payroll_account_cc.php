@@ -834,7 +834,7 @@ class Payroll_account_cc extends CI_Controller
 
                             <th style="text-align:center;">LEADER</th>
 
-                            <th style="text-align:center;">PAYROLL STAFF</th>
+                            <th style="text-align:center;">HR-GENERALIST</th>
 
                         </tr>
 
