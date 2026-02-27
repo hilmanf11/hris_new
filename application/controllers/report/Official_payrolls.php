@@ -971,7 +971,7 @@ class Official_payrolls extends CI_Controller
 
                     <tr>
 
-                        <th rowspan="2" colspan="2" style="text-align:center;">APPROVED</th>
+                        <th rowspan="2" style="text-align:center;">APPROVED</th>
 
                         <th colspan="3" style="text-align:center;">CONFIRM OK</th>
 
@@ -993,8 +993,6 @@ class Official_payrolls extends CI_Controller
 
                         <td style="height:60px;" width="100"></td>
 
-                        <td style="height:60px;" width="100"></td>
-
                         <td style="height:60px;"></td>
 
                         <td style="height:60px;"></td>
@@ -1006,8 +1004,6 @@ class Official_payrolls extends CI_Controller
                     </tr>
 
                     <tr>
-
-                        <td>&nbsp;</td>
 
                         <td>&nbsp;</td>
 
@@ -1024,8 +1020,6 @@ class Official_payrolls extends CI_Controller
                     <tr>
 
                         <th style="text-align:center;">BOD</th>
-
-                        <th style="text-align:center;">GENERAL MANAGER</th>
 
                         <th style="text-align:center;">LEADER</th>
 

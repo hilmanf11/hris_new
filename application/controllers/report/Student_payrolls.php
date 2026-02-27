@@ -202,6 +202,7 @@ class Student_payrolls extends CI_Controller
             if (@$records[0]['group_name'] == "MAGANG") {
                 $grandtotal = 0;
                 $autoid = 0;
+                $name_bf = '';
                 foreach ($records as $record) {
                     $autoid++;
                     $query = $this->db->query("SELECT a.*, b.bank_branch, b.bank_no, b.national_id FROM payrolls a
@@ -219,7 +220,10 @@ class Student_payrolls extends CI_Controller
                     $rows = 20;
                     $page = ceil(count($recordEmployees) / $rows);
 
-                    $html .= '<div style="page-break-after:always;">';
+                    if ($page != 0 && $name_bf != $record['source_name']) {
+                        if (!empty($name_bf)) { $html .= '<div style="page-break-after:always;"></div>'; }
+                        $name_bf = $record['source_name'];
+                    }
                     $no = 1;
                     $hal = 1;
                     $totalgroup = 0;
@@ -384,7 +388,7 @@ class Student_payrolls extends CI_Controller
                             $html .= '<center>
                                         <table id="customers" style="width:70%;">
                                             <tr>
-                                                <th rowspan="2" colspan="2" style="text-align:center;">APPROVED</th>
+                                                <th rowspan="2" style="text-align:center;">APPROVED</th>
                                                 <th colspan="3" style="text-align:center;">CONFIRM OK</th>
                                                 <th rowspan="2" width="100" style="text-align:center;">PREPARED</th>
                                             </tr>
@@ -395,14 +399,12 @@ class Student_payrolls extends CI_Controller
                                             </tr>
                                             <tr>
                                                 <td style="height:60px;" width="100"></td>
-                                                <td style="height:60px;" width="100"></td>
                                                 <td style="height:60px;"></td>
                                                 <td style="height:60px;"></td>
                                                 <td style="height:60px;"></td>
                                                 <td style="height:60px;"></td>
                                             </tr>
                                             <tr>
-                                                <td>&nbsp;</td>
                                                 <td>&nbsp;</td>
                                                 <td>&nbsp;</td>
                                                 <td>&nbsp;</td>
@@ -411,7 +413,6 @@ class Student_payrolls extends CI_Controller
                                             </tr>
                                             <tr>
                                                 <th style="text-align:center;">BOD</th>
-                                                <th style="text-align:center;">GENERAL MANAGER</th>
                                                 <th style="text-align:center;">LEADER</th>
                                                 <th style="text-align:center;">ASSISTANT MANAGER</th>
                                                 <th style="text-align:center;">LEADER</th>
@@ -455,7 +456,7 @@ class Student_payrolls extends CI_Controller
                     $rows = 20;
                     $page = ceil(count($payrolls) / $rows);
 
-                    $html2 .= '<div style="page-break-after:always;">';
+                    // $html2 .= '<div style="page-break-after:always;">';
                     $no = 1;
                     $hal = 1;
                     $grandgroup=0;
@@ -579,7 +580,7 @@ class Student_payrolls extends CI_Controller
                             $html2 .= '<center>
                                 <table id="customers" style="width:70%;">
                                     <tr>
-                                        <th rowspan="2" colspan="2" style="text-align:center;">APPROVED</th>
+                                        <th rowspan="2" style="text-align:center;">APPROVED</th>
                                         <th colspan="3" style="text-align:center;">CONFIRM OK</th>
                                         <th rowspan="2" width="100" style="text-align:center;">PREPARED</th>
                                     </tr>
@@ -590,7 +591,6 @@ class Student_payrolls extends CI_Controller
                                     </tr>
                                     <tr>
                                         <td style="height:60px;" width="100"></td>
-                                        <td style="height:60px;" width="100"></td>
                                         <td style="height:60px;"></td>
                                         <td style="height:60px;"></td>
                                         <td style="height:60px;"></td>
@@ -598,7 +598,6 @@ class Student_payrolls extends CI_Controller
                                     </tr>
                                     <tr>
                                         <th style="text-align:center;">BOD</th>
-                                        <th style="text-align:center;">GENERAL MANAGER</th>
                                         <th style="text-align:center;">LEADER</th>
                                         <th style="text-align:center;">ASSISTANT MANAGER</th>
                                         <th style="text-align:center;">LEADER</th>
