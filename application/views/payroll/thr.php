@@ -401,6 +401,29 @@
         }
     }
 
+    function deleted() {
+        var rows = $('#dg').datagrid("getSelections");
+        if (rows.length == 0) { toastr.warning("Please select data!", "Warning"); }
+        else {
+            var ids = [];
+
+            rows.forEach(function (value, key) {
+                ids.push(btoa(value.id));
+            });
+            console.log(ids);
+            $.messager.confirm('Warning', 'Are you sure you want to delete this data?', function(r) {
+                if (r) {
+                    $.ajax({
+                        method: 'post',
+                        url: '<?= base_url('payroll/thr/delete') ?>',
+                        data: {id: ids},
+                        success: function(deleted) { $('#dg').datagrid("reload"); }
+                    });
+                }
+            });
+        }
+    }
+
     //PRINT PDF
     function pdf() {
         $("#printout").get(0).contentWindow.print();

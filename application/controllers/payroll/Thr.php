@@ -184,7 +184,7 @@ class Thr extends CI_Controller
 
             $username = $this->session->username;
 
-            $query = $this->db->query("SELECT a.*, 
+            $q = "SELECT a.*, 
                     b.name as division_name,
                     c.name as departement_name,
                     d.name as departement_sub_name,
@@ -230,7 +230,9 @@ class Thr extends CI_Controller
                 AND a.id LIKE '%$filter_employee%'
                 AND a.group_id LIKE '%$filter_group%'
                 GROUP BY a.id
-                ORDER BY b.name ASC, c.name ASC, d.name ASC, a.number, a.name ASC");
+                ORDER BY b.name ASC, c.name ASC, d.name ASC, a.number, a.name ASC";
+            // die($q);
+            $query = $this->db->query($q);
             $records = $query->result_array();
 
             $datas = array();
@@ -410,39 +412,45 @@ class Thr extends CI_Controller
         $post = $this->input->post();
         $username = $this->session->username;
 
-        $privileges = $this->crud->reads('privilege_groups', [], ["username" => $username, "status" => "1"]);
+        if (isset($post['id'])) {
+            foreach ($post['id'] as $key => $value) {
+                $this->db->delete("thr", ['id' => base64_decode($value)]);
+            }
+        } else {
+            $privileges = $this->crud->reads('privilege_groups', [], ["username" => $username, "status" => "1"]);
 
-        foreach ($privileges as $privilege) {
-            $group_id = $privilege->group_id;
+            foreach ($privileges as $privilege) {
+                $group_id = $privilege->group_id;
 
-            $this->db->select('a.*');
-            $this->db->from('thr a');
-            $this->db->join('employees b', 'a.employee_id = b.id');
-            $this->db->where('a.period', $post['filter_year']);
-            if ($post['filter_division'] != "") {
-                $this->db->where('b.division_id', $post['filter_division']);
-            }
-            if ($post['filter_departement'] != "") {
-                $this->db->where('b.departement_id', $post['filter_departement']);
-            }
-            if ($post['filter_departement_sub'] != "") {
-                $this->db->where('b.departement_sub_id', $post['filter_departement_sub']);
-            }
-            if ($post['filter_employee'] != "") {
-                $this->db->where('b.id', $post['filter_employee']);
-            }
-            if ($post['filter_employee_type'] != "") {
-                $this->db->where('b.contract_id', $post['filter_employee_type']);
-            }
-            if ($post['filter_group'] != "") {
-                $this->db->where('b.group_id', $post['filter_group']);
-            } else {
-                $this->db->where('b.group_id', $group_id);
-            }
-            $payrolls = $this->db->get()->result_object();
+                $this->db->select('a.*');
+                $this->db->from('thr a');
+                $this->db->join('employees b', 'a.employee_id = b.id');
+                $this->db->where('a.period', $post['filter_year']);
+                if ($post['filter_division'] != "") {
+                    $this->db->where('b.division_id', $post['filter_division']);
+                }
+                if ($post['filter_departement'] != "") {
+                    $this->db->where('b.departement_id', $post['filter_departement']);
+                }
+                if ($post['filter_departement_sub'] != "") {
+                    $this->db->where('b.departement_sub_id', $post['filter_departement_sub']);
+                }
+                if ($post['filter_employee'] != "") {
+                    $this->db->where('b.id', $post['filter_employee']);
+                }
+                if ($post['filter_employee_type'] != "") {
+                    $this->db->where('b.contract_id', $post['filter_employee_type']);
+                }
+                if ($post['filter_group'] != "") {
+                    $this->db->where('b.group_id', $post['filter_group']);
+                } else {
+                    $this->db->where('b.group_id', $group_id);
+                }
+                $payrolls = $this->db->get()->result_object();
 
-            foreach ($payrolls as $payroll) {
-                $this->db->delete("thr", ['id' => $payroll->id]);
+                foreach ($payrolls as $payroll) {
+                    $this->db->delete("thr", ['id' => $payroll->id]);
+                }
             }
         }
     }
