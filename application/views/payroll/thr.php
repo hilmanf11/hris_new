@@ -13,6 +13,7 @@
             <th data-options="field:'source_name',width:200,halign:'center'">Source</th>
             <th data-options="field:'date_sign',width:100,halign:'center'">Join Date</th>
             <th data-options="field:'cutoff',width:100,halign:'center'">Cutoff</th>
+            <th data-options="field:'type',width:150,halign:'center',align:'center'">THR Type</th>
             <th data-options="field:'services',width:150,halign:'center'">Fit for Service</th>
             <th data-options="field:'position_name',width:100,halign:'center'">Position</th>
             <th data-options="field:'marital',width:100,halign:'center'">Marital</th>
@@ -46,11 +47,7 @@
                     </div>
                     <div class="fitem">
                         <span style="width:30%; display:inline-block;">Fit for Service</span>
-                        <select style="width:60%;" id="filter_service" class="easyui-combobox" panelHeight="auto">
-                            <option value="">Choose All</option>
-                            <option value="0"> < 1 Year</option>
-                            <option value="1"> >= 1 Year</option>
-                        </select>
+                        <input style="width:60%;" id="filter_service" class="easyui-combobox">
                     </div>
                     <div class="fitem">
                         <span style="width:30%; display:inline-block;"></span>
@@ -94,6 +91,7 @@
         </div>
     </div>
     <?= $button ?>
+    <a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="btnAdditional()"><i class="fa fa-plus"></i> Additional THR</a>
 </div>
 
 <div id="dlg_generate" class="easyui-dialog" title="Generating Data" data-options="closed: true,modal:true,closable: false" style="width: 500px; padding:10px; top: 20px;">
@@ -108,6 +106,38 @@
 
         </ul>
     </div>
+</div>
+
+<div id="dlg_additional" class="easyui-dialog" style="width: 1200px; height: 550px;">
+    <div id="toolbar_additional">
+        <table>
+            <tr>
+                <td style="width: 77px;">THR Type</td>
+                <td><input class="easyui-textbox" data-options="readonly: true, value: 'ADDITIONAL'"></td>
+            </tr>
+            <tr>
+                <td>Cutoff THR</td>
+                <td><input class="easyui-datebox" id="cutoff_thr"></td>
+            </tr>
+            <tr><td colspan="2">
+                <div class="row">
+                    <div class="col-auto">
+                        <span style="width: 200px;">Employee</span>
+                    </div>
+                    <div class="col-auto">
+                        <input id="employee_thr" class="easyui-combogrid">
+                    </div>
+                    <div class="col-auto">
+                        <a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="btnAddCal()"><i class="fa fa-plus"></i> Add & Calculate THR</a>
+                    </div>
+                    <div class="col-auto">
+                        <a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="btnDelete()"><i class="fa fa-minus"></i> Delete</a>
+                    </div>
+                </div>
+            </td></tr>
+        </table>
+    </div>
+    <table id="dg_additional" class="easyui-datagrid" style="width: 100%; height: 100%;"></table>
 </div>
 
 <!-- PDF -->
@@ -410,7 +440,7 @@
             rows.forEach(function (value, key) {
                 ids.push(btoa(value.id));
             });
-            console.log(ids);
+
             $.messager.confirm('Warning', 'Are you sure you want to delete this data?', function(r) {
                 if (r) {
                     $.ajax({
@@ -463,8 +493,9 @@
         window.location.reload();
     }
 
+    var url_emp_additional = "<?= base_url('payroll/thr/readEmployee') ?>";
     $(function() {
-        $("#add").html("Generate Payroll");
+        $("#add").html("Generate THR");
         $('#dg').datagrid({
             url: '<?= base_url('payroll/thr/datatables') ?>',
             pagination: true,
@@ -480,6 +511,19 @@
             valueField: 'year',
             textField: 'year',
             prompt: 'Choose Period',
+        });
+
+        //Filter Cutoff
+        $('#filter_service').combobox({
+            textField: 't',
+            valueField: 'v',
+            panelHeight: 'auto',
+            prompt: 'Choose All',
+            data: [{v: '0', t: ' < 1 Year'}, {v: '1', t: ' >= 1 Year'}],
+            icons: [{
+                iconCls: 'icon-clear',
+                handler: function(e) { $(e.data.target).combobox('clear').combobox('textbox').focus(); }
+            }]
         });
 
         //Get Departement
@@ -618,7 +662,143 @@
                 });
             }
         });
+
+        $("#cutoff_thr").datebox({
+            editable: false,
+            parser: myparser,
+            formatter: myformatter,
+            onSelect: function (date) {
+                $("#employee_thr").combogrid("grid")
+                    .datagrid("reload", {cutoff: btoa(myformatter(date))});
+            }
+        });
+        $("#employee_thr").combogrid({
+            url: url_emp_additional,
+            idField: "number",
+            textField: "name",
+            icons: [{
+                iconCls: 'icon-clear',
+                handler: function(e) { $(e.data.target).combogrid('clear'); }
+            }],
+            panelWidth: 530,
+            panelHeight: 427,
+            pagination: true,
+            rownumbers: true,
+            columns: [[
+                {field: 'number', title: 'Employee ID', width: '130', halign: 'center'},
+                {field: 'name', title: 'Employee Name', width: '350', halign: 'center'}
+            ]]
+        }).combogrid("grid").datagrid("enableFilter");
+
+        $("#dg_additional").datagrid({
+            toolbar: "#toolbar_additional",
+            checkOnSelect: true,
+            selectOnCheck: true,
+            rownumbers: true,
+            fit: true,
+            frozenColumns: [[
+                {field: "ck", checkbox: true},
+                {field: "employee_number", title: "Employee ID", halign: "center"},
+                {field: "employee_name", title: "Employee Name", halign: "center"}
+            ]],
+            columns: [[
+                {field: 'departement_name', title: "Departement", halign: 'center'},
+                {field: 'departement_sub_name', title: "Departement Sub", halign: 'center'},
+                {field: 'source_name', title: "Source", halign: 'center'},
+                {field: 'date_sign', title: "Join Date", halign: 'center'},
+                {field: 'cutoff', title: "Cutoff", halign: 'center'},
+                {field: 'type', title: "THR Type", halign: 'center', align: 'center'},
+                {field: 'services', title: "Fit for Service", halign: 'center'},
+                {field: 'position_name', title: "Position", halign: 'center'},
+                {field: 'marital', title: "Marital", halign: 'center'},
+                {field: 'tax_id', title: "Tax Id", halign: 'center'},
+                {field: 'salary', title: "Salary", halign: 'center', align: 'right', formatter: numberformat},
+                {field: 'allowence', title: "Allowence", halign: 'center', align: 'right', formatter: numberformat},
+                {field: 'total', title: "Total", halign: 'center', align: 'right', formatter: numberformat},
+                {field: 'thr', title: "THR", halign: 'center', align: 'right', formatter: numberformat},
+                {field: 'income', title: "Payroll", halign: 'center', align: 'right', formatter: numberformat},
+                {field: 'income_thr', title: "Total Income", halign: 'center', align: 'right', formatter: numberformat},
+                {field: 'pph', title: "TER", halign: 'center', align: 'right', formatter: numberformat},
+                {field: 'total_thr', title: "Total THR", halign: 'center', align: 'right', formatter: numberformat}
+            ]]
+        });
+        $("#dlg_additional").dialog({
+            title: 'Additional THR',
+            closed: true,
+            modal: true,
+            buttons: [{
+                text: 'Save',
+                iconCls: 'icon-ok',
+                handler: function() {
+                    $("#dg_additional").datagrid("loading");
+                    $.ajax({
+                        url: "<?= base_url('payroll/thr/additionalSave') ?>",
+                        data: {
+                            periode: btoa($("#filter_year").combobox("getValue")),
+                            data: btoa(JSON.stringify($("#dg_additional").datagrid("getData").rows))
+                        },
+                        async: false,
+                        method: 'POST',
+                        dataType: 'json',
+                        success: function (result) {
+                            $("#dg_additional").datagrid("loaded");
+                            if (result.stat != '') { toastr.error("Failed save Additional!", "ERROR"); }
+                            else { $("#dlg_additional").dialog("close"); filter(); }
+                        }
+                    });
+                }
+            }]
+        }).dialog("close");
     });
+
+    function btnAdditional() {
+        var date = new Date(), now = myformatter(date);
+
+        $("#cutoff_thr").datebox("setValue", now);
+        $("#employee_thr").combogrid("clear").combogrid("grid")
+            .datagrid("reload", {cutoff: btoa(now)});
+
+        $("#dg_additional").datagrid("loadData", []);
+        $("#dlg_additional").dialog("open");
+    }
+
+    function btnAddCal() {
+        var cutoff = $("#cutoff_thr").datebox("getValue");
+        var mp = $("#employee_thr").combogrid("grid").datagrid("getSelected");
+
+        if (cutoff == '' || mp == '') { toastr.warning("Please fill in all fields!", "Warning"); }
+        else if ($("#dg_additional").datagrid("getRows").some(obj => obj.employee_number == mp))
+            { toastr.warning("Employees available!", "Warning"); }
+        else {
+            $("#dg_additional").datagrid("loading");
+            $.ajax({
+                url: "<?= base_url('payroll/thr/additionalCalculation') ?>",
+                data: {cutoff: btoa(cutoff), mp: btoa(mp.number), periode_mp: btoa(mp.periode_mp)},
+                async: false,
+                method: 'POST',
+                dataType: 'json',
+                success: function (result) {
+                    if (result == null) { toastr.error("No Data!", "Failed"); }
+                    else { $("#dg_additional").datagrid('appendRow', result); }
+                    $("#dg_additional").datagrid("loaded");
+
+                    ["employee_number","employee_name","departement_name","departement_sub_name","source_name","date_sign","cutoff","type","services","position_name","marital","tax_id","salary","allowence","total","thr","income","income_thr","pph","total_thr"].forEach(function (value, key) { $("#dg_additional").datagrid("autoSizeColumn", value); });
+                }
+            });
+        }
+    }
+
+    function btnDelete() {
+        var dg = $("#dg_additional"), selections = dg.datagrid("getSelections");
+        if (dg.length == 0) { toastr.warning("Please select one of the data in the table first!", "Information"); }
+        else {
+            for (var i = selections.length - 1; i >= 0; i--) {
+                var index = dg.datagrid('getRowIndex', selections[i]);
+                dg.datagrid('deleteRow', index);
+            }
+            dg.datagrid('acceptChanges');
+        }
+    }
 
     //Format Datepicker
     function myformatter(date) {

@@ -92,6 +92,31 @@ class Thr extends CI_Controller
         }
     }
 
+    public function readEmployee()
+    {
+        $cutoff = base64_decode($this->input->post("cutoff"));
+        $result = [];
+
+        $periode = date("Y-m", strtotime("-1 year", strtotime(date("Y-m-01", strtotime($cutoff)))));
+
+        if (!empty($cutoff)) {
+            $this->db->distinct()->select("TRIM(a.number) AS number, TRIM(a.name) AS name, c.period_start AS periode_mp")
+            ->from("employees a")
+                ->join("resignations b", "a.id = b.employee_id", "LEFT")
+                ->join("payrolls c", "a.id = c.employee_id")
+            ->where([
+                "a.deleted" => 0,
+                "a.status" => 1,
+                "b.resign_date >=" => date("Y-m-d", strtotime("-1 year", strtotime($cutoff))),
+                "c.period_start" => $periode
+            ])->order_by("name");
+            // die($this->db->get_compiled_select());
+            $result = $this->db->get()->result();
+        }
+
+        echo json_encode(["total" => count($result), "rows" => $result]);
+    }
+
     //GET DATATABLES
     public function datatables()
     {
@@ -366,6 +391,7 @@ class Thr extends CI_Controller
                     "employee_name" => $record['name'],
                     "period" => $filter_year,
                     "cutoff" => $cutoff,
+                    "type" => 'NORMAL',
                     "date_sign" => $record['date_sign'],
                     "services" => $service['periode'],
                     "departement_name" => $record['departement_name'],
@@ -582,5 +608,163 @@ class Thr extends CI_Controller
 
         $html .= '</table></body></html>';
         echo $html;
+    }
+
+    public function additionalCalculation()
+    {
+        $periode_mp = base64_decode($this->input->post("periode_mp"));
+        $cutoff = base64_decode($this->input->post("cutoff"));
+        $mp = base64_decode($this->input->post("mp"));
+
+        $this->db->distinct()->select(
+            "TRIM(a.id) AS employee_id,".
+
+            "TRIM(a.number) AS employee_number,".
+            "TRIM(a.name) AS employee_name,".
+            "COALESCE(TRIM(b.name), '') AS departement_name,".
+            "COALESCE(TRIM(c.name), '') AS departement_sub_name,".
+            "COALESCE(TRIM(d.name), '') AS source_name,".
+            "a.date_sign AS date_sign,".
+            "'$cutoff' AS cutoff,".
+            "'ADDITIONAL' AS type,".
+            "'' AS services,".
+            "COALESCE(TRIM(e.name), '') AS position_name,".
+            "COALESCE(TRIM(f.number), '') AS marital,".
+            "TRIM(a.tax_id) AS tax_id,".
+            "COALESCE(g.amount, 0) AS salary,".
+            "COALESCE(d.thr_fee, h.amount, 0) AS allowence,".
+            "COALESCE(g.amount, 0) + COALESCE(d.thr_fee, h.amount, 0) AS total,".
+            "0 AS thr,".
+            "0 AS income,".
+            "0 AS income_thr,".
+            "0 AS pph,".
+            "0 AS total_thr,".
+
+            "a.date_expired,".
+            "a.source_id,".
+            "a.group_id,".
+            "COALESCE(TRIM(i.name), '') AS group_name,".
+            "COALESCE(j.total_all_allowance, 0) AS total_allowance,".
+            "COALESCE(TRIM(j.bpjs_company), '') AS bpjs,".
+            "COALESCE(j.ter, 0) AS ter,".
+            "COALESCE(TRIM(f.ter_type), '') AS ter_type"
+        )->from("employees a")
+            ->join("departements b", "a.departement_id = b.id")
+            ->join("departement_subs c", "a.departement_sub_id = c.id")
+            ->join("sources d", "a.source_id = d.id", "LEFT")
+            ->join("positions e", "a.position_id = e.id", "LEFT")
+            ->join("maritals f", "a.marital_id = f.id", "LEFT")
+            ->join("setup_salaries g", "a.id = g.employee_id", "LEFT")
+            ->join("(".
+                "SELECT a.employee_id, SUM(COALESCE(a.amount, 0)) as amount ".
+                "FROM setup_allowances a LEFT JOIN allowances b ON a.allowance_id = b.id ".
+                "WHERE b.type = 'FIX' GROUP BY a.employee_id"
+            .") h", "a.id = h.employee_id", "LEFT")
+            ->join("groups i", "a.group_id = i.id", "LEFT")
+            ->join("(".
+                "SELECT employee_id, total_all_allowance, bpjs_company, ter FROM payrolls ".
+                "WHERE period_start = '$periode_mp' GROUP BY employee_id, total_all_allowance, bpjs_company, ter"
+            .") j", "a.id = j.employee_id", "LEFT")
+        ->where(["a.number" => $mp]);
+        // die($this->db->get_compiled_select());
+        $result = $this->db->get()->row();
+
+        if (!empty($result)) {
+            $service = $this->readService($result->date_expired, date("Y-m-d", strtotime("-1 year", strtotime($cutoff))));
+            $result->services = $service["periode"];
+
+            $numBulan = (floatval($service['year']) * 12) + floatval($service['month']);
+            if (floatval($service['day']) >= 20) { $numBulan += 1; }
+
+            if ($result->group_name == "PKL") {
+                $month = "3";
+
+                if ($numBulan < 3) { $month = "2"; }
+                elseif ($numBulan > 3) { $month = "4"; }
+
+                $result->thr = floatval($this->crud->read("allowance_students", [], [
+                    "group_id" => $result->group_id,
+                    "months" => $month,
+                    "type" => "THR"
+                ])->amount) ?? 0;
+            } else {
+                $thr = floatval((empty($result->source_id)) ? $result->total : $result->allowence);
+                if ($numBulan < 12) { $thr = round(($thr / 12) * $numBulan); }
+                $result->thr = $thr ?? 0;
+            }
+
+            $bpjs = json_decode($result->bpjs) ?? (object)["jht_company" => 0, "jp_company" => 0];
+            $result->income = floatval($result->total_allowance) - floatval($bpjs->jht_company) - floatval($bpjs->jp_company);
+            $result->income_thr = $result->income + $result->thr;
+
+            $this->db->select("ter")->from("marital_categories")->where([
+                "ter_from <" => $result->income_thr,
+                "ter_to >" => $result->income_thr,
+                "type" => $result->ter_type
+            ]);
+            $marital_category = $this->db->get()->row();
+
+            if (!empty($marital_category)) { $result->pph = (($result->income_thr * floatval($marital_category->ter)) / 100) - $result->ter; }
+
+            $result->total_thr = $result->thr - $result->pph;
+        }
+
+        echo json_encode($result);
+    }
+
+    public function additionalSave()
+    {
+
+        $post = $this->input->post();
+        $periode = base64_decode($post["periode"]);
+        $data = json_decode(base64_decode($post["data"]));
+        $result = ['stat' => ''];
+
+        $this->db->trans_start();
+
+        foreach ($data as $index => $row) {
+            $this->db->delete("thr", [
+                "period" => $periode,
+                "employee_id" => $row->employee_id
+            ]);
+        }
+
+        foreach ($data as $index => $row) {
+            if (empty($result['stat'])) {
+                $send_data = [
+                    "employee_id" => $row->employee_id,
+                    "employee_number" => $row->employee_number,
+                    "employee_name" => $row->employee_name,
+                    "period" => $periode,
+                    "cutoff" => $row->cutoff,
+                    "type" => 'ADDITIONAL',
+                    "date_sign" => $row->date_sign,
+                    "services" => $row->services,
+                    "departement_name" => $row->departement_name,
+                    "departement_sub_name" => $row->departement_sub_name,
+                    "position_name" => $row->position_name,
+                    "marital" => $row->marital,
+                    "tax_id" => $row->tax_id,
+                    "salary" => $row->salary,
+                    "allowence" => $row->allowence,
+                    "total" => $row->total,
+                    "thr" => $row->thr,
+                    "income" => $row->income,
+                    "income_thr" => $row->income_thr,
+                    "pph" => $row->pph,
+                    "total_thr" => $row->total_thr
+                ];
+
+                $this->crud->create("thr", $send_data);
+                if ($this->db->where($send_data)->get("thr")->num_rows() == 0) {
+                    $result['stat'] = $this->db->error()['message'];
+                }
+            }
+        }
+
+        if (!empty($result['stat'])) { $this->db->trans_rollback(); }
+        else { $this->db->trans_commit(); }
+
+        echo json_encode($result);
     }
 }
