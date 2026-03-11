@@ -132,14 +132,73 @@ class Thr_slips extends CI_Controller
 
             $this->db->group_by(array("c.id", "d.id"));
 
-            $this->db->order_by('c.name', 'ASC');
+            $this->db->order_by('departement_name', 'ASC');
 
-            $this->db->order_by('SUM(a.total_thr)', 'ASC');
+            $this->db->order_by('income', 'ASC');
+            // die($this->db->get_compiled_select());
 
             //Get Data Array
 
             $records = $this->db->get()->result_array();
 
+
+            $this->db->select('
+
+                b.departement_id,
+
+                b.departement_sub_id,
+
+                b.group_id,
+
+                c.name as departement_name, 
+
+                d.name as departement_sub_name, 
+
+                e.name as group_name, 
+
+                COUNT(b.id) as employee, 
+
+                SUM(a.total_thr) as income');
+
+            $this->db->from('thr_hl a');
+
+            $this->db->join('employees b', "a.employee_id = b.id");
+
+            $this->db->join('departements c', "b.departement_id = c.id");
+
+            $this->db->join('departement_subs d', "b.departement_sub_id = d.id");
+
+            $this->db->join('groups e', "b.group_id = e.id");
+
+            $this->db->join('privilege_groups f', "b.group_id = f.group_id and f.username = '$username' and f.status = '1'");
+
+            $this->db->where('a.deleted', 0);
+
+            $this->db->where('a.period =', $filter_year);
+
+            $this->db->like('b.id', $filter_employee);
+
+            $this->db->like('b.division_id', $filter_division);
+
+            $this->db->like('b.departement_id', $filter_departement);
+
+            $this->db->like('b.departement_sub_id', $filter_departement_sub);
+
+            $this->db->like('b.group_id', $filter_group);
+
+            $this->db->group_by(array("c.id", "d.id"));
+
+            $this->db->order_by('departement_name', 'ASC');
+
+            $this->db->order_by('income', 'ASC');
+            // die($this->db->get_compiled_select());
+
+            foreach ($this->db->get()->result_array() as $index => $row) {
+                $idx = array_search($row['departement_id'], array_column($records, 'departement_id'))
+                    && array_search($row['departement_sub_id'], array_column($records, 'departement_sub_id'));
+                if (gettype($idx) != 'boolean') { $records[$idx]['employee'] += floatval($row['employee']); }
+                else { array_push($records, $row); }
+            }
 
 
             echo json_encode($records);
@@ -563,8 +622,7 @@ class Thr_slips extends CI_Controller
             $username = $this->session->username;
 
 
-
-            $query = $this->db->query("SELECT a.*, b.bank_branch, b.bank_no, b.national_id, b.tax_id, i.name as marital_name, b.email
+            $q = "SELECT a.*, b.bank_branch, b.bank_no, b.national_id, b.tax_id, i.name as marital_name, b.email
 
             FROM thr a
 
@@ -588,11 +646,49 @@ class Thr_slips extends CI_Controller
 
             GROUP BY b.id
 
-            ORDER BY b.name ASC");
+            ORDER BY b.name ASC";
+            // die($q);
+            $query = $this->db->query($q);
 
             $records = $query->result_array();
 
 
+            $q = "SELECT a.*, b.bank_branch, b.bank_no, b.national_id, b.tax_id, i.name as marital_name, b.email
+
+            FROM thr_hl a
+
+            JOIN employees b ON a.employee_id = b.id
+
+            JOIN privilege_groups e ON b.group_id = e.group_id and e.username = '$username' and e.status = '1'
+
+            LEFT JOIN maritals i ON a.marital = i.number
+
+            WHERE a.period = '$filter_year'
+
+            AND b.division_id LIKE '%$filter_division%'
+
+            AND b.departement_id LIKE '%$filter_departement%'
+
+            AND b.departement_sub_id LIKE '%$filter_departement_sub%'
+
+            AND b.group_id LIKE '%$filter_group%'
+
+            AND a.employee_id LIKE '%$filter_employee%'
+
+            GROUP BY b.id
+
+            ORDER BY b.name ASC";
+            // die($q);
+            $query = $this->db->query($q);
+
+            foreach ($query->result_array() as $index => $row) {
+                $row["total"] = $row["salary"];
+                array_push($records, $row);
+            }
+            // foreach ($query->result_array() as $index => $row) {
+            //     $idx = array_search($row['departement_id'], array_column($records, 'departement_id'));
+            //     $records[$idx]['employee'] += floatval($row['employee']);
+            // }
 
             //Config
 
@@ -968,7 +1064,7 @@ class Thr_slips extends CI_Controller
 
                 COUNT(b.id) as employee, 
 
-                SUM(a.total_thr) as income');
+                SUM(a.net_income) as income');
 
             $this->db->from('payrolls a');
 
@@ -1000,9 +1096,9 @@ class Thr_slips extends CI_Controller
 
             $this->db->group_by(array("c.id", "d.id", "e.id"));
 
-            $this->db->order_by('c.name', 'ASC');
+            $this->db->order_by('departement_name', 'ASC');
 
-            $this->db->order_by('SUM(a.total_thr)', 'ASC');
+            $this->db->order_by('income', 'ASC');
 
             //Get Data Array
 
