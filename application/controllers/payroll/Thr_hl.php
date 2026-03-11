@@ -522,7 +522,6 @@ class Thr_hl extends CI_Controller
                             <td>' . $data['employee_name'] . '</td>
                             <td>' . $data['departement_name'] . '</td>
                             <td>' . $data['departement_sub_name'] . '</td>
-                            <td>' . $data['source_name'] . '</td>
                             <td>' . date("d F Y", strtotime($data['date_sign'])) . '</td>
                             <td>' . date("d F Y", strtotime($data['cutoff'])) . '</td>
                             <td>' . $data['services'] . '</td>
@@ -530,8 +529,6 @@ class Thr_hl extends CI_Controller
                             <td>' . $data['marital'] . '</td>
                             <td style="mso-number-format:\@;">' . $data['tax_id'] . '</td>
                             <td>' . $data['salary'] . '</td>
-                            <td>' . $data['allowence'] . '</td>
-                            <td>' . $data['total'] . '</td>
                             <td>' . $data['thr'] . '</td>
                             <td>' . $data['income'] . '</td>
                             <td>' . $data['income_thr'] . '</td>
