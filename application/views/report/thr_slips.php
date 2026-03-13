@@ -50,6 +50,7 @@
     </fieldset>
 
     <?= $button ?>
+    <a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="excelReport()"><i class="fa fa-file"></i> Export Report</a>
     <iframe id="printout_recap" src="" style="width: 100%; height:500px; border: 0;" hidden></iframe>
 </div>
 
@@ -238,6 +239,27 @@
                 },
                 "json"
             );
+        }
+    }
+
+    function excelReport() {
+        var filter_year = $("#filter_year").combobox('getValue');
+        var filter_division = $("#filter_division").combobox('getValue');
+        var filter_departement = $("#filter_departement").combobox('getValue');
+        var filter_departement_sub = $("#filter_departement_sub").combobox('getValue');
+        var filter_employee = $("#filter_employee").combogrid('getValue');
+        var filter_group = $("#filter_group").combobox('getValue');
+
+        if (filter_year == "") { toastr.warning("Please Choose Period"); }
+        else {
+            var url = "?filter_division=" + filter_division +
+                "&filter_departement=" + filter_departement +
+                "&filter_departement_sub=" + filter_departement_sub +
+                '&filter_year=' + filter_year +
+                '&filter_group=' + filter_group +
+                '&filter_employee=' + filter_employee;
+
+            window.location.assign('<?= base_url('report/thr_slips/printReport/excel') ?>' + url);
         }
     }
 

@@ -1308,5 +1308,179 @@ class Thr_slips extends CI_Controller
 
     }
 
+    public function printReport($option = "")
+
+    {
+
+        if ($option == "excel") {
+
+            $format  = date("Ymd");
+
+            header("Content-type: application/vnd-ms-excel");
+
+            header("Content-Disposition: attachment; filename=thr_slip_report_$format.xls");
+
+        }
+
+
+
+        if ($this->input->get()) {
+
+            $filter_year = $this->input->get('filter_year');
+
+            $filter_division = $this->input->get('filter_division');
+
+            $filter_departement = $this->input->get('filter_departement');
+
+            $filter_departement_sub = $this->input->get('filter_departement_sub');
+
+            $filter_group = $this->input->get('filter_group');
+
+            $filter_employee = $this->input->get('filter_employee');
+
+            $username = $this->session->username;
+
+            $q = "SELECT b.bank_no AS bank, a.total_thr, a.number, a.name, d.name as source FROM (
+                SELECT employee_id, total_thr, employee_number AS number, employee_name AS name
+                FROM thr WHERE period = '$filter_year'
+                UNION ALL
+                SELECT employee_id, total_thr, employee_number AS number, employee_name AS name
+                FROM thr_hl WHERE period = '$filter_year'
+            ) a
+                JOIN employees b ON a.employee_id = b.id
+                JOIN privilege_groups c ON b.group_id = c.group_id
+                LEFT JOIN sources d ON b.source_id = d.id
+            WHERE c.username = '$username' AND c.status = '1'
+                AND b.division_id LIKE '%$filter_division%'
+                AND b.departement_id LIKE '%$filter_departement%'
+                AND b.departement_sub_id LIKE '%$filter_departement_sub%'
+                AND a.employee_id LIKE '%$filter_employee%'
+                AND c.group_id LIKE '%$filter_group%'
+            ORDER BY source, name";
+            // die($q);
+            $query = $this->db->query($q);
+            $records = $query->result_array();
+
+
+
+            //Config
+
+            $this->db->select('*');
+
+            $this->db->from('config');
+
+            $config = $this->db->get()->row();
+
+
+
+            $html = '<html><head><title>Print Data</title></head><style>body {font-family: Arial, Helvetica, sans-serif;}#customers {border-collapse: collapse;width: 100%;font-size: 10px;}#customers td, #customers th {border: 1px solid #ddd;padding: 2px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 2px;padding-bottom: 2px;text-align: left;color: black;}</style>
+
+                    <style> .str{ mso-number-format:\@; } </style>
+
+                    <body>
+
+                    <center>
+
+                        <div style="float: left; font-size: 12px; text-align: left;">
+
+                            <table style="width: 100%;">
+
+                                <tr>
+
+                                    <td width="50" style="font-size: 12px; vertical-align: top; text-align: center; vertical-align:jus margin-right:10px;">
+
+                                        <img src="' . $config->favicon . '" width="30">
+
+                                    </td>
+
+                                    <td style="font-size: 14px; text-align: left; margin:2px;">
+
+                                        <b>' . $config->name . '</b><br>
+
+                                        <small>' . $config->description . '</small>
+
+                                    </td>
+
+                                </tr>
+
+                            </table>
+
+                        </div>
+
+                        <div style="float: right; font-size: 12px; text-align: right;">
+
+                            Print Date ' . date("d M Y H:i:s") . ' <br>
+
+                            Print By ' . $this->session->username . '  
+
+                        </div>
+
+                    </center><br><br><br>
+
+                    <center>
+
+                        <h3 style="margin:0;">THR Slip Report</h3>
+
+                        <p style="margin:0;">Period ' . $filter_year . '</p>
+
+                    </center>
+
+                    <br>';
+
+
+            $html .= '  <table id="customers" border="1">
+
+                            <tr>
+
+                                <th width="20">No</th>
+
+                                <th style="text-align:center;">NIK</th>
+
+                                <th style="text-align:center;">NAMA</th>
+
+                                <th style="text-align:center;">NO REK</th>
+
+                                <th style="text-align:center;">JUMLAH</th>
+
+                                <th style="text-align:center;">SOURCE</th>
+
+                            </tr>';
+
+            $no = 1;
+
+            foreach ($records as $record) {
+
+                $html .= '<tr>
+
+                            <td>' . $no . '</td>
+
+                            <td style="mso-number-format:\@;">' . $record['number'] . '</td>
+
+                            <td>' . $record['name'] . '</td>
+
+                            <td style="mso-number-format:\@;">' . $record['bank'] . '</td>
+
+                            <td style="text-align:right;">' . $record['total_thr'] . '</td>
+
+                            <td>' . $record['source'] . '</td>
+
+                        </tr>';
+
+                $no++;
+
+            }
+
+            $html .= '</table>';
+
+        }
+
+
+
+        $html .= '</body></html>';
+
+        echo $html;
+
+    }
+
 }
 
