@@ -1882,10 +1882,12 @@ class Payrolls extends CI_Controller
                 // ambil nilai uang makan
                 $uang_makan = isset($arr_allowance['um']) ? (float) $arr_allowance['um'] : 0;
 
-                // hitung total selain uang makan
-                foreach ($arr_allowance as $key => $value) {
-                    if ($key === 'um') continue; // skip uang makan
-                    $gaji_harian += (float) $value;
+                if (floatval($record['salary']) == 0) {
+                    // hitung total selain uang makan
+                    foreach ($arr_allowance as $key => $value) {
+                        if (in_array($key, ['20221213000006','20250916000001','20221213000007'])) continue; // skip uang makan
+                        $gaji_harian += (float) $value;
+                    }
                 }
                 if (!$is_hl_emp) {
                     $gaji_harian = 0;
@@ -2331,10 +2333,12 @@ class Payrolls extends CI_Controller
                     elseif (isset($arr_allowance['20250916000001'])) { $uang_makan = floatval($arr_allowance['20250916000001']); }
                     elseif (isset($arr_allowance['20221213000007'])) { $uang_makan = floatval($arr_allowance['20221213000007']); }
 
-                    // hitung total selain uang makan
-                    foreach ($arr_allowance as $key => $value) {
-                        if ($key === 'um') continue; // skip uang makan
-                        $gaji_harian += (float) $value;
+                    if (floatval($record['salary']) == 0) {
+                        // hitung total selain uang makan
+                        foreach ($arr_allowance as $key => $value) {
+                            if (in_array($key, ['20221213000006','20250916000001','20221213000007'])) continue; // skip uang makan
+                            $gaji_harian += (float) $value;
+                        }
                     }
                     if (!$is_hl_emp) {
                         $gaji_harian = 0;

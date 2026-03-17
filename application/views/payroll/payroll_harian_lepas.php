@@ -196,6 +196,8 @@
 
     <?= $button ?>
 
+    <a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="pdfReport()"><i class="fa fa-print"></i> Print Report</a>
+    <a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="excelReport()"><i class="fa fa-file"></i> Export Report</a>
     <a href="javascript:;" class="easyui-linkbutton" plain="true" onclick="printcsv()"><i class="fa fa-file"></i> Export to CSV</a>
 </div>
 
@@ -1546,6 +1548,35 @@
 
         }
 
+    }
+
+    function excelReport() {
+        var filter_from = $("#filter_from").combogrid('getValue');
+        var filter_to = $("#filter_to").textbox('getValue');
+        var filter_division = $("#filter_division").combobox('getValue');
+        var filter_departement = $("#filter_departement").combobox('getValue');
+        var filter_departement_sub = $("#filter_departement_sub").combobox('getValue');
+        var filter_employee = $("#filter_employee").combogrid('getValue');
+        // var filter_employee_type = $("#filter_employee_type").combobox('getValue');
+        // var filter_group = $("#filter_group").combobox('getValues');
+        var filter_status = $("#filter_status").combobox('getValue');
+
+        var url = "?filter_from=" + filter_from
+            + "&filter_to=" + filter_to
+            + "&filter_division=" + filter_division
+            + "&filter_departement=" + filter_departement
+            + "&filter_departement_sub=" + filter_departement_sub
+            + "&filter_employee=" + filter_employee
+            // + "&filter_employee_type=" + filter_employee_type
+            + "&filter_status=" + filter_status
+            // + "&filter_group=" + filter_group
+        ;
+
+        if (filter_from == "" || filter_to == "") {
+            toastr.warning("Please Enter Cut Off Period");
+        } else {
+            window.location.assign('<?= base_url('payroll/payroll_harian_lepas/excelReport') ?>' + url);
+        }
     }
 
     function printcsv() {
