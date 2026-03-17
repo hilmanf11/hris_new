@@ -20,7 +20,7 @@
 
         <tr>
 
-            <!-- <th rowspan="2" data-options="field:'status_resign',width:80,halign:'center', formatter:statusResign, styler:styleStatusResign">Status</th> -->
+            <!-- <th rowspan="2" data-options="field:'status_resign',width:80,halign:'center',align:'center', formatter:statusResign, styler:styleStatusResign">Status</th> -->
 
             <th rowspan="2" data-options="field:'division_name',width:200,halign:'center'">Division</th>
 
@@ -346,6 +346,8 @@
 
     <?= $button ?>
 
+    <a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="pdfReport()"><i class="fa fa-print"></i> Print Report</a>
+    <a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="excelReport()"><i class="fa fa-file"></i> Export Report</a>
     <a href="javascript:;" class="easyui-linkbutton" plain="true" onclick="printcsv()"><i class="fa fa-file"></i> Export to CSV</a>
 </div>
 
@@ -403,8 +405,7 @@
 <!-- PDF -->
 
 <iframe id="printout" src="<?= base_url('payroll/payrolls/print') ?>" style="width: 100%;" hidden></iframe>
-
-
+<iframe id="printoutreport" src="<?= base_url('payroll/payrolls/printReport') ?>" style="width: 100%;" hidden></iframe>
 
 <script>
 
@@ -1042,6 +1043,9 @@
 
             $("#printout").attr('src', '<?= base_url('payroll/payrolls/print') ?>' + url);
 
+            $("#printoutreport").contents().find('html').html("<center><br><br><br><b style='font-size:20px;'>Please Wait...</b></center>");
+            $("#printoutreport").attr('src', '<?= base_url('payroll/payrolls/printReport') ?>' + url);
+
         }
 
     }
@@ -1106,7 +1110,7 @@
 
         } else {
 
-            window.location.assign('<?= base_url('payroll/payrolls/print/excel') ?>' + url);
+            window.location.assign('<?= base_url('payroll/payrolls/excel') ?>' + url);
 
         }
 
@@ -1610,29 +1614,29 @@
 
     // function numberformatDecimal(value, row) {
 
-    //     var digits = 2;
+        // var digits = 2;
 
-    //     var currency = 'IDR';
+        // var currency = 'IDR';
 
-    //     var format = "id-ID";
+        // var format = "id-ID";
 
 
 
-    //     if (value != null) {
+        // if (value != null) {
 
-    //         const formatter = new Intl.NumberFormat(format, {
+        //     const formatter = new Intl.NumberFormat(format, {
 
-    //             style: 'currency',
+        //         style: 'currency',
 
-    //             currency: currency,
+        //         currency: currency,
 
-    //             minimumFractionDigits: digits
+        //         minimumFractionDigits: digits
 
-    //         });
+        //     });
 
-    //         return "<b>" + formatter.format(value) + "</b>";
+        //     return "<b>" + formatter.format(value) + "</b>";
 
-    //     }
+        // }
 
     // }
 
@@ -1666,6 +1670,38 @@
 
         }
 
+    }
+
+    function excelReport() {
+        var filter_from = $("#filter_from").combogrid('getValue');
+        var filter_to = $("#filter_to").textbox('getValue');
+        var filter_division = $("#filter_division").combobox('getValue');
+        var filter_departement = $("#filter_departement").combobox('getValue');
+        var filter_departement_sub = $("#filter_departement_sub").combobox('getValue');
+        var filter_employee = $("#filter_employee").combogrid('getValue');
+        var filter_employee_type = $("#filter_employee_type").combobox('getValue');
+        var filter_group = $("#filter_group").combobox('getValues');
+        var filter_status = $("#filter_status").combobox('getValue');
+
+        var url = "?filter_from=" + filter_from +
+            "&filter_to=" + filter_to +
+            "&filter_division=" + filter_division +
+            "&filter_departement=" + filter_departement +
+            "&filter_departement_sub=" + filter_departement_sub +
+            "&filter_employee=" + filter_employee +
+            "&filter_employee_type=" + filter_employee_type +
+            "&filter_status=" + filter_status +
+            "&filter_group=" + filter_group;
+
+        if (filter_from == "" || filter_to == "") {
+            toastr.warning("Please Enter Cut Off Period");
+        } else {
+            window.location.assign('<?= base_url('payroll/payrolls/excelReport') ?>' + url);
+        }
+    }
+
+    function pdfReport() {
+        $("#printoutreport").get(0).contentWindow.print();
     }
 
     function printcsv() {

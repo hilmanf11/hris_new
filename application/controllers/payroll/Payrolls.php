@@ -1,6 +1,12 @@
 <?php
 date_default_timezone_set("Asia/Bangkok");
 defined('BASEPATH') or exit('No direct script access allowed');
+
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+
 class Payrolls extends CI_Controller
 {
     public function __construct()
@@ -9,6 +15,7 @@ class Payrolls extends CI_Controller
         $this->load->helper('url');
         $this->load->helper(array('form', 'url'));
         $this->load->library('form_validation');
+        $this->load->library('spreadsheet_lib');
         $this->load->library('session');
         $this->load->model('crud');
         $this->load->model('banks');
@@ -210,7 +217,7 @@ class Payrolls extends CI_Controller
             $filter_employee_type = $this->input->get('filter_employee_type');
             $filter_group = $this->input->get('filter_group');
             $username = $this->session->username;
-            $query = $this->db->query("SELECT a.*, 
+            $q = "SELECT a.*, 
                     b.name as division_name,
                     c.name as departement_name,
                     d.name as departement_sub_name,
@@ -250,7 +257,9 @@ class Payrolls extends CI_Controller
                 AND a.id LIKE '%$filter_employee%'
                 AND a.group_id LIKE '%$filter_group%'
                 GROUP BY a.id
-                ORDER BY b.name ASC, c.name ASC, d.name ASC, a.number, a.name ASC");
+                ORDER BY b.name ASC, c.name ASC, d.name ASC, a.number, a.name ASC";
+            // die($q);
+            $query = $this->db->query($q);
             $records = $query->result_array();
             $datas = array();
             $datas['total'] = count($records);
@@ -1099,6 +1108,7 @@ class Payrolls extends CI_Controller
                 <th rowspan="2" width="20">No</th>
                 <th rowspan="2">Employee ID</th>
                 <th rowspan="2">Employee Name</th>
+                <th rowspan="2">Status</th>
                 <th rowspan="2">Division</th>
                 <th rowspan="2">Departement</th>
                 <th rowspan="2">Departement Sub</th>
@@ -1178,10 +1188,12 @@ class Payrolls extends CI_Controller
         $html .= '</tr>';
         $no = 1;
         foreach ($records as $record) {
+            $is_resign = !empty($record['status_resign']);
             $html .= '<tr>
                     <td>' . $no . '</td>
                     <td class="str">' . $record['number'] . '</td>
                     <td>' . $record['name'] . '</td>
+                    <td style="text-align: center; color: white; background: '.(($is_resign) ? "#FFC41B" : "#53D636").';">' . (($is_resign) ? 'RESIGN' : 'ACTIVE') . '</td>
                     <td>' . $record['division_name'] . '</td>
                     <td>' . $record['departement_name'] . '</td>
                     <td>' . $record['departement_sub_name'] . '</td>
@@ -1254,6 +1266,1372 @@ class Payrolls extends CI_Controller
         }
         $html .= '</table></body></html>';
         echo $html;
+    }
+
+    public function excel()
+    {
+        if ($this->session->username != "") {
+            $sheet = 0;
+            $excel = $this->spreadsheet_lib->newSpreadsheet();
+            $spreadsheet = $excel->getActiveSheet($sheet);
+            $excel->getProperties()->setCreator('Pixelphy')
+                ->setLastModifiedBy('Pixelphy')
+                ->setTitle('Office 2007 XLSX Test Document')
+                ->setSubject('Office 2007 XLSX Test Document')
+                ->setDescription('Test document for Office 2007 XLSX, generated using PHP classes.')
+                ->setKeywords('office 2007 openxml php')
+                ->setCategory('PT ASKARA TEHNO INDONESIA');
+
+            $style_row = [
+                'alignment' => ['horizontal' => 'left', 'vertical' => 'center'],
+                'borders' => [
+                    'top' => ['borderStyle' => Border::BORDER_THIN],
+                    'left' => ['borderStyle' => Border::BORDER_THIN],
+                    'right' => ['borderStyle' => Border::BORDER_THIN],
+                    'bottom' => ['borderStyle' => Border::BORDER_THIN]
+                ]
+            ];
+
+            $style_center = ['alignment' => ['horizontal' => 'center', 'vertical' => 'center']];
+            $style_right = ['alignment' => ['horizontal' => 'right', 'vertical' => 'center']];
+
+            $style_row_center = array_merge($style_row, $style_center);
+            $style_row_right = array_merge($style_row, $style_right);
+
+            $style_row_center_green = array_merge($style_row_center, [
+                'font' => ['color' => ['rgb' => 'FFFFFF']],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FF53D636'],
+                ]
+            ]);
+            $style_row_center_yellow = array_merge($style_row_center, [
+                'font' => ['color' => ['rgb' => 'FFFFFF']],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FFFFC41B'],
+                ]
+            ]);
+
+            $style_col = array_merge($style_row, [
+                'font' => ['bold' => true],
+                'alignment' => ['horizontal' => 'center', 'vertical' => 'center']
+            ]);
+
+            // $drawing = new Drawing();
+            // $drawing->setName('Logo');
+            // $drawing->setDescription('Company Logo');
+            // $drawing->setPath(FCPATH.'assets/image/config/logo/1741863196.png');
+            // $drawing->setWidth(50);
+            // $drawing->setHeight(50);
+            // $drawing->setCoordinates('A1');
+            // $drawing->setWorksheet($spreadsheet);
+
+            //SHEET 1 ------------------------------------------------------------------------------------------------------------
+            //Coloumn
+            $permit_type = $this->crud->reads('permit_types', [], ['payroll' => 'NON DEDUCTION']);
+            $allowance = $this->crud->reads('allowances', [], [], "", "name", "asc");
+            $deduction = $this->crud->reads('deductions', [], [], "", "name", "asc");
+            $permit_type_d = $this->crud->reads('permit_types', [], ['payroll' => 'DEDUCTION']);
+            $bpjs = $this->crud->reads('bpjs', ['status' => 0]);
+            $columns = [
+                ['No','Employee ID','Employee Name','Status','Division','Departement','Departement Sub','Job Type','Status','Source','Position','Shift','Level','Marital','TER Code','Group','National ID','NPWP','Account No','Attandance','','Working Calendar','Salary','Allowence','BPJS Company','Total BPJS Company','Correction Plus','Bruto Income','Deduction','Correction Minus','Total Deduction','Total BPJS Company','Income','Deduction','LOAN','BPJS Employee','Total BPJS Employee','TER','Net Income'],
+                ['','','','','','','','','','','','','','','','','','','','','WD','','','','','','','','','','','','','','','','','','']
+            ];
+
+            $deduction_keys = [];
+            $new = [[],[]];
+            $position = 1;
+            foreach ($columns[0] as $key => $col) {
+                if (in_array($col, ['Attandance','Allowence','BPJS Company','Deduction','LOAN','BPJS Employee'])) {
+                    $row1 = [];
+                    $row2 = [];
+                    $datas = [];
+
+                    if ($col == 'Attandance') { $datas = $permit_type; }
+                    elseif ($col == 'Allowence') { $datas = $allowance; }
+                    elseif (in_array($col, ['BPJS Company','BPJS Employee'])) { $datas = $bpjs; }
+                    elseif ($col == 'Deduction' && $position == 1) {
+                        foreach ($permit_type_d as $index => $row) {
+                            $deduction_keys[] = $row->number;
+                            $datas[] = (object)['number' => $row->number];
+                            $datas[] = (object)['number' => 'Amount'];
+                        }
+                        $datas[] = (object)['number' => 'Absence'];
+                        $datas[] = (object)['number' => 'Amount'];
+                        $position++;
+                    } elseif ($col == 'Deduction') { $datas = $deduction; }
+                    elseif ($col == 'LOAN') { $datas = [
+                        (object)['number' => 'Koperasi'],
+                        (object)['number' => 'Bank'],
+                        (object)['number' => 'Other']
+                    ]; }
+
+                    foreach ($datas as $index => $row) {
+                        array_push($row1, '');
+                        array_push($row2, $row->number);
+                    }
+                    $row1[0] = $col;
+
+                    $new[0][$key] = $row1;
+                    $new[1][$key] = $row2;
+                }
+            }
+            krsort($new[0]);
+            krsort($new[1]);
+            foreach ($new[0] as $key => $value) { array_splice($columns[0], $key, 1, $value); }
+            foreach ($new[1] as $key => $value) { array_splice($columns[1], $key, 1, $value); }
+            // die(json_encode($columns));
+
+            $last_index = count($columns[0]) - 1;
+            $title = 'Generate Payroll';
+
+            $this->db->select('TRIM(name) AS name')->from('users')->where('username', $this->session->username);
+            $fullname = $this->db->get()->row()->name;
+
+            $row_number = 6;
+            foreach ($columns as $index => $row) {
+                $start_alfa = '';
+                $end_alfa = '';
+                $alfa = 'A';
+
+                foreach ($row as $key => $value) {
+                    if ($index == 0 && $key == $last_index) {
+                        $spreadsheet->setCellValue('A1', $title);
+                        $spreadsheet->mergeCells('A1:'.$alfa.'1');
+                        $spreadsheet->getStyle('A1')->applyFromArray($style_center);
+                        $spreadsheet->getStyle('A1:'.$alfa.'1')->getFont()->setSize(20);
+
+                        $spreadsheet->setCellValue($alfa.'3', 'Print Date : ' . date("d M Y H:m:s"));
+                        $spreadsheet->setCellValue($alfa.'4', 'Print By : ' . $fullname);
+                    }
+
+                    $spreadsheet->setCellValue($alfa.$row_number, $value);
+                    $spreadsheet->getStyle($alfa.$row_number)->applyFromArray($style_col);
+
+                    if ($index == 0) {
+                        if (!empty($value)) {
+                            if (!empty($end_alfa)) { $spreadsheet->mergeCells($start_alfa.$row_number.':'.$end_alfa.$row_number); }
+
+                            $start_alfa = $alfa;
+                            $end_alfa = '';
+                        } else { $end_alfa = $alfa; }
+                    } elseif (empty($value)) { $spreadsheet->mergeCells($alfa.($row_number - 1).':'.$alfa.$row_number); }
+
+                    $alfa++;
+                }
+                $row_number++;
+            }
+
+            $filter_from = $this->input->get('filter_from');
+            $filter_to = $this->input->get('filter_to');
+            $filter_division = $this->input->get('filter_division');
+            $filter_departement = $this->input->get('filter_departement');
+            $filter_departement_sub = $this->input->get('filter_departement_sub');
+            $filter_employee = $this->input->get('filter_employee');
+            $filter_employee_type = $this->input->get('filter_employee_type');
+            $filter_group = $this->input->get('filter_group');
+            $filter_status = $this->input->get('filter_status');
+
+            $username = $this->session->username;
+            $period_start = date("Y-m", strtotime($filter_from));
+            $period_end = date("Y-m", strtotime($filter_to));
+
+            $where_status = "";
+            if ($filter_status == "0") { $where_status = "AND e.employee_id IS NULL"; }
+            elseif ($filter_status == "1") { $where_status = "AND e.employee_id IS NOT NULL"; }
+
+            $query = $this->db->query("SELECT a.*, b.national_id, b.date_sign, b.date_expired, d.name as source_name, e.employee_id as status_resign, e.resign_date, g.number as account_no 
+            FROM payrolls a
+                JOIN employees b on a.employee_id = b.id
+                LEFT JOIN sources d on b.source_id = d.id
+                JOIN privilege_groups c ON b.group_id = c.group_id and c.username = '$username' and c.status = '1'
+                LEFT JOIN resignations e ON b.id = e.employee_id
+                LEFT JOIN account_coa f ON b.division_id = f.division_id and b.departement_id = f.departement_id and b.position_id = f.position_id and b.contract_id = f.contract_id
+                LEFT JOIN accounts g ON f.account_id = g.id and g.category = 'payroll'
+            WHERE a.period_start = '$period_start' $where_status
+                AND a.period_end = '$period_end'
+                AND b.division_id LIKE '%$filter_division%'
+                AND b.departement_id LIKE '%$filter_departement%'
+                AND b.departement_sub_id LIKE '%$filter_departement_sub%'
+                AND a.employee_id LIKE '%$filter_employee%'
+                AND b.contract_id LIKE '%$filter_employee_type%'
+                AND b.group_id LIKE '%$filter_group%'
+            GROUP BY a.employee_id
+            ORDER BY a.name ASC");
+            $datas = [];
+            $right_cell_keys = [];
+            $amount_groups = [];
+            foreach ($query->result() as $index => $row) {
+                if (!isset($amount_groups[$row->group_name])) { $amount_groups[$row->group_name] = 0; }
+                $amount_groups[$row->group_name]++;
+
+                $data = [
+                    "number" => $row->number,
+                    "name" => $row->name,
+                    "status_resign" => (!empty($row->status_resign)) ? 'RESIGN' : 'ACTIVE',
+                    "division_name" => $row->division_name,
+                    "departement_name" => $row->departement_name,
+                    "departement_sub_name" => $row->departement_sub_name,
+                    "job_type" => $row->job_type,
+                    "contract_name" => $row->contract_name,
+                    "source_name" => $row->source_name,
+                    "position_name" => $row->position_name,
+                    "shift_name" => $row->shift_name,
+                    "level" => $row->level,
+                    "marital" => $row->marital,
+                    "ter_number" => $row->ter_number,
+                    "group_name" => $row->group_name,
+                    "national_id" => $row->national_id,
+                    "tax_id" => $row->tax_id,
+                    "account_no" => $row->account_no
+                ];
+                foreach (json_decode($row->attandance) as $key => $value) {
+                    $right_cell_keys[] = $key;
+                    $data[$key] = number_format($value, 0, '', ',');
+                }
+                $data['attandance_wd'] = $row->attandance_wd;
+                $data['working_day'] = $row->working_day;
+                $data['salary'] = number_format($row->salary, 0, '', ',');
+                foreach (json_decode($row->allowence) as $key => $value) {
+                    $right_cell_keys[] = $key;
+                    $data[$key] = number_format($value, 0, '', ',');
+                }
+                foreach (json_decode($row->bpjs_company) as $key => $value) {
+                    $right_cell_keys[] = $key;
+                    $data[$key] = number_format($value, 0, '', ',');
+                }
+                $data['bpjs_company_total'] = number_format($row->bpjs_company_total, 0, '', ',');
+                $data['correction_plus'] = number_format($row->correction_plus, 0, '', ',');
+                $data['total_all_allowance'] = number_format($row->total_all_allowance, 0, '', ',');
+                $deduction_data = json_decode($row->deduction_number, true);
+                $amount_data = json_decode($row->deduction_amount, true);
+                foreach ($deduction_keys as $key => $value) {
+                    $right_cell_keys[] = $value;
+                    $right_cell_keys[] = $value.'_amount';
+                    $data[$value] = number_format($deduction_data[$value] ?? '0', 0, '', ',');
+                    $data[$value.'_amount'] = number_format($amount_data[$index] ?? '0', 0, '', ',');
+                }
+                $data['deduction_absence'] = number_format($row->deduction_absence, 0, '', ',');
+                $data['deduction_absence_amount'] = number_format($row->deduction_absence_amount, 0, '', ',');
+                $data['correction_minus'] = number_format($row->correction_minus, 0, '', ',');
+                $data['total_all_deduction'] = number_format($row->total_all_deduction, 0, '', ',');
+                $data['bpjs_company_total_2'] = number_format($row->bpjs_company_total, 0, '', ',');
+                $data['income'] = number_format($row->income, 0, '', ',');
+                foreach (json_decode($row->deduction) as $key => $value) {
+                    $right_cell_keys[] = $key;
+                    $data[$key] = number_format(((empty($value)) ? '0' : $value), 0, '', ',');
+                }
+                $data['loan_cooperative'] = number_format($row->loan_cooperative, 0, '', ',');
+                $data['loan_bank'] = number_format($row->loan_bank, 0, '', ',');
+                $data['loan_other'] = number_format($row->loan_other, 0, '', ',');
+                foreach (json_decode($row->bpjs_employee) as $key => $value) {
+                    $right_cell_keys[] = $key;
+                    $data[$key] = number_format($value, 0, '', ',');
+                }
+                $data['bpjs_employee_total'] = number_format($row->bpjs_employee_total, 0, '', ',');
+                $data['ter'] = number_format($row->ter, 0, '', ',');
+                $data['net_income'] = number_format($row->net_income, 0, '', ',');
+
+                array_push($datas, json_decode(json_encode($data)));
+            }
+            // die(json_encode($datas));
+            $row_no = $row_number;
+            foreach ($datas as $index => $row) {
+                $no = $index + 1;
+                $alfa = 'A';
+
+                $spreadsheet->setCellValue($alfa.$row_no, $no);
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_row_center);
+
+                foreach ($row as $key => $value) {
+                    $alfa++;
+
+                    $style = $style_row;
+                    if ($key == 'status_resign') { $style = ($value == 'ACTIVE') ? $style_row_center_green : $style_row_center_yellow; }
+                    if (in_array($key, ['attandance_wd','working_day'])) { $style = $style_row_center; }
+                    if (in_array($key, array_merge(['salary','bpjs_company_total','correction_plus','total_all_allowance','deduction_absence','deduction_absence_amount','correction_minus','total_all_deduction','bpjs_company_total_2','income','loan_cooperative','loan_bank','loan_other','bpjs_employee_total','ter','net_income'],$right_cell_keys)))
+                        { $style = $style_row_right; }
+
+                    if (in_array($key, ['number','national_id','tax_id']))
+                        { $spreadsheet->setCellValueExplicit($alfa.$row_no, $value, DataType::TYPE_STRING); }
+                    else { $spreadsheet->setCellValue($alfa.$row_no, $value); }
+                    $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+                    $spreadsheet->getColumnDimension($alfa)->setAutoSize(true);
+                }
+
+                $row_no++;
+            }
+
+            // Rename worksheet
+            $spreadsheet->setTitle('data table');
+
+            $sheet++;
+            $spreadsheet = $excel->createSheet();
+            $excel->setActiveSheetIndex($sheet);
+            $spreadsheet->setTitle('Accumulation Amount');
+
+            $columns = ['No', 'Group', 'Total Amount'];
+
+            $alfa = 'A';
+            $row_no = 1;
+            foreach ($columns as $key => $value) {
+                $spreadsheet->setCellValue($alfa.$row_no, $value);
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_col);
+
+                $alfa++;
+            }
+
+            $datas = $this->db->distinct()->select("TRIM(name) AS name, 0 AS amount")->from("groups")->order_by("name")->get()->result();
+
+            $total = 0;
+            $row_no++;
+            foreach ($datas as $index => $row) {
+                $no = $index + 1;
+                $alfa = 'A';
+
+                $spreadsheet->setCellValue($alfa.$row_no, $no);
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_row_center);
+
+                foreach ($row as $key => $value) {
+                    $alfa++;
+
+                    if ($key == 'amount') {
+                        if (isset($amount_groups[$row->name])) {
+                            $value = $amount_groups[$row->name];
+                            $total += floatval($value);
+                        }
+                    }
+
+                    $style = $style_row;
+                    if (in_array($key, [''])) { $style = $style_row_center; }
+                    if (in_array($key, ['amount'])) { $style = $style_row_right; }
+
+                    if (in_array($key, ['']))
+                        { $spreadsheet->setCellValueExplicit($alfa.$row_no, $value, DataType::TYPE_STRING); }
+                    else { $spreadsheet->setCellValue($alfa.$row_no, $value); }
+                    $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+                }
+
+                $row_no++;
+            }
+
+            $spreadsheet->setCellValue("A".$row_no, "Grand Total");
+            $spreadsheet->setCellValue("C".$row_no, $total);
+
+            $spreadsheet->mergeCells("A".$row_no.":B".$row_no);
+            $spreadsheet->getStyle("A".$row_no)->applyFromArray($style_col);
+            $spreadsheet->getStyle("B".$row_no)->applyFromArray($style_col);
+            $spreadsheet->getStyle("C".$row_no)->applyFromArray(array_merge($style_row_right, ["font" => ["bold" => true]]));
+
+            for ($i='A'; $i <= $alfa; $i++) { $spreadsheet->getColumnDimension($i)->setAutoSize(true); }
+
+            $excel->setActiveSheetIndex(0);
+            // die(json_encode($excel->getActiveSheet()->toArray()));
+
+            if (ob_get_length()) { ob_end_clean(); }
+
+            // Redirect output to a client’s web browser (Xlsx)
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="'.$title.date(' (Y-m-d)').'.xlsx"');
+            header('Cache-Control: max-age=0');
+            header('Cache-Control: max-age=1');
+
+            // If you're serving to IE over SSL, then the following may be needed
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Cache-Control: cache, must-revalidate');
+            header('Pragma: public');
+
+            $writer = IOFactory::createWriter($excel, 'Xlsx');
+            $writer->save('php://output');
+            exit;
+        }
+    }
+
+    public function printReport($option = "")
+    {
+        if ($option == "excel") {
+            $format  = date("Ymd");
+            header("Content-type: application/vnd-ms-excel");
+            header("Content-Disposition: attachment; filename=payroll_report_$format.xls");
+        }
+
+        $permit_type = $this->crud->reads('permit_types', [], ['payroll' => 'NON DEDUCTION']);
+        $allowance = $this->crud->reads('allowances', [], [], "", "name", "asc");
+        $deduction = $this->crud->reads('deductions', [], [], "", "name", "asc");
+        $permit_type_d = $this->crud->reads('permit_types', [], ['payroll' => 'DEDUCTION']);
+        $bpjs = $this->crud->reads('bpjs', ['status' => 0], [], "", "", "", ["number"]);
+
+        $filter_from = $this->input->get('filter_from');
+        $filter_to = $this->input->get('filter_to');
+        $filter_division = $this->input->get('filter_division');
+        $filter_departement = $this->input->get('filter_departement');
+        $filter_departement_sub = $this->input->get('filter_departement_sub');
+        $filter_employee = $this->input->get('filter_employee');
+        $filter_employee_type = $this->input->get('filter_employee_type');
+        $filter_group = $this->input->get('filter_group');
+        $filter_status = $this->input->get('filter_status');
+        $username = $this->session->username;
+        $filter_group_ex = explode(",", trim($filter_group));
+
+        $period_start = date("Y-m", strtotime($filter_from));
+        $period_end = date("Y-m", strtotime($filter_to));
+
+        if($filter_status == "0"){
+            $where_status = "AND e.employee_id IS NULL";
+        }elseif($filter_status == "1"){
+            $where_status = "AND e.employee_id IS NOT NULL";
+        }else{
+            $where_status = "";
+        }
+
+        if ($username == "admin") {
+            $privileges = "";
+        } else {
+            $privileges = "AND c.status = '1'";
+        }
+
+        if($filter_group != ""){
+            $filter_group_ex = array_map(function($v) {
+                return $this->db->escape($v);
+            }, $filter_group_ex);
+
+            $where_group = "AND b.group_id IN (" . implode(',', $filter_group_ex) . ")";
+        } else {
+            $where_group = "";
+        }
+
+        if($filter_employee != ""){
+            $employee = " AND a.employee_id LIKE '%$filter_employee%'";
+        } else {
+            $employee = " AND ( r.resign_date IS NULL OR r.resign_date >= '$filter_from' ) ";
+        }
+
+        $q = "SELECT a.*, 0 AS tax_allowance, 0 AS overtime_saturday, 0 AS overtime_amount_saturday, 0 AS overtime_sunday, 0 AS overtime_amount_sunday, b.national_id, d.name as source_name, e.employee_id as status_resign, g.number as account_no,
+        coalesce(p.bpjs, 0) as bpjs_rate, b.group_id, 0 as bpjs_kes_rate, r.resign_date
+        FROM payrolls a
+            JOIN employees b on a.employee_id = b.id
+            LEFT JOIN sources d on b.source_id = d.id
+            JOIN privilege_groups c ON b.group_id = c.group_id and c.username = '$username' $privileges
+            LEFT JOIN resignations e ON b.id = e.employee_id
+            LEFT JOIN account_coa f ON b.division_id = f.division_id and b.departement_id = f.departement_id and b.position_id = f.position_id and b.contract_id = f.contract_id
+            LEFT JOIN accounts g ON f.account_id = g.id and g.category = 'payroll'
+            LEFT JOIN setup_salaries p ON p.employee_id = b.id
+            LEFT JOIN resignations r ON r.employee_id = b.id
+            WHERE a.period_start = '$period_start' $where_status
+            AND a.period_end = '$period_end'
+            AND b.division_id LIKE '%$filter_division%'
+            AND b.departement_id LIKE '%$filter_departement%'
+            AND b.departement_sub_id LIKE '%$filter_departement_sub%'
+            $employee
+            AND b.contract_id LIKE '%$filter_employee_type%'
+            $where_group
+            GROUP BY a.employee_id
+            ORDER BY a.name ASC";
+        // die($q);
+        $query = $this->db->query($q);
+        $records = $query->result_array();
+
+        //Config
+        $this->db->select('*');
+        $this->db->from('config');
+        $config = $this->db->get()->row();
+        $group_id = null;
+        $hlGroups = ['20221213000002', '20221213000003'];
+
+        $filter_group_ex = array_map(function($v) {
+            return trim($v, "'");
+        }, $filter_group_ex);
+        $is_hl = 0;
+        if ($filter_employee) {
+            $femployee = $this->crud->read('employees', [], ['id' => $filter_employee]);
+            $group_id  = $femployee->group_id ?? null;
+            $is_hl = in_array($group_id, $hlGroups, true);
+        } else {
+            $is_hl = array_intersect($filter_group_ex, $hlGroups);
+        }
+
+        $filterGroupAll = 1;
+        if ($filter_group) {
+            $filterGroupAll = 0;
+        }
+
+        $th = "";
+        if ($is_hl || $filterGroupAll) {
+            $th .= " <th>Gaji Harian</th>
+                    <th>Uang Makan</th>";
+        }
+        $th .= "
+            <th>Basic Salary</th>
+            <th>Tunjangan Tetap</th>
+            <th>Tunjangan Jabatan</th>
+            <th>Tunjangan Kinerja</th>
+            <th>Tunjangan Transport</th>
+        ";
+
+        if ($filter_division) {
+            $division = $this->crud->read('divisions', [], ['id' => $filter_division]);
+            $division_name = $division ? $division->name : '';
+            $division_logo = $division ? base_url('assets/image/division/' . $division->logo) : '';
+        } else {
+            $division_name = $config->name;
+            $division_logo = $config->favicon;
+        }
+
+        $html = '<html><head><title>Print Data</title></head><style>body {font-family: Arial, Helvetica, sans-serif;}#customers {border-collapse: collapse;width: 100%;font-size: 12px;}#customers td, #customers th {border: 1px solid #ddd;padding: 2px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 2px;padding-bottom: 2px;text-align: left;color: black;}#ttd {border-collapse: collapse;width: 100%;font-size: 10px;}#ttd td, #ttd th {padding: 2px;}</style><body>
+                <style> .str{ mso-number-format:\@; } </style>
+                <div style="page-break-after:always;"><center>
+                    <div style="float: left; font-size: 12px; text-align: left;">
+                        <table style="width: 100%;">
+                            <tr>
+                                <td width="50" style="font-size: 12px; vertical-align: top; text-align: center; vertical-align:jus margin-right:10px;">
+                                    <img src="' . $division_logo . '" width="30">
+                                </td>
+                                <td style="font-size: 14px; text-align: left; margin:2px;">
+                                    <b>' . $division_name . '</b><br>
+                                    <small>' . $config->description . '</small>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div style="float: right; font-size: 12px; text-align: right;">
+                        Print Date ' . date("d M Y H:i:s") . ' <br>
+                        Print By ' . $this->session->username . '  
+                    </div>
+                </center><br><br>
+                <center>
+                    <h3 style="margin:0;">Generate Payroll</h3>
+                    Period : ' . $filter_from . ' to ' . $filter_to . '
+                    <br>
+                </center>
+                <br>
+        
+        <table id="customers" border="1">
+            <tr>
+                <th width="20">No</th>
+                <th>Employee ID</th>
+                <th>Full Name</th>
+                <th>Status</th>
+                <th>No. KTP</th>
+                <th>Status PTKP</th>
+                <th>Job Position</th>
+                <th>Organization</th>
+                '.$th.'
+                <th>Correction Plus</th>
+                <th>Total Overtime</th>
+                <th>Tax Allowance</th>
+                <th>Total Allowance</th>
+                <th>Potongan Absen</th>
+                <th>Potongan Lain-Lain</th>
+                <th>Jaminan Pensiun Employee</th>
+                <th>BPJSK Employee</th>
+                <th>JHT Employee</th>
+                <th>PPH 21</th>
+                <th>Total Deduction</th>
+                <th>PPH 21 Payment</th>
+                <th>Take Home Pay</th>
+                <th>BPJS TK Rate</th>
+                <th>BPJS Kes Rate</th>
+            </tr>';
+
+        $no = 1;
+        $sum_total_correction_plus = 0;
+        $sum_total_overtime       = 0;
+        $sum_tax_allowance        = 0;
+        $sum_total_all_allowance  = 0;
+        $sum_deduction_absence    = 0;
+        $sum_potongan_lain        = 0;
+        $sum_jp_emp               = 0;
+        $sum_bpjs_emp             = 0;
+        $sum_jht_emp              = 0;
+        $sum_ter                  = 0;
+        $sum_total_all_deduction  = 0;
+        $sum_net_income           = 0;
+        $sum_bpjs_rate            = 0;
+        $sum_bpjs_kes_rate        = 0;
+        // total untuk th2
+        $sum_salary              = 0;
+        $sum_tunjangan_tetap     = 0;
+        $sum_tunjangan_jabatan   = 0;
+        $sum_tunjangan_kinerja   = 0;
+        $sum_tunjangan_transport = 0;
+
+        $sum_gaji_harian = 0;
+        $sum_uang_makan  = 0;
+
+
+        foreach ($records as $record) {
+            $status = "ACTIVE";
+            if ($record['resign_date']) {
+                // cek resign dalam periode gaji
+                $rstart = new DateTime($filter_from);
+                $rend   = (new DateTime($filter_to));
+                $rdate = new DateTime($record['resign_date']);
+
+                if ($rdate >= $rstart && $rdate <= $rend) {
+                    $status = 'RESIGN';
+                }
+            }
+            $is_hl_emp = in_array($record['group_id'], $hlGroups, true);
+            $potongan_lain = $record['loan_cooperative'] + $record['loan_bank'] + $record['loan_other'];
+            $arr_allowance = json_decode($record['allowence'], true);
+            $th2 = "";
+            if ($is_hl || $filterGroupAll) {
+                $gaji_harian = 0;
+                // ambil nilai uang makan
+                $uang_makan = isset($arr_allowance['um']) ? (float) $arr_allowance['um'] : 0;
+
+                // hitung total selain uang makan
+                foreach ($arr_allowance as $key => $value) {
+                    if ($key === 'um') continue; // skip uang makan
+                    $gaji_harian += (float) $value;
+                }
+                if (!$is_hl_emp) {
+                    $gaji_harian = 0;
+                    $uang_makan = 0;
+                }
+                if ($option === 'excel') {
+                    $th2 .= '
+                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($gaji_harian, 0) .'</td>
+                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($uang_makan, 0) .'</td>
+                    ';
+                } else {
+                    $th2 .= '
+                        <td>'. number_format($gaji_harian, 0, ".", ",") .'</td>
+                        <td>'. number_format($uang_makan, 0, ".", ",") .'</td>
+                    ';
+                }
+
+                $sum_gaji_harian += $gaji_harian;
+                $sum_uang_makan  += $uang_makan;
+            }
+                $tunjangan_tetap = $arr_allowance['tt'] ?? 0;
+                $tunjangan_jabatan = $arr_allowance['tj'] ?? 0;
+                $tunjangan_kinerja = $arr_allowance['tk'] ?? 0;
+                $tunjangan_transport = $arr_allowance['tr'] ?? 0;
+
+                if ($option === 'excel') {
+                    $th2 .= '
+                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($record['salary'], 0) .'</td>
+                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($tunjangan_tetap, 0) .'</td>
+                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($tunjangan_jabatan, 0) .'</td>
+                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($tunjangan_kinerja, 0) .'</td>
+                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($tunjangan_transport, 0) .'</td>
+                    ';
+                } else {
+                    $th2 .= '
+                        <td>'. number_format($record['salary'], 0, '.', ',') .'</td>
+                        <td>'. number_format($tunjangan_tetap, 0, '.', ',') .'</td>
+                        <td>'. number_format($tunjangan_jabatan, 0, '.', ',') .'</td>
+                        <td>'. number_format($tunjangan_kinerja, 0, '.', ',') .'</td>
+                        <td>'. number_format($tunjangan_transport, 0, '.', ',') .'</td>
+                    ';
+                }
+
+                $sum_salary              += $record['salary'];
+                $sum_tunjangan_tetap     += $tunjangan_tetap;
+                $sum_tunjangan_jabatan   += $tunjangan_jabatan;
+                $sum_tunjangan_kinerja   += $tunjangan_kinerja;
+                $sum_tunjangan_transport += $tunjangan_transport;
+
+            
+            if ($record['ter'] < 0 || $record['tax_allowance'] == 0) {
+                $tax_allowance = 0;
+            } else {
+                $tax_allowance = $record['ter'];
+            }
+            $total_overtime = $record['overtime_amount_weekday'] + $record['overtime_amount_saturday'] + $record['overtime_amount_sunday'] + $record['overtime_amount_holiday'];
+
+            $corr_plus = $record['correction_plus'];
+
+            if ($is_hl_emp) {
+                $total_all_allowance = $tax_allowance + $total_overtime + $gaji_harian + $corr_plus;
+            } else {
+                $total_all_allowance = $tax_allowance + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $total_overtime + $corr_plus;
+            }
+
+            $bpjs_employee = json_decode($record['bpjs_employee'], true);
+            $jp_emp = $bpjs_employee['jp_employee'] ?? 0;
+            $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
+            $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
+
+            $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+
+            if ($option === 'excel') {
+                // ===== EXCEL (numeric, bisa dihitung) =====
+                $td_number = '
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($corr_plus, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($total_overtime, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($tax_allowance, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($total_all_allowance, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($record["total_all_deduction"], 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($potongan_lain, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($jp_emp, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($bpjs_emp, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($jht_emp, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($record["ter"], 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($total_all_deduction, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($record["ter"], 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($record["net_income"], 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($record["bpjs_rate"], 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($record["bpjs_kes_rate"], 0) .'</td>
+                ';
+            } else {
+                // ===== PDF (tampilan pakai koma) =====
+                $td_number = '
+                    <td>'. number_format($corr_plus, 0, ".", ",") .'</td>
+                    <td>'. number_format($total_overtime, 0, ".", ",") .'</td>
+                    <td>'. number_format($tax_allowance, 0, ".", ",") .'</td>
+                    <td>'. number_format($total_all_allowance, 0, ".", ",") .'</td>
+                    <td>'. number_format($record["total_all_deduction"], 0, ".", ",") .'</td>
+                    <td>'. number_format($potongan_lain, 0, ".", ",") .'</td>
+                    <td>'. number_format($jp_emp, 0, ".", ",") .'</td>
+                    <td>'. number_format($bpjs_emp, 0, ".", ",") .'</td>
+                    <td>'. number_format($jht_emp, 0, ".", ",") .'</td>
+                    <td>'. number_format($record["ter"], 0, ".", ",") .'</td>
+                    <td>'. number_format($total_all_deduction, 0, ".", ",") .'</td>
+                    <td>'. number_format($record["ter"], 0, ".", ",") .'</td>
+                    <td>'. number_format($record["net_income"], 0, ".", ",") .'</td>
+                    <td>'. number_format($record["bpjs_rate"], 0, ".", ",") .'</td>
+                    <td>'. number_format($record["bpjs_kes_rate"], 0, ".", ",") .'</td>
+                ';
+            }
+
+            $html .= '<tr>
+                    <td>' . $no . '</td>
+                    <td class="str">' . $record['number'] . '</td>
+                    <td>' . $record['name'] . '</td>
+                    <td>' . $status . '</td>
+                    <td class="str">' . $record['national_id'] . '</td>
+                    <td>' . $record['marital'] . '</td>
+                    <td>' . $record['position_name'] . '</td>
+                    <td>' . $record['departement_sub_name'] . '</td>
+                    '.$th2.'
+                    '.$td_number.'
+                    ';
+            $no++;
+            $sum_total_correction_plus += $corr_plus;
+            $sum_total_overtime      += $total_overtime;
+            $sum_tax_allowance       += $tax_allowance;
+            $sum_total_all_allowance += $total_all_allowance;
+            $sum_deduction_absence   += $record['total_all_deduction'];
+            $sum_potongan_lain       += $potongan_lain;
+            $sum_jp_emp              += $jp_emp;
+            $sum_bpjs_emp            += $bpjs_emp;
+            $sum_jht_emp             += $jht_emp;
+            $sum_ter                 += $record['ter'];
+            $sum_total_all_deduction += $total_all_deduction;
+            $sum_net_income          += $record['net_income'];
+            $sum_bpjs_rate           += $record['bpjs_rate'];
+            $sum_bpjs_kes_rate       += $record['bpjs_kes_rate'];
+        }
+        $th2_total = "";
+        if ($is_hl || $filterGroupAll) {
+            if ($option === 'excel') {
+                $th2_total .= '
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_gaji_harian, 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_uang_makan, 0) .'</td>
+                ';
+            } else {
+                $th2_total .= '
+                    <td>'. number_format($sum_gaji_harian, 0, ".", ",") .'</td>
+                    <td>'. number_format($sum_uang_makan, 0, ".", ",") .'</td>
+                ';
+            }
+        }
+        if ($option === 'excel') {
+            $th2_total .= '
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_salary, 0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_tunjangan_tetap, 0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_tunjangan_jabatan, 0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_tunjangan_kinerja, 0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_tunjangan_transport, 0) .'</td>
+            ';
+        } else {
+            $th2_total .= '
+                <td>'. number_format($sum_salary, 0, ".", ",") .'</td>
+                <td>'. number_format($sum_tunjangan_tetap, 0, ".", ",") .'</td>
+                <td>'. number_format($sum_tunjangan_jabatan, 0, ".", ",") .'</td>
+                <td>'. number_format($sum_tunjangan_kinerja, 0, ".", ",") .'</td>
+                <td>'. number_format($sum_tunjangan_transport, 0, ".", ",") .'</td>
+            ';
+        }
+
+        if ($option === 'excel') {
+            $html .= '
+            <tr style="font-weight:bold; background:#f0f0f0;">
+                <td colspan="8" align="center">TOTAL</td>
+                '.$th2_total.'
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_total_correction_plus,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_total_overtime,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_tax_allowance,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_total_all_allowance,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_deduction_absence,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_potongan_lain,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_jp_emp,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_bpjs_emp,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_jht_emp,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_ter,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_total_all_deduction,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_ter,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_net_income,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_bpjs_rate,0) .'</td>
+                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_bpjs_kes_rate,0) .'</td>
+            </tr>';
+        } else {
+            $html .= '
+            <tr style="font-weight:bold; background:#f0f0f0;">
+                <td colspan="8" align="center">TOTAL</td>
+                '.$th2_total.'
+                <td>'. number_format($sum_total_correction_plus,0,'.',',') .'</td>
+                <td>'. number_format($sum_total_overtime,0,'.',',') .'</td>
+                <td>'. number_format($sum_tax_allowance,0,'.',',') .'</td>
+                <td>'. number_format($sum_total_all_allowance,0,'.',',') .'</td>
+                <td>'. number_format($sum_deduction_absence,0,'.',',') .'</td>
+                <td>'. number_format($sum_potongan_lain,0,'.',',') .'</td>
+                <td>'. number_format($sum_jp_emp,0,'.',',') .'</td>
+                <td>'. number_format($sum_bpjs_emp,0,'.',',') .'</td>
+                <td>'. number_format($sum_jht_emp,0,'.',',') .'</td>
+                <td>'. number_format($sum_ter,0,'.',',') .'</td>
+                <td>'. number_format($sum_total_all_deduction,0,'.',',') .'</td>
+                <td>'. number_format($sum_ter,0,'.',',') .'</td>
+                <td>'. number_format($sum_net_income,0,'.',',') .'</td>
+                <td>'. number_format($sum_bpjs_rate,0,'.',',') .'</td>
+                <td>'. number_format($sum_bpjs_kes_rate,0,'.',',') .'</td>
+            </tr>';
+        }
+
+        $html .= '</table><br></br>';
+
+        $html .= '
+            <table id="ttd">
+                <tr>
+                    <th style="width: 62%;" colspan="22"></th>
+                    <th colspan="2" style="width: 10%; border: 1px solid #ddd;">Approval By</th>
+                </tr>
+                <tr>
+                    <th style="width: 62%; style="height: 65px" colspan="22"></th>
+                    <th style="height: 65px; width: 13%; border: 1px solid #ddd;"></th>
+                    <th style="height: 65px; width: 13%; border: 1px solid #ddd;"></th>
+                </tr>
+                <tr>
+                    <th style="width: 62%;" colspan="22"></th>
+                    <th style="width: 10%; border: 1px solid #ddd;">Rendhika Harsono</th>
+                    <th style="width: 10%; border: 1px solid #ddd;">Askara Harsono</th>
+                </tr>
+            </table>
+            ';
+        $html .= '</body></html>';
+        
+        echo $html;
+    }
+
+    public function excelReport()
+    {
+        if ($this->session->username != "") {
+            $sheet = 0;
+            $excel = $this->spreadsheet_lib->newSpreadsheet();
+            $spreadsheet = $excel->getActiveSheet($sheet);
+            $excel->getProperties()->setCreator('Pixelphy')
+                ->setLastModifiedBy('Pixelphy')
+                ->setTitle('Office 2007 XLSX Test Document')
+                ->setSubject('Office 2007 XLSX Test Document')
+                ->setDescription('Test document for Office 2007 XLSX, generated using PHP classes.')
+                ->setKeywords('office 2007 openxml php')
+                ->setCategory('PT ASKARA TEHNO INDONESIA');
+
+            $style_row = [
+                'alignment' => ['horizontal' => 'left', 'vertical' => 'center'],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+            ];
+            $style_center = ['alignment' => ['horizontal' => 'center', 'vertical' => 'center']];
+            $style_right = ['alignment' => ['horizontal' => 'right', 'vertical' => 'center']];
+            $style_row_center = array_merge($style_row, $style_center);
+            $style_row_right = array_merge($style_row, $style_right);
+
+            $style_row_ttd = array_merge($style_row, $style_center);
+            $style_row_ttd['borders']['allBorders']['color'] = ['argb' => 'FFDDDDDD'];
+
+            $style_col = array_merge($style_row, [
+                'font' => ['bold' => true],
+                'alignment' => ['horizontal' => 'center', 'vertical' => 'center']
+            ]);
+
+            // $drawing = new Drawing();
+            // $drawing->setName('Logo');
+            // $drawing->setDescription('Company Logo');
+            // $drawing->setPath(FCPATH.'assets/image/config/logo/1741863196.png');
+            // $drawing->setWidth(50);
+            // $drawing->setHeight(50);
+            // $drawing->setCoordinates('A1');
+            // $drawing->setWorksheet($spreadsheet);
+
+            //SHEET 1 ------------------------------------------------------------------------------------------------------------
+            //Coloumn
+            $permit_type = $this->crud->reads('permit_types', [], ['payroll' => 'NON DEDUCTION']);
+            $allowance = $this->crud->reads('allowances', [], [], "", "name", "asc");
+            $deduction = $this->crud->reads('deductions', [], [], "", "name", "asc");
+            $permit_type_d = $this->crud->reads('permit_types', [], ['payroll' => 'DEDUCTION']);
+            $bpjs = $this->crud->reads('bpjs', ['status' => 0], [], "", "", "", ["number"]);
+
+            $id_allowances = [];
+            foreach ($allowance as $index => $row) { $id_allowances[strtolower(trim($row->number))] = $row->id; }
+
+            $filter_from = $this->input->get('filter_from');
+            $filter_to = $this->input->get('filter_to');
+            $filter_division = $this->input->get('filter_division');
+            $filter_departement = $this->input->get('filter_departement');
+            $filter_departement_sub = $this->input->get('filter_departement_sub');
+            $filter_employee = $this->input->get('filter_employee');
+            $filter_employee_type = $this->input->get('filter_employee_type');
+            $filter_group = $this->input->get('filter_group');
+            $filter_status = $this->input->get('filter_status');
+            $username = $this->session->username;
+            $filter_group_ex = explode(",", trim($filter_group));
+
+            $period_start = date("Y-m", strtotime($filter_from));
+            $period_end = date("Y-m", strtotime($filter_to));
+
+            if($filter_status == "0"){
+                $where_status = "AND e.employee_id IS NULL";
+            }elseif($filter_status == "1"){
+                $where_status = "AND e.employee_id IS NOT NULL";
+            }else{
+                $where_status = "";
+            }
+
+            if ($username == "admin") {
+                $privileges = "";
+            } else {
+                $privileges = "AND c.status = '1'";
+            }
+
+            if($filter_group != ""){
+                $filter_group_ex = array_map(function($v) {
+                    return $this->db->escape($v);
+                }, $filter_group_ex);
+
+                $where_group = "AND b.group_id IN (" . implode(',', $filter_group_ex) . ")";
+            } else {
+                $where_group = "";
+            }
+
+            if($filter_employee != ""){
+                $employee = " AND a.employee_id LIKE '%$filter_employee%'";
+            } else {
+                $employee = " AND ( r.resign_date IS NULL OR r.resign_date >= '$filter_from' ) ";
+            }
+
+            $q = "SELECT a.*, 0 AS tax_allowance, 0 AS overtime_saturday, 0 AS overtime_amount_saturday, 0 AS overtime_sunday, 0 AS overtime_amount_sunday, b.national_id, d.name as source_name, e.employee_id as status_resign, g.number as account_no,
+            coalesce(p.bpjs, 0) as bpjs_rate, b.group_id, 0 as bpjs_kes_rate, r.resign_date
+            FROM payrolls a
+                JOIN employees b on a.employee_id = b.id
+                LEFT JOIN sources d on b.source_id = d.id
+                JOIN privilege_groups c ON b.group_id = c.group_id and c.username = '$username' $privileges
+                LEFT JOIN resignations e ON b.id = e.employee_id
+                LEFT JOIN account_coa f ON b.division_id = f.division_id and b.departement_id = f.departement_id and b.position_id = f.position_id and b.contract_id = f.contract_id
+                LEFT JOIN accounts g ON f.account_id = g.id and g.category = 'payroll'
+                LEFT JOIN setup_salaries p ON p.employee_id = b.id
+                LEFT JOIN resignations r ON r.employee_id = b.id
+                WHERE a.period_start = '$period_start' $where_status
+                AND a.period_end = '$period_end'
+                AND b.division_id LIKE '%$filter_division%'
+                AND b.departement_id LIKE '%$filter_departement%'
+                AND b.departement_sub_id LIKE '%$filter_departement_sub%'
+                $employee
+                AND b.contract_id LIKE '%$filter_employee_type%'
+                $where_group
+                GROUP BY a.employee_id
+                ORDER BY a.name ASC";
+            // die($q);
+            $datas = [];
+            $no = 1;
+            $sum_total_correction_plus = 0;
+            $sum_total_overtime       = 0;
+            $sum_tax_allowance        = 0;
+            $sum_total_all_allowance  = 0;
+            $sum_deduction_absence    = 0;
+            $sum_potongan_lain        = 0;
+            $sum_jp_emp               = 0;
+            $sum_bpjs_emp             = 0;
+            $sum_jht_emp              = 0;
+            $sum_ter                  = 0;
+            $sum_total_all_deduction  = 0;
+            $sum_net_income           = 0;
+            $sum_bpjs_rate            = 0;
+            $sum_bpjs_kes_rate        = 0;
+            // total untuk th2
+            $sum_salary              = 0;
+            $sum_tunjangan_tetap     = 0;
+            $sum_tunjangan_jabatan   = 0;
+            $sum_tunjangan_kinerja   = 0;
+            $sum_tunjangan_transport = 0;
+
+            $sum_gaji_harian = 0;
+            $sum_uang_makan  = 0;
+
+            $group_id = null;
+            $hlGroups = ['20221213000002', '20221213000003'];
+
+            $filter_group_ex = array_map(function($v) {
+                return trim($v, "'");
+            }, $filter_group_ex);
+            $is_hl = 0;
+            if ($filter_employee) {
+                $femployee = $this->crud->read('employees', [], ['id' => $filter_employee]);
+                $group_id  = $femployee->group_id ?? null;
+                $is_hl = in_array($group_id, $hlGroups, true);
+            } else {
+                $is_hl = array_intersect($filter_group_ex, $hlGroups);
+            }
+
+            $filterGroupAll = 1;
+            if ($filter_group) {
+                $filterGroupAll = 0;
+            }
+
+            $amount_groups = [];
+            foreach ($this->db->query($q)->result_array() as $index => $record) {
+                if (!isset($amount_groups[$record['group_name']])) { $amount_groups[$record['group_name']] = 0; }
+                $amount_groups[$record['group_name']]++;
+
+                $status = "ACTIVE";
+                if ($record['resign_date']) {
+                    // cek resign dalam periode gaji
+                    $rstart = new DateTime($filter_from);
+                    $rend   = (new DateTime($filter_to));
+                    $rdate = new DateTime($record['resign_date']);
+
+                    if ($rdate >= $rstart && $rdate <= $rend) {
+                        $status = 'RESIGN';
+                    }
+                }
+                $data = [
+                    "number" => $record["number"],
+                    "name" => $record["name"],
+                    "status" => $status,
+                    "national_id" => $record["national_id"],
+                    "marital" => $record["marital"],
+                    "position_name" => $record["position_name"],
+                    "departement_sub_name" => $record["departement_sub_name"],
+                ];
+                $is_hl_emp = in_array($record['group_id'], $hlGroups, true);
+                $potongan_lain = $record['loan_cooperative'] + $record['loan_bank'] + $record['loan_other'];
+                $allowances = json_decode($record['allowence'], true);
+                $arr_allowance = [];
+                foreach ($allowances as $key => $value) {
+                    $arr_allowance[(isset($id_allowances[$key])) ? $id_allowances[$key] : $key] = $value;
+                }
+                if ($is_hl || $filterGroupAll) {
+                    $gaji_harian = 0;
+                    // ambil nilai uang makan (only pti)
+                    $uang_makan = 0;
+                    if (isset($arr_allowance['20221213000006'])) { $uang_makan = floatval($arr_allowance['20221213000006']); }
+                    elseif (isset($arr_allowance['20250916000001'])) { $uang_makan = floatval($arr_allowance['20250916000001']); }
+                    elseif (isset($arr_allowance['20221213000007'])) { $uang_makan = floatval($arr_allowance['20221213000007']); }
+
+                    // hitung total selain uang makan
+                    foreach ($arr_allowance as $key => $value) {
+                        if ($key === 'um') continue; // skip uang makan
+                        $gaji_harian += (float) $value;
+                    }
+                    if (!$is_hl_emp) {
+                        $gaji_harian = 0;
+                        $uang_makan = 0;
+                    }
+                    $data["gaji_harian"] = number_format($gaji_harian, 0, "", ",");
+                    $data["uang_makan"] = number_format($uang_makan, 0, "", ",");
+
+                    $sum_gaji_harian += $gaji_harian;
+                    $sum_uang_makan  += $uang_makan;
+                }
+                // BRI, KI, PTI, DUMMY
+                $tunjangan_tetap = $arr_allowance['20230119000002'] ?? $arr_allowance['20230221000001'] ?? $arr_allowance['20230217000001'] ?? $arr_allowance['20230221000001'] ?? 0;
+                $tunjangan_jabatan = $arr_allowance['20230119000003'] ?? $arr_allowance['20230117000002'] ?? $arr_allowance['20230222000001'] ?? $arr_allowance['20230117000002'] ?? 0;
+                $tunjangan_kinerja = $arr_allowance['20230119000004'] ?? $arr_allowance['20230117000003'] ?? $arr_allowance['20230117000003'] ?? 0;
+                $tunjangan_transport = 0;
+
+                $data["salary"] = number_format($record['salary'], 0, "", ",");
+                $data["tunjangan_tetap"] = number_format($tunjangan_tetap, 0, "", ",");
+                $data["tunjangan_jabatan"] = number_format($tunjangan_jabatan, 0, "", ",");
+                $data["tunjangan_kinerja"] = number_format($tunjangan_kinerja, 0, "", ",");
+                $data["tunjangan_transport"] = number_format($tunjangan_transport, 0, "", ",");
+
+                $sum_salary              += $record['salary'];
+                $sum_tunjangan_tetap     += $tunjangan_tetap;
+                $sum_tunjangan_jabatan   += $tunjangan_jabatan;
+                $sum_tunjangan_kinerja   += $tunjangan_kinerja;
+                $sum_tunjangan_transport += $tunjangan_transport;
+
+                
+                if ($record['ter'] < 0) {
+                    $tax_allowance = 0;
+                } else {
+                    $tax_allowance = $record['ter'];
+                }
+                $total_overtime = $record['overtime_amount_weekday'] + $record['overtime_amount_saturday'] + $record['overtime_amount_sunday'] + $record['overtime_amount_holiday'];
+
+                $corr_plus = $record['correction_plus'];
+
+                if ($is_hl_emp) {
+                    $total_all_allowance = $tax_allowance + $total_overtime + $gaji_harian + $corr_plus;
+                } else {
+                    $total_all_allowance = $tax_allowance + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $total_overtime + $corr_plus;
+                }
+
+                $bpjs_employee = json_decode($record['bpjs_employee'], true);
+                $jp_emp = $bpjs_employee['jp_employee'] ?? 0;
+                $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
+                $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
+
+                $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+
+                $data["corr_plus"] = number_format($corr_plus, 0, "", ",");
+                $data["total_overtime"] = number_format($total_overtime, 0, "", ",");
+                $data["tax_allowance"] = number_format($tax_allowance, 0, "", ",");
+                $data["total_all_allowance"] = number_format($total_all_allowance, 0, "", ",");
+                $data["total_all_deduction"] = number_format($record["total_all_deduction"], 0, "", ",");
+                $data["potongan_lain"] = number_format($potongan_lain, 0, "", ",");
+                $data["jp_emp"] = number_format($jp_emp, 0, "", ",");
+                $data["bpjs_emp"] = number_format($bpjs_emp, 0, "", ",");
+                $data["jht_emp"] = number_format($jht_emp, 0, "", ",");
+                $data["ter"] = number_format($record["ter"], 0, "", ",");
+                $data["total_all_deduction2"] = number_format($total_all_deduction, 0, "", ",");
+                $data["ter2"] = number_format($record["ter"], 0, "", ",");
+                $data["net_income"] = number_format($record["net_income"], 0, "", ",");
+                $data["bpjs_rate"] = number_format($record["bpjs_rate"], 0, "", ",");
+                $data["bpjs_kes_rate"] = number_format($record["bpjs_kes_rate"], 0, "", ",");
+
+                $no++;
+                $sum_total_correction_plus += $corr_plus;
+                $sum_total_overtime      += $total_overtime;
+                $sum_tax_allowance       += $tax_allowance;
+                $sum_total_all_allowance += $total_all_allowance;
+                $sum_deduction_absence   += $record['total_all_deduction'];
+                $sum_potongan_lain       += $potongan_lain;
+                $sum_jp_emp              += $jp_emp;
+                $sum_bpjs_emp            += $bpjs_emp;
+                $sum_jht_emp             += $jht_emp;
+                $sum_ter                 += $record['ter'];
+                $sum_total_all_deduction += $total_all_deduction;
+                $sum_net_income          += $record['net_income'];
+                $sum_bpjs_rate           += $record['bpjs_rate'];
+                $sum_bpjs_kes_rate       += $record['bpjs_kes_rate'];
+                // die(json_encode($data));
+                array_push($datas, json_decode(json_encode($data)));
+            }
+            $data = ["total_1" => "", "total_2" => "", "total_3" => "", "total_4" => "", "total_5" => "", "total_6" => "", "total_7" => ""];
+            if ($is_hl || $filterGroupAll) {
+                $data["sum_gaji_harian"] = number_format($sum_gaji_harian, 0, "", ",");
+                $data["sum_uang_makan"] = number_format($sum_uang_makan, 0, "", ",");
+            }
+            $data["sum_salary"] = number_format($sum_salary, 0, "", ",");
+            $data["sum_tunjangan_tetap"] = number_format($sum_tunjangan_tetap, 0, "", ",");
+            $data["sum_tunjangan_jabatan"] = number_format($sum_tunjangan_jabatan, 0, "", ",");
+            $data["sum_tunjangan_kinerja"] = number_format($sum_tunjangan_kinerja, 0, "", ",");
+            $data["sum_tunjangan_transport"] = number_format($sum_tunjangan_transport, 0, "", ",");
+            $data["sum_total_correction_plus"] = number_format($sum_total_correction_plus, 0, "", ",");
+            $data["sum_total_overtime"] = number_format($sum_total_overtime, 0, "", ",");
+            $data["sum_tax_allowance"] = number_format($sum_tax_allowance, 0, "", ",");
+            $data["sum_total_all_allowance"] = number_format($sum_total_all_allowance, 0, "", ",");
+            $data["sum_deduction_absence"] = number_format($sum_deduction_absence, 0, "", ",");
+            $data["sum_potongan_lain"] = number_format($sum_potongan_lain, 0, "", ",");
+            $data["sum_jp_emp"] = number_format($sum_jp_emp, 0, "", ",");
+            $data["sum_bpjs_emp"] = number_format($sum_bpjs_emp, 0, "", ",");
+            $data["sum_jht_emp"] = number_format($sum_jht_emp, 0, "", ",");
+            $data["sum_ter"] = number_format($sum_ter, 0, "", ",");
+            $data["sum_total_all_deduction"] = number_format($sum_total_all_deduction, 0, "", ",");
+            $data["sum_ter2"] = number_format($sum_ter, 0, "", ",");
+            $data["sum_net_income"] = number_format($sum_net_income, 0, "", ",");
+            $data["sum_bpjs_rate"] = number_format($sum_bpjs_rate, 0, "", ",");
+            $data["sum_bpjs_kes_rate"] = number_format($sum_bpjs_kes_rate, 0, "", ",");
+            array_push($datas, json_decode(json_encode($data)));
+
+            $columns = ['No', 'Employee ID', 'Full Name', 'Status', 'No. KTP', 'Status PTKP', 'Job Position', 'Organization', 'Basic Salary', 'Tunjangan Tetap', 'Tunjangan Jabatan', 'Tunjangan Kinerja', 'Tunjangan Transport', 'Correction Plus', 'Total Overtime', 'Tax Allowance', 'Total Allowance', 'Potongan Absen', 'Potongan Lain-Lain', 'Jaminan Pensiun Employee', 'BPJSK Employee', 'JHT Employee', 'PPH 21', 'Total Deduction', 'PPH 21 Payment', 'Take Home Pay', 'BPJS TK Rate', 'BPJS Kes Rate'];
+            if ($is_hl || $filterGroupAll) { array_splice($columns, 8, 0, ['Gaji Harian', 'Uang Makan']); }
+            $last_index = count($columns) - 1;
+            $title = 'Generate Payroll Report';
+
+            $this->db->select('TRIM(name) AS name')->from('users')->where('username', $this->session->username);
+            $fullname = $this->db->get()->row()->name;
+
+            $alfa = 'A';
+            $ttd_alfa = '';
+            $ttd_alfa2 = '';
+            foreach ($columns as $key => $value) {
+                if ($key == $last_index) {
+                    $spreadsheet->setCellValue('A1', $title);
+                    $spreadsheet->mergeCells('A1:'.$alfa.'1');
+                    $spreadsheet->getStyle('A1')->applyFromArray($style_center);
+                    $spreadsheet->getStyle('A1:'.$alfa.'1')->getFont()->setSize(20);
+
+                    $spreadsheet->setCellValue($alfa.'3', 'Print Date : ' . date("d M Y H:m:s"));
+                    $spreadsheet->setCellValue($alfa.'4', 'Print By : ' . $fullname);
+                }
+
+                $spreadsheet->setCellValue($alfa.'6', $value);
+                $spreadsheet->getStyle($alfa.'6')->applyFromArray($style_col);
+
+                if (empty($ttd_alfa) && $value == 'BPJSK Employee') { $ttd_alfa = $alfa; }
+                if (empty($ttd_alfa2) && $value == 'JHT Employee') { $ttd_alfa2 = $alfa; }
+
+                $alfa++;
+            }
+
+            $id = base64_decode($this->input->post('id'));
+
+            $row_no = 7;
+            foreach ($datas as $index => $row) {
+                $no = $index + 1;
+                $alfa = 'A';
+                $is_total = isset($row->total_1);
+
+                $style = $style_row_center;
+                if ($is_total) {
+                    $style = array_merge($style, [
+                        'font' => ['bold' => true],
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['argb' => 'FFF0F0F0']
+                        ]
+                    ]);
+                }
+                $spreadsheet->setCellValue($alfa.$row_no, ($is_total) ? 'TOTAL' : $no);
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+
+                $set_right = false;
+                foreach ($row as $key => $value) {
+                    $alfa++;
+
+                    $style = $style_row;
+                    if (in_array($key, ['status'])) { $style = $style_row_center; }
+                    if ($set_right) { $style = $style_row_right; }
+                    if ($is_total) {
+                        $style = array_merge($style, [
+                            'font' => ['bold' => true],
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+                                'startColor' => ['argb' => 'FFF0F0F0']
+                            ]
+                        ]);
+                    }
+
+                    if (in_array($key, ['number','national_id']))
+                        { $spreadsheet->setCellValueExplicit($alfa.$row_no, $value, DataType::TYPE_STRING); }
+                    else { $spreadsheet->setCellValue($alfa.$row_no, $value); }
+
+                    $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+                    $spreadsheet->getColumnDimension($alfa)->setAutoSize(true);
+
+                    if (!$set_right && in_array($key, ['departement_sub_name', 'total_7'])) { $set_right = true; }
+                }
+
+                if ($is_total) { $spreadsheet->mergeCells('A'.$row_no.':H'.$row_no); }
+
+                $row_no++;
+            }
+            $row_no++;
+            $spreadsheet->setCellValue($ttd_alfa.$row_no, 'Approval By');
+            $spreadsheet->getStyle($ttd_alfa.$row_no)->applyFromArray($style_row_ttd);
+            $spreadsheet->getStyle($ttd_alfa2.$row_no)->applyFromArray($style_row_ttd);
+            $spreadsheet->mergeCells($ttd_alfa.$row_no.':'.$ttd_alfa2.$row_no);
+            $row_no++;
+            $spreadsheet->getStyle($ttd_alfa.$row_no)->applyFromArray($style_row_ttd);
+            $spreadsheet->getStyle($ttd_alfa2.$row_no)->applyFromArray($style_row_ttd);
+            $spreadsheet->getRowDimension($row_no)->setRowHeight(48.75);
+            $row_no++;
+            $spreadsheet->setCellValue($ttd_alfa.$row_no, 'Rendhika Harsono');
+            $spreadsheet->setCellValue($ttd_alfa2.$row_no, 'Askara Harsono');
+            $spreadsheet->getStyle($ttd_alfa.$row_no)->applyFromArray($style_row_ttd);
+            $spreadsheet->getStyle($ttd_alfa2.$row_no)->applyFromArray($style_row_ttd);
+            $spreadsheet->getColumnDimension($ttd_alfa)->setAutoSize(true);
+            $spreadsheet->getColumnDimension($ttd_alfa2)->setAutoSize(true);
+
+            // Rename worksheet
+            $spreadsheet->setTitle('data table');
+
+            $sheet++;
+            $spreadsheet = $excel->createSheet();
+            $excel->setActiveSheetIndex($sheet);
+            $spreadsheet->setTitle('Accumulation Amount');
+
+            $columns = ['No', 'Group', 'Total Amount'];
+
+            $alfa = 'A';
+            $row_no = 1;
+            foreach ($columns as $key => $value) {
+                $spreadsheet->setCellValue($alfa.$row_no, $value);
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_col);
+
+                $alfa++;
+            }
+
+            $datas = $this->db->distinct()->select("TRIM(name) AS name, 0 AS amount")->from("groups")->order_by("name")->get()->result();
+
+            $total = 0;
+            $row_no++;
+            foreach ($datas as $index => $row) {
+                $no = $index + 1;
+                $alfa = 'A';
+
+                $spreadsheet->setCellValue($alfa.$row_no, $no);
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_row_center);
+
+                foreach ($row as $key => $value) {
+                    $alfa++;
+
+                    if ($key == 'amount') {
+                        if (isset($amount_groups[$row->name])) {
+                            $value = $amount_groups[$row->name];
+                            $total += floatval($value);
+                        }
+                    }
+
+                    $style = $style_row;
+                    if (in_array($key, [''])) { $style = $style_row_center; }
+                    if (in_array($key, ['amount'])) { $style = $style_row_right; }
+
+                    if (in_array($key, ['']))
+                        { $spreadsheet->setCellValueExplicit($alfa.$row_no, $value, DataType::TYPE_STRING); }
+                    else { $spreadsheet->setCellValue($alfa.$row_no, $value); }
+                    $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+                }
+
+                $row_no++;
+            }
+
+            $spreadsheet->setCellValue("A".$row_no, "Grand Total");
+            $spreadsheet->setCellValue("C".$row_no, $total);
+
+            $spreadsheet->mergeCells("A".$row_no.":B".$row_no);
+            $spreadsheet->getStyle("A".$row_no)->applyFromArray($style_col);
+            $spreadsheet->getStyle("B".$row_no)->applyFromArray($style_col);
+            $spreadsheet->getStyle("C".$row_no)->applyFromArray(array_merge($style_row_right, ["font" => ["bold" => true]]));
+
+            for ($i='A'; $i <= $alfa; $i++) { $spreadsheet->getColumnDimension($i)->setAutoSize(true); }
+
+            $excel->setActiveSheetIndex(0);
+            // die(json_encode($excel->getActiveSheet()->toArray()));
+
+            if (ob_get_length()) { ob_end_clean(); }
+
+            // Redirect output to a client’s web browser (Xlsx)
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="'.$title.date(' (Y-m-d)').'.xlsx"');
+            header('Cache-Control: max-age=0');
+            header('Cache-Control: max-age=1');
+
+            // If you're serving to IE over SSL, then the following may be needed
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Cache-Control: cache, must-revalidate');
+            header('Pragma: public');
+
+            $writer = IOFactory::createWriter($excel, 'Xlsx');
+            $writer->save('php://output');
+            exit;
+        }
     }
 
     public function printcsv(){
