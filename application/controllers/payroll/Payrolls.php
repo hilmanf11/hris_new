@@ -484,6 +484,7 @@ class Payrolls extends CI_Controller
             $arr_allowance_amount_total_bpjs = 0;
             $arr_allowance_amount_number = 0;
             $count_allowance_number = 0;
+            $sum_allowance_tj = 0;
             foreach ($r_allowance as $allowance_data) {
                 if ($allowance_data['calculate_days'] == "1") {
                     $arr_allowance_number .= strtolower($allowance_data['number']) . ",";
@@ -511,6 +512,8 @@ class Payrolls extends CI_Controller
                     $count_allowance_number += 0;
                     $arr_allowance_amount_number += 0;
                 }
+                if (strpos($allowance_data['number'], 'TJ TDK TTP') !== false || strpos($allowance_data['number'], 'TJ TETAP') !== false)
+                    { $sum_allowance_tj += $allowance_data['amount']; }
             }
             $arr_allowance_number_ex = explode(",", substr($arr_allowance_number, 0, -1));
             $arr_allowance_amount_ex = explode(",", substr($arr_allowance_amount, 0, -1));
@@ -788,12 +791,17 @@ class Payrolls extends CI_Controller
                 $absence_qty_final = 0;
             }
             //Harga Potong Gaji kalo dia ga masuk kerja
+            // if ($record['group_name'] == "MAGANG") {
+            //     $absence_amount = round(($record['salary'] / $hkw) * $absence_qty_final);
+            // } elseif ($count_allowance_number > 0) {
+            //     $absence_amount = round(($arr_allowance_amount_number / $hkw) * $absence_qty_final);
+            // } else {
+            //     $absence_amount = round((($record['salary'] + $arr_allowance_amount_total) / $hkw) * $absence_qty_final);
+            // }
             if ($record['group_name'] == "MAGANG") {
                 $absence_amount = round(($record['salary'] / $hkw) * $absence_qty_final);
-            } elseif ($count_allowance_number > 0) {
-                $absence_amount = round(($arr_allowance_amount_number / $hkw) * $absence_qty_final);
             } else {
-                $absence_amount = round((($record['salary'] + $arr_allowance_amount_total) / $hkw) * $absence_qty_final);
+                $absence_amount = round((($record['salary'] + $sum_allowance_tj) / $hkw) * $absence_qty_final);
             }
             //Total Pendapatan Gaji (Gaji + Tunjangan + BPJS dari perusahaan + Koreksi plus + lembur hari biasa + lembur hari libur)
             $total_all_allowance = ($record['salary'] + $arr_allowance_amount_total + $arr_bpjs_com_amount_total + @$correction_plus_amount);
@@ -1335,8 +1343,8 @@ class Payrolls extends CI_Controller
             $permit_type_d = $this->crud->reads('permit_types', [], ['payroll' => 'DEDUCTION']);
             $bpjs = $this->crud->reads('bpjs', ['status' => 0]);
             $columns = [
-                ['No','Employee ID','Employee Name','Status','Division','Departement','Departement Sub','Job Type','Status','Source','Position','Shift','Level','Marital','TER Code','Group','National ID','NPWP','Account No','Attandance','','Working Calendar','Salary','Allowence','BPJS Company','Total BPJS Company','Correction Plus','Bruto Income','Deduction','Correction Minus','Total Deduction','Total BPJS Company','Income','Deduction','LOAN','BPJS Employee','Total BPJS Employee','TER','Net Income'],
-                ['','','','','','','','','','','','','','','','','','','','','WD','','','','','','','','','','','','','','','','','','']
+                ['No','Employee ID','Employee Name','Status','Division','Departement','Departement Sub','Sign Date','Expired Date','Resign Date','Job Type','Status','Source','Position','Shift','Level','Marital','TER Code','Group','National ID','NPWP','Account No','Attandance','','Working Calendar','Salary','Allowence','BPJS Company','Total BPJS Company','Correction Plus','Bruto Income','Deduction','Correction Minus','Total Deduction','Total BPJS Company','Income','Deduction','LOAN','BPJS Employee','Total BPJS Employee','TER','Net Income'],
+                ['','','','','','','','','','','','','','','','','','','','','','','','WD','','','','','','','','','','','','','','','','','','']
             ];
 
             $deduction_keys = [];
@@ -1353,7 +1361,7 @@ class Payrolls extends CI_Controller
                     elseif (in_array($col, ['BPJS Company','BPJS Employee'])) { $datas = $bpjs; }
                     elseif ($col == 'Deduction' && $position == 1) {
                         foreach ($permit_type_d as $index => $row) {
-                            $deduction_keys[] = $row->number;
+                            $deduction_keys[] = strtolower($row->number);
                             $datas[] = (object)['number' => $row->number];
                             $datas[] = (object)['number' => 'Amount'];
                         }
@@ -1473,6 +1481,9 @@ class Payrolls extends CI_Controller
                     "division_name" => $row->division_name,
                     "departement_name" => $row->departement_name,
                     "departement_sub_name" => $row->departement_sub_name,
+                    "date_sign" => $row->date_sign,
+                    "date_expired" => $row->date_expired,
+                    "resign_date" => $row->resign_date,
                     "job_type" => $row->job_type,
                     "contract_name" => $row->contract_name,
                     "source_name" => $row->source_name,
@@ -1509,8 +1520,8 @@ class Payrolls extends CI_Controller
                 foreach ($deduction_keys as $key => $value) {
                     $right_cell_keys[] = $value;
                     $right_cell_keys[] = $value.'_amount';
-                    $data[$value] = number_format($deduction_data[$value] ?? '0', 0, '', ',');
-                    $data[$value.'_amount'] = number_format($amount_data[$index] ?? '0', 0, '', ',');
+                    $data[$value] = (empty($deduction_data[$value.'b'])) ? 0 : number_format($deduction_data[$value.'b'] ?? '0', 0, '', ',');
+                    $data[$value.'_amount'] = (empty($amount_data[$value.'_amount'])) ? 0 : number_format($amount_data[$value.'_amount'] ?? '0', 0, '', ',');
                 }
                 $data['deduction_absence'] = number_format($row->deduction_absence, 0, '', ',');
                 $data['deduction_absence_amount'] = number_format($row->deduction_absence_amount, 0, '', ',');
