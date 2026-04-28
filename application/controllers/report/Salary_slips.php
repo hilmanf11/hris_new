@@ -346,7 +346,31 @@ class Salary_slips extends CI_Controller
 
             $records_daily = $query_daily->result_array();
 
-
+            if (!empty($records_daily)) {
+                $records_daily[0]["allowance"] = "{}";
+                $records_daily[0]["bpjs_company"] = "{}";
+                $records_daily[0]["bpjs_company_total"] = "0";
+                $records_daily[0]["correction_plus"] = "0";
+                $records_daily[0]["overtime_weekday"] = "0";
+                $records_daily[0]["overtime_convert_weekday"] = "0";
+                $records_daily[0]["overtime_amount_weekday"] = "0";
+                $records_daily[0]["overtime_holiday"] = "0";
+                $records_daily[0]["overtime_convert_holiday"] = "0";
+                $records_daily[0]["overtime_amount_holiday"] = "0";
+                $records_daily[0]["overtime_correction"] = "0";
+                $records_daily[0]["overtime_convert_correction"] = "0";
+                $records_daily[0]["overtime_amount_correction"] = "0";
+                $records_daily[0]["total_overtime"] = "0";
+                $records_daily[0]["total_overtime_convert"] = "0";
+                $records_daily[0]["total_overtime_amount"] = "0";
+                $records_daily[0]["total_all_allowance"] = "0";
+                $records_daily[0]["deduction_number"] = "{}";
+                $records_daily[0]["deduction_amount"] = "{}";
+                $records_daily[0]["deduction_absence"] = "0";
+                $records_daily[0]["deduction_absence_amount"] = "0";
+                $records_daily[0]["correction_minus"] = "0";
+                $records_daily[0]["total_all_deduction"] = "0";
+            }
 
             // Combine both results
 
@@ -1134,7 +1158,31 @@ class Salary_slips extends CI_Controller
 
         $records_daily = $query_daily->result_array();
 
-
+        if (!empty($records_daily)) {
+            $records_daily[0]["allowance"] = "{}";
+            $records_daily[0]["bpjs_company"] = "{}";
+            $records_daily[0]["bpjs_company_total"] = "0";
+            $records_daily[0]["correction_plus"] = "0";
+            $records_daily[0]["overtime_weekday"] = "0";
+            $records_daily[0]["overtime_convert_weekday"] = "0";
+            $records_daily[0]["overtime_amount_weekday"] = "0";
+            $records_daily[0]["overtime_holiday"] = "0";
+            $records_daily[0]["overtime_convert_holiday"] = "0";
+            $records_daily[0]["overtime_amount_holiday"] = "0";
+            $records_daily[0]["overtime_correction"] = "0";
+            $records_daily[0]["overtime_convert_correction"] = "0";
+            $records_daily[0]["overtime_amount_correction"] = "0";
+            $records_daily[0]["total_overtime"] = "0";
+            $records_daily[0]["total_overtime_convert"] = "0";
+            $records_daily[0]["total_overtime_amount"] = "0";
+            $records_daily[0]["total_all_allowance"] = "0";
+            $records_daily[0]["deduction_number"] = "{}";
+            $records_daily[0]["deduction_amount"] = "{}";
+            $records_daily[0]["deduction_absence"] = "0";
+            $records_daily[0]["deduction_absence_amount"] = "0";
+            $records_daily[0]["correction_minus"] = "0";
+            $records_daily[0]["total_all_deduction"] = "0";
+        }
 
         // Combine both results
 
@@ -1992,10 +2040,34 @@ class Salary_slips extends CI_Controller
 
             $records_daily = $query_daily->result_array();
 
-
+            if (!empty($records_daily)) {
+                $records_daily[0]["allowance"] = "{}";
+                $records_daily[0]["bpjs_company"] = "{}";
+                $records_daily[0]["bpjs_company_total"] = "0";
+                $records_daily[0]["correction_plus"] = "0";
+                $records_daily[0]["overtime_weekday"] = "0";
+                $records_daily[0]["overtime_convert_weekday"] = "0";
+                $records_daily[0]["overtime_amount_weekday"] = "0";
+                $records_daily[0]["overtime_holiday"] = "0";
+                $records_daily[0]["overtime_convert_holiday"] = "0";
+                $records_daily[0]["overtime_amount_holiday"] = "0";
+                $records_daily[0]["overtime_correction"] = "0";
+                $records_daily[0]["overtime_convert_correction"] = "0";
+                $records_daily[0]["overtime_amount_correction"] = "0";
+                $records_daily[0]["total_overtime"] = "0";
+                $records_daily[0]["total_overtime_convert"] = "0";
+                $records_daily[0]["total_overtime_amount"] = "0";
+                $records_daily[0]["total_all_allowance"] = "0";
+                $records_daily[0]["deduction_number"] = "{}";
+                $records_daily[0]["deduction_amount"] = "{}";
+                $records_daily[0]["deduction_absence"] = "0";
+                $records_daily[0]["deduction_absence_amount"] = "0";
+                $records_daily[0]["correction_minus"] = "0";
+                $records_daily[0]["total_all_deduction"] = "0";
+            }
 
             // Combine both results
-
+            // die(json_encode($records_daily));
             $records = array_merge($records_regular, $records_daily);
 
 
