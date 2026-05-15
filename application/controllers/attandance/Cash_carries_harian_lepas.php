@@ -674,6 +674,13 @@ class Cash_carries_harian_lepas extends CI_Controller
             $total = 0;
 
             foreach ($records as $record) {
+                $record['amount'] = $this->readOvertimePrice(
+                    $record['employee_id'],
+                    $record['trans_date'],
+                    $this->convertHour($record['trans_date'], $record['start'], $record['end'], $record['employee_id'], $record['break'])['duration_hour'],
+                    $record['meal']
+                );
+
                 $this->db->select('*');
                 $this->db->from('attandances');
                 $this->db->where('number', $record['employee_number']);
@@ -711,11 +718,13 @@ class Cash_carries_harian_lepas extends CI_Controller
                         $tomorrow = strtotime(date('Y-m-d', strtotime($record['trans_date'] . "+1 days")) . " " . $attandance->time_out);
                         $att_diff = $att_time_end - $att_time_begin;
                         $att_hour = floor($att_diff / (60 * 60));
-                        if ($att_hour < 0) {
-                            $att_diff = $tomorrow - $att_time_begin;
-                            $att_hour = floor($att_diff / (60 * 60));
-                        }
-                        $duration_att = number_format($att_hour, 2);
+                        if ($att_hour < 0) { $att_diff = $tomorrow - $att_time_begin; }
+
+                        $minutes = ($att_diff % 3600) / 60;
+                        $att_minutes = ($minutes >= 30 && $minutes <= "59") ? 0.5 : 0.0;
+                        $att_hour = floor($att_diff / (60 * 60));
+
+                        $duration_att = number_format($att_hour + $att_minutes, 2);
                         $cc_hour = $record['duration_hour'];
                         $hour = ($att_hour > $cc_hour) ? $cc_hour : $att_hour;
                     } else if (!empty($record['duration_hour'])) {
@@ -2145,21 +2154,22 @@ class Cash_carries_harian_lepas extends CI_Controller
                 $duration_att = "0.00";
                 $hour = 0;
             } else {
-                if (@$attandance->time_in && @$attandance->time_out) {
-                    // Hitung dari attendance
-                    $att_time_begin = strtotime($record['trans_date'] . " " . $attandance->time_in);
-                    $att_time_end = strtotime($record['trans_date'] . " " . $attandance->time_out);
-                    $tomorrow = strtotime(date('Y-m-d', strtotime($record['trans_date'] . "+1 days")) . " " . $attandance->time_out);
-                    $att_diff = $att_time_end - $att_time_begin;
-                    $att_hour = floor($att_diff / (60 * 60));
-                    if ($att_hour < 0) {
-                        $att_diff = $tomorrow - $att_time_begin;
-                        $att_hour = floor($att_diff / (60 * 60));
-                    }
-                    $duration_att = number_format($att_hour, 2);
-                    $cc_hour = $record['duration_hour'];
-                    $hour = ($att_hour > $cc_hour) ? $cc_hour : $att_hour;
-                } else if (!empty($record['duration_hour'])) {
+                // if (@$attandance->time_in && @$attandance->time_out) {
+                //     // Hitung dari attendance
+                //     $att_time_begin = strtotime($record['trans_date'] . " " . $attandance->time_in);
+                //     $att_time_end = strtotime($record['trans_date'] . " " . $attandance->time_out);
+                //     $tomorrow = strtotime(date('Y-m-d', strtotime($record['trans_date'] . "+1 days")) . " " . $attandance->time_out);
+                //     $att_diff = $att_time_end - $att_time_begin;
+                //     $att_hour = floor($att_diff / (60 * 60));
+                //     if ($att_hour < 0) {
+                //         $att_diff = $tomorrow - $att_time_begin;
+                //         $att_hour = floor($att_diff / (60 * 60));
+                //     }
+                //     $duration_att = number_format($att_hour, 2);
+                //     $cc_hour = $record['duration_hour'];
+                //     $hour = ($att_hour > $cc_hour) ? $cc_hour : $att_hour;
+                // } else
+                if (!empty($record['duration_hour'])) {
                     // Salah satu kosong, pakai cash_carries
                     $duration_att = number_format($record['duration_hour'], 2);
                     $hour = $record['duration_hour'];

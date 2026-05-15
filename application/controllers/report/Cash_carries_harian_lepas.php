@@ -312,25 +312,12 @@ class Cash_carries_harian_lepas extends CI_Controller
 
                 }
 
-
-
-                if (@$shift_employee->days == "5") {
+                if (count($calendars) > 0) { $total += ((@$record['total_holiday'] * $hour) + $meal); }
+                elseif (@$shift_employee->days == "5") {
 
                     if (date('w', $start) !== '0' && date('w', $start) !== '6') {
 
-
-
-                        //Kalo ada tanggal Merah
-
-                        if (count($calendars) > 0) {
-
-                            $total += ((@$record['total_holiday'] * $hour) + $meal);
-
-                        } else {
-
-                            $total += ((@$record['total_weekday'] * $hour) + $meal);
-
-                        }
+                        $total += ((@$record['total_weekday'] * $hour) + $meal);
 
                     } else {
 
@@ -769,23 +756,12 @@ class Cash_carries_harian_lepas extends CI_Controller
 
 
 
-                    if (@$shift_employee->days == "5") {
+                    if (count($calendars) > 0) { $total = ((@$record['total_holiday'] * $hour)); }
+                    elseif (@$shift_employee->days == "5") {
 
                         if (date('w', $start) !== '0' && date('w', $start) !== '6') {
 
-
-
-                            //Kalo ada tanggal Merah
-
-                            if (count($calendars) > 0) {
-
-                                $total = ((@$record['total_holiday'] * $hour));
-
-                            } else {
-
-                                $total = ((@$record['total_weekday'] * $hour));
-
-                            }
+                            $total = ((@$record['total_weekday'] * $hour));
 
                         } else {
 
@@ -805,19 +781,7 @@ class Cash_carries_harian_lepas extends CI_Controller
 
                         if (date('w', $start) !== '0') {
 
-
-
-                            //Kalo ada tanggal Merah
-
-                            if (count($calendars) > 0) {
-
-                                $total = ((@$record['total_holiday'] * $hour));
-
-                            } else {
-
-                                $total = ((@$record['total_weekday'] * $hour));
-
-                            }
+                            $total = ((@$record['total_weekday'] * $hour));
 
                         } else {
 

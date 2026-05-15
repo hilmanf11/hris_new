@@ -204,7 +204,8 @@ class Payroll_harian_lepas extends CI_Controller
                     "deduction_absence" => $record['deduction_absence'],
                     "deduction_absence_amount" => $record['deduction_absence_amount'],
                     "correction_minus" => $record['correction_minus'],
-                    "total_all_deduction" => $record['total_all_deduction'],
+                    // "total_all_deduction" => $record['total_all_deduction'],
+                    "total_all_deduction" => 0,
                     "income" => $record['income'],
                     //"deduction" => json_encode($arr_deduction_combine),
                     "loan_cooperative" => $record['loan_cooperative'],
@@ -464,6 +465,13 @@ class Payroll_harian_lepas extends CI_Controller
             $this->db->where('loan_type', 'OTHER');
             $loan_other = $this->db->get()->row();
             $loan_other_amount = empty($loan_other->amount) ? 0 : $loan_other->amount;
+
+            // Cash Carry HL
+            $this->db->distinct()->select("trans_date")->from("cash_carries")
+            ->where(["employee_id" => $record['id']])->order_by("trans_date");
+            $data_cc = [];
+            foreach ($this->db->get()->result() as $index => $row) { array_push($data_cc, $row->trans_date); }
+
             //Attandances
             $tomorow = date('Y-m-d', strtotime("+1 day", strtotime($filter_from)));
             $this->db->select("number, date_in");
@@ -480,7 +488,9 @@ class Payroll_harian_lepas extends CI_Controller
             // die($this->db->last_query());
             $attandance_amount = 0;
             foreach ($attandances as $attandance) {
-                $attandance_amount++;
+                if (!in_array($attandance['date_in'], $data_cc)) {
+                    $attandance_amount++;
+                }
             }
             //Hitung HKW atau jumlah hari kerja
             //Untuk payroll harian lepas, HKW = total weekday (tidak dikurangi calendar holidays)
@@ -640,7 +650,7 @@ class Payroll_harian_lepas extends CI_Controller
                     $arr_bpjs_com_amount_salary_total += 0;
                     $arr_bpjs_com_amount_jabatan_total += 0;
                 } elseif ($record['jamsostek'] == "" && $record['jkn'] != "") {
-                    if ($bpjs_com_data->number == "BPJS") {
+                    if ($bpjs_com_data->number == "BPJS" && $record['group_name'] != 'HARIAN LEPAS 1') {
                         if ($record['bpjs'] == "0") {
                             $arr_bpjs_com_amount .= round((($salary + $arr_allowance_amount_total_bpjs) * ($bpjs_com_data->company / 100)) * $record['jkn_family']) . ",";
                             $arr_bpjs_com_amount_total += round((($salary + $arr_allowance_amount_total_bpjs) * ($bpjs_com_data->company / 100)) * $record['jkn_family']);
@@ -728,7 +738,7 @@ class Payroll_harian_lepas extends CI_Controller
                         $arr_bpjs_com_amount_total_ter += 0;
                         $arr_bpjs_com_amount_salary_total += 0;
                         $arr_bpjs_com_amount_jabatan_total += round((($salary + $arr_allowance_amount_total_bpjs) * ($bpjs_com_data->company / 100)));
-                    } elseif ($bpjs_com_data->number == "BPJS") {
+                    } elseif ($bpjs_com_data->number == "BPJS" && $record['group_name'] != 'HARIAN LEPAS 1') {
                         if ($record['bpjs'] == "0") {
                             $arr_bpjs_com_amount .= round((($salary + $arr_allowance_amount_total_bpjs) * ($bpjs_com_data->company / 100)) * $record['jkn_family']) . ",";
                             $arr_bpjs_com_amount_total += round((($salary + $arr_allowance_amount_total_bpjs) * ($bpjs_com_data->company / 100)) * $record['jkn_family']);
@@ -821,11 +831,11 @@ class Payroll_harian_lepas extends CI_Controller
             //Potong gaji jika dia ga masuk kerja
             //Rumus nya Gaji / 30 hari x jumlah dia ga absen
             //$absence_qty = (@count($weekday) - @count($holiday) - $masuk - $arr_total_permit);
-            $absence_qty = $absen;
-            if ($absence_qty > 0) {
-                $absence_qty_final = $absence_qty;
-            } else {
-                $absence_qty_final = 0;
+            $absence_qty = 0;
+            $absence_qty_final = 0;
+            if ($absen > 0 && $record['group_name'] != 'HARIAN LEPAS 1') {
+                $absence_qty = $absen;
+                $absence_qty_final = $absen;
             }
             //Harga Potong Gaji kalo dia ga masuk kerja
             $salary_num = (float)$record['salary'];
@@ -1207,7 +1217,7 @@ class Payroll_harian_lepas extends CI_Controller
                     <td>' . $record['date_sign'] . '</td>
                     <td>' . $record['date_expired'] . '</td>
                     <td>' . $record['resign_date'] . '</td>
-                    <td class="str">' . $record['working_day'] . '</td>
+                    <td class="str">' . $record['attandance_wd'] . '</td>
                     <td class="str">' . number_format($record['salary']) . '</td>
                     <td class="str">' . number_format($record['income']) . '</td>
                     <td class="str">' . number_format($record['correction_plus']) . '</td>
@@ -1923,7 +1933,8 @@ class Payroll_harian_lepas extends CI_Controller
             $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
             $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
 
-            $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+            // $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+            $total_all_deduction = 0 + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
 
             if ($option === 'excel') {
                 // ===== EXCEL (numeric, bisa dihitung) =====
@@ -1982,7 +1993,8 @@ class Payroll_harian_lepas extends CI_Controller
             $sum_total_overtime      += $total_overtime;
             $sum_tax_allowance       += $tax_allowance;
             $sum_total_all_allowance += $total_all_allowance;
-            $sum_deduction_absence   += $record['total_all_deduction'];
+            // $sum_deduction_absence   += $record['total_all_deduction'];
+            $sum_deduction_absence   += 0;
             $sum_potongan_lain       += $potongan_lain;
             $sum_jp_emp              += $jp_emp;
             $sum_bpjs_emp            += $bpjs_emp;
@@ -2353,13 +2365,15 @@ class Payroll_harian_lepas extends CI_Controller
                 $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
                 $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
 
-                $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+                // $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+                $total_all_deduction = 0 + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
 
                 $data["corr_plus"] = number_format($corr_plus, 0, "", ",");
                 $data["total_overtime"] = number_format($total_overtime, 0, "", ",");
                 $data["tax_allowance"] = number_format($tax_allowance, 0, "", ",");
                 $data["total_all_allowance"] = number_format($total_all_allowance, 0, "", ",");
-                $data["total_all_deduction"] = number_format($record["total_all_deduction"], 0, "", ",");
+                // $data["total_all_deduction"] = number_format($record["total_all_deduction"], 0, "", ",");
+                $data["total_all_deduction"] = number_format(0, 0, "", ",");
                 $data["potongan_lain"] = number_format($potongan_lain, 0, "", ",");
                 $data["jp_emp"] = number_format($jp_emp, 0, "", ",");
                 $data["bpjs_emp"] = number_format($bpjs_emp, 0, "", ",");
@@ -2376,7 +2390,8 @@ class Payroll_harian_lepas extends CI_Controller
                 $sum_total_overtime      += $total_overtime;
                 $sum_tax_allowance       += $tax_allowance;
                 $sum_total_all_allowance += $total_all_allowance;
-                $sum_deduction_absence   += $record['total_all_deduction'];
+                // $sum_deduction_absence   += $record['total_all_deduction'];
+                $sum_deduction_absence   += 0;
                 $sum_potongan_lain       += $potongan_lain;
                 $sum_jp_emp              += $jp_emp;
                 $sum_bpjs_emp            += $bpjs_emp;
