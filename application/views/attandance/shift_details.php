@@ -85,6 +85,7 @@
             <div class="fitem" style="margin-bottom: 2px;">
                 <span style="width:30%; display:inline-block;">Working Day</span>
                 <select style="width:60%;" name="days" panelHeight="auto" required="" id="working_day" class="easyui-combobox">
+                    <option value="4">4 Days a Week</option>
                     <option value="5">5 Days a Week</option>
                     <option value="6">6 Days a Week</option>
                 </select>
