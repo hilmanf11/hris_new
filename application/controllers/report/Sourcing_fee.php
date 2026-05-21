@@ -71,6 +71,15 @@ class Sourcing_fee extends CI_Controller
                 }
             }
 
+            $permits = [];
+            $this->db->select("employee_id, COUNT(permit_date) AS count")->from("permits")->where([
+                "permit_type_id" => "20221124000005",
+                "permit_date >=" => $filter_from,
+                "permit_date <=" => $filter_to
+            ])->group_by("employee_id");
+            // die($this->db->get_compiled_select());
+            foreach ($this->db->get()->result() as $index => $row) { $permits[$row->employee_id] = $row->count; }
+
             $html = '<html><head><title>Print Data</title></head><style>body {font-family: Arial, Helvetica, sans-serif;}#customers {border-collapse: collapse;width: 100%;font-size: 10px;}#customers td, #customers th {border: 1px solid #ddd;padding: 2px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 2px;padding-bottom: 2px;text-align: left;color: black;}</style>
             <style> .str{ mso-number-format:\@; } </style>
             <body>';
@@ -163,7 +172,7 @@ class Sourcing_fee extends CI_Controller
                         if ($selisih->format('%a') > 30) {
                             $wd = $hkw;
                         } else {
-                            $wd = $employee['attandance_wd'];
+                            $wd = $employee['attandance_wd'] + ($permits[$employee["employee_id"]] ?? 0);
                         }
 
                         $fee = (($record['sourcing_fee'] / $hkw) * $wd);

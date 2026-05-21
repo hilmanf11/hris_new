@@ -248,9 +248,9 @@ class Employees extends CI_Controller
             "TRIM(a.bank_branch) AS bank_branch,".
             "COALESCE(a.status, 0) AS status,".
             "COALESCE(TRIM(b.id), '') AS resign"
-        )->from("employees a")->join("resignations b", "a.id = b.employee_id", "left")
-            ->where_not_in('a.contract_id', [20221119000003, 20250704000001])
-            ->where('a.group_id !=', 20221119000002);
+        )->from("employees a")->join("resignations b", "a.id = b.employee_id")->where('a.status', 1);
+            // ->where_not_in('a.contract_id', [20221119000003, 20250704000001])
+            // ->where('a.group_id !=', 20221119000002)
         if (!empty($post)) {
             $this->db->group_start()
                 ->like('a.number', $post)
@@ -597,6 +597,7 @@ class Employees extends CI_Controller
                 $this->db->like("j.id", $filter_shift);
             }
             $this->db->order_by('a.name', 'ASC');
+            // die($this->db->get_compiled_select());
             //Total Data
             $totalRows = $this->db->count_all_results('', false);
             //Limit 1 - 10
