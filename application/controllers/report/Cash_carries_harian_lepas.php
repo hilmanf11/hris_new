@@ -1061,8 +1061,23 @@ class Cash_carries_harian_lepas extends CI_Controller
                         $total = ((@$record['total_sunday'] * $hour) + $meal);
                     }
                 }
+
+                $total_week = 0;
+                $end_day = ['0'];
+                $week = date('w', $start);
+                if (count($calendars) > 0) { $total_week = @$record['total_holiday']; }
+                else {
+                    if (@$shift_employee->days == "5") { $end_day[] = '6'; }
+                    if (!in_array($week, $end_day)) { $total_week = @$record['total_weekday']; }
+                    else {
+                        $total_week = @$record['total_sunday'];
+                        if ($week == '6') { $total_week = @$record['total_saturday']; }
+                    }
+                }
+                $total = ($total_week * $hour) + $meal;
                 $employee_data[$employee_id]['total_amount'] += $total;
             }
+
 
             $html = '<html><head><title>Print Data</title></head><style>body {font-family: Arial, Helvetica, sans-serif;}#customers {border-collapse: collapse;width: 100%;font-size: 12px;}#customers td, #customers th {border: 1px solid #ddd;padding: 2px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 2px;padding-bottom: 2px;text-align: left;color: black;}</style><style> .str{ mso-number-format:\@; } </style><body>';
             $html .= '  <center>
@@ -1330,20 +1345,18 @@ class Cash_carries_harian_lepas extends CI_Controller
                 $hour = (float)$record['duration_hour'];
                 $meal_allowance = ($record['meal'] == 0) ? 0 : (float)$record['total_meal'];
                 $daily_total = 0;
-                if (@$shift_employee->days == "5") {
-                    if (date('w', $start) !== '0' && date('w', $start) !== '6') {
-                        $daily_total = (count($calendars) > 0) ? ((float)$record['holiday'] * $hour) : ((float)$record['weekday'] * $hour);
-                    } else {
-                        $daily_total = (date('w', $start) === '0') ? ((float)$record['sunday'] * $hour) : ((float)$record['saturday'] * $hour);
-                    }
-                } else {
-                    if (date('w', $start) !== '0') {
-                        $daily_total = (count($calendars) > 0) ? ((float)$record['holiday'] * $hour) : ((float)$record['weekday'] * $hour);
-                    } else {
-                        $daily_total = ((float)$record['sunday'] * $hour);
+                $end_day = ['0'];
+                $week = date('w', $start);
+                if (count($calendars) > 0) { $daily_total = (float)$record['holiday']; }
+                else {
+                    if (@$shift_employee->days == "5") { $end_day[] = '6'; }
+                    if (!in_array($week, $end_day)) { $daily_total = (float)$record['total_weekday']; }
+                    else {
+                        $daily_total = (float)$record['total_sunday'];
+                        if ($week == '6') { $daily_total = (float)$record['total_saturday']; }
                     }
                 }
-                $final_daily_total = $daily_total + $meal_allowance;
+                $final_daily_total = ($daily_total * $hour) + $meal_allowance;
                 if (!isset($data[$employee_id]['dates'][$trans_date])) {
                     $data[$employee_id]['dates'][$trans_date] = 0;
                 }
