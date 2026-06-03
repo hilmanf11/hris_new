@@ -1350,10 +1350,10 @@ class Cash_carries_harian_lepas extends CI_Controller
                 if (count($calendars) > 0) { $daily_total = (float)$record['holiday']; }
                 else {
                     if (@$shift_employee->days == "5") { $end_day[] = '6'; }
-                    if (!in_array($week, $end_day)) { $daily_total = (float)$record['total_weekday']; }
+                    if (!in_array($week, $end_day)) { $daily_total = (float)$record['weekday']; }
                     else {
-                        $daily_total = (float)$record['total_sunday'];
-                        if ($week == '6') { $daily_total = (float)$record['total_saturday']; }
+                        $daily_total = (float)$record['sunday'];
+                        if ($week == '6') { $daily_total = (float)$record['saturday']; }
                     }
                 }
                 $final_daily_total = ($daily_total * $hour) + $meal_allowance;
