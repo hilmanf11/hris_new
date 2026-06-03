@@ -472,22 +472,19 @@ class Attandances extends CI_Controller
 
                 $no = 1;
 
+                $q = "SELECT MIN(dates) AS date FROM (".
+                    // "SELECT MIN(permit_date) AS dates FROM permits WHERE employee_id = '".$record['id']."' UNION ".
+                    "SELECT MIN(date_in) AS dates FROM attandances WHERE number = '".$record['number']."'".
+                ") x";
+                $start_date = new DateTime($this->db->query($q)->row()->date);
+
                 for ($i = $start; $i <= $finish; $i += (60 * 60 * 24)) {
+
+                    $week = date('w', $i);
 
                     $working_date = date('Y-m-d', $i);
 
-
-
-                    if (date('w', $i) !== '0' && date('w', $i) !== '6') {
-
-                        $working = "WEEKDAY";
-
-                    } else {
-
-                        $working = "WEEKEND";
-
-                    }
-
+                    $working = (!in_array($week, ["0", "6"])) ? "WEEKDAY" : "WEEKEND";
 
 
                     //Working Calendar
@@ -536,7 +533,7 @@ class Attandances extends CI_Controller
 
                     //Attandance and Overtime
 
-                    $this->db->select("date_in, time_in, date_out, time_out");
+                    $this->db->select("date_in, time_in, date_out, time_out, remarks");
 
                     $this->db->from('attandances');
 
@@ -617,35 +614,18 @@ class Attandances extends CI_Controller
 
 
                     //Jika hari kerja nya adalah 5 hari
-
-                    if (@$shift->days == "5") {
-
-                        //sabtu dan minggu libur
-
-                        if (date('w', $i) !== '0' && date('w', $i) !== '6') {
-
-                            $weekend = "";
-
-                        } else {
-
-                            $weekend = "Weekend";
-
-                        }
-
+                    if (@$shift->days == "4") {
+                        $weekend = "";
+                        $count = $start_date->diff(new DateTime($working_date))->days + 1;
+                        if (in_array(($count - (intval($count / 6) * 6)), [5,0])
+                            && empty($attandance->date_in)
+                            && empty($attandance->date_out)
+                            && empty($permit->permit_name)
+                        ) { $weekend = "Off Security"; }
                     } else {
-
-                        //sabtu doang libur
-
-                        if (date('w', $i) !== '0') {
-
-                            $weekend = "";
-
-                        } else {
-
-                            $weekend = "Weekend";
-
-                        }
-
+                        $weekday = ["0"]; //minggu doang libur
+                        if (@$shift->days == "5") { $weekday[] = "6"; } //tambah sabtu
+                        $weekend = (!in_array($week, $weekday)) ? "" : "Weekend";
                     }
 
 
@@ -739,7 +719,7 @@ class Attandances extends CI_Controller
 
                             // }
 
-                        } elseif ($weekend == "Weekend") {
+                        } elseif (in_array($weekend, ["Weekend", "Off Security"])) {
 
                             $holiday = $weekend;
 
@@ -945,7 +925,7 @@ class Attandances extends CI_Controller
 
                                         <td ' . $style_status . '>' . $attandance_status . '</td>
 
-                                        <td>' . $holiday . '</td>
+                                        <td>' . ((!empty(@$attandance->remarks)) ? $attandance->remarks : $holiday) . '</td>
 
                                         <td>' . $approval_status . '</td>
 
@@ -975,7 +955,7 @@ class Attandances extends CI_Controller
 
                                     <td ' . $style_status . '>' . $attandance_status . '</td>
 
-                                    <td>' . $holiday . '</td>
+                                    <td>' . ((!empty(@$attandance->remarks)) ? $attandance->remarks : $holiday) . '</td>
 
                                     <td>' . $approval_status . '</td>
 

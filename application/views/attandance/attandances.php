@@ -12,6 +12,7 @@
             <th data-options="field:'contract_name',width:100">Type</th>
             <th data-options="field:'time_in',width:80">Check In</th>
             <th data-options="field:'time_out',width:80">Check Out</th>
+            <th data-options="field:'remarks'">Remark</th>
         </tr>
     </thead>
 </table>
@@ -88,6 +89,10 @@
             <div hidden>
                 <span style="width:35%; display:inline-block;">Status</span>
                 <input style="width:60%;" id="status" name="status" class="easyui-textbox">
+            </div>
+            <div class="fitem">
+                <span style="width:35%; display:inline-block;">Remark</span>
+                <input style="width:60%; height: 60px;" id="remark" name="remarks" class="easyui-textbox">
             </div>
         </fieldset>
     </form>
@@ -536,6 +541,8 @@
             textField: 'name',
             prompt: 'Choose Shift'
         });
+
+        $('#remark').textbox({multiline: true});
     });
 
     function StylerStatus(value, row, index) {
