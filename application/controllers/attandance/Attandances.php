@@ -55,16 +55,25 @@ class Attandances extends CI_Controller
             $result = array();
 
             //Employee
-            $this->db->select("a.id, b.id as attandance_id, a.number, a.name, a.division_id, a.departement_id, a.departement_sub_id,
-                DAYNAME(b.date_in) as dayname,
-                b.date_in,
-                b.date_out,
-                b.time_in,
-                b.time_out,
-                c.name as division_name, 
-                d.name as departement_name, 
-                e.name as departement_sub_name, 
-                g.name as contract_name");
+            $this->db->select(
+                "a.id,".
+                "b.id as attandance_id,".
+                "a.number,".
+                "a.name,".
+                "a.division_id,".
+                "a.departement_id,".
+                "a.departement_sub_id,".
+                "DAYNAME(b.date_in) as dayname,".
+                "b.date_in,".
+                "b.date_out,".
+                "b.time_in,".
+                "b.time_out,".
+                "c.name as division_name,".
+                "d.name as departement_name,".
+                "e.name as departement_sub_name,".
+                "g.name as contract_name,".
+                "b.remarks"
+            );
             $this->db->from('employees a');
             $this->db->join('attandances b', 'a.number = b.number');
             $this->db->join('divisions c', 'a.division_id = c.id');
@@ -215,7 +224,8 @@ class Attandances extends CI_Controller
                     'lokasi' => $data->val($i, 5),
                     'number' => trim($data->val($i, 6)),
                     'date_in' => $datein[0] . " " . $datein[1],
-                    'date_out' => $datein[0] . " " . $datein[1]
+                    'date_out' => $datein[0] . " " . $datein[1],
+                    'remark' => trim($data->val($i, 9))
                 );
                 //$this->create_temp(trim($data->val($i, 6)), trim(date('Y-m-d', strtotime($data->val($i, 4)))), trim(date('H:i:s', strtotime($data->val($i, 4)))));
             }
@@ -282,7 +292,7 @@ class Attandances extends CI_Controller
             $time_in = $explode[1];
             $to_time_in = strtotime($time_in);
             $type_in = $data['lokasi'] == 1;
-            $send = [];
+            $send = ["remarks" => $data['remark']];
 
             //Employee
             $this->db->select('*');
