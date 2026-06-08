@@ -272,44 +272,67 @@ class Payrolls extends CI_Controller
     {
         if ($this->input->post()) {
             $record   = $this->input->post();
+
             //ambil data dari variabel filter
             $filter_from = $this->input->get('filter_from');
             $filter_to = $this->input->get('filter_to');
+
             //Ubah format tanggal menjadi tahun dan bulan
             $period_start = date("Y-m", strtotime($filter_from));
             $period_end = date("Y-m", strtotime($filter_to));
+
             //Convert tanggal ke time supaya hitungan tanggal nya mudah
             $start = strtotime($filter_from);
             $finish = strtotime($filter_to);
+
+            $q = "SELECT MIN(date_in) AS date FROM attandances WHERE number = '".$record['number']."'";
+            $start_date = new DateTime($this->db->query($q)->row()->date);
+
             //Looping tanggal awal sampai tanggal akhir
-            $weekday = [];
-            $weekday2 = [];
-            $weekend = [];
-            $weekend2 = [];
+            $weekend_day = [];
+            $weekday_day = [];
+            // $weekday = [];
+            // $weekday2 = [];
+            // $weekend = [];
+            // $weekend2 = [];
             for ($i = $start; $i <= $finish; $i += (60 * 60 * 24)) {
+                $week = date('w', $i);
+                $date = date('Y-m-d', $i);
+                if ($record['days'] == "4") {
+                    if (in_array((($start_date->diff(new DateTime($date))->days + 1) % 6), [5,0]))
+                        { $weekend_day[] = $date; }
+                    else { $weekday_day[] = $date; }
+                } else {
+                    $weekend = ["0"]; //minggu doang libur
+                    if ($record['days'] == "5") { $weekend[] = "6"; } //tambah sabtu
+
+                    if (in_array($week, $weekend)) { $weekend_day[] = $date; }
+                    else { $weekday_day[] = $date; }
+                }
+
                 //Jika tanggal yg di looping bukan hari sabtu dan minggu
-                if (date('w', $i) !== '0' && date('w', $i) !== '6') {
+                // if (date('w', $i) !== '0' && date('w', $i) !== '6') {
                     //Hari kerja
-                    $weekday[] = date('Y-m-d', $i);
-                } else {
+                    // $weekday[] = date('Y-m-d', $i);
+                // } else {
                     //Hari libur
-                    $weekend[] = date('Y-m-d', $i);
-                }
-                if (date('w', $i) !== '0') {
+                    // $weekend[] = date('Y-m-d', $i);
+                // }
+                // if (date('w', $i) !== '0') {
                     //Hari kerja
-                    $weekday2[] = date('Y-m-d', $i);
-                } else {
+                    // $weekday2[] = date('Y-m-d', $i);
+                // } else {
                     //Hari libur
-                    $weekend2[] = date('Y-m-d', $i);
-                }
+                    // $weekend2[] = date('Y-m-d', $i);
+                // }
             }
-            if ($record['days'] == "6") {
-                $weekend_day = $weekend2;
-                $weekday_day = $weekday2;
-            } else {
-                $weekend_day = $weekend;
-                $weekday_day = $weekday;
-            }
+            // if ($record['days'] == "6") {
+                // $weekend_day = $weekend2;
+                // $weekday_day = $weekday2;
+            // } else {
+                // $weekend_day = $weekend;
+                // $weekday_day = $weekday;
+            // }
             //Setting Payroll
             $config = $this->db->get('payroll_config')->result();
             //Tanggal merah di master calendar
@@ -760,17 +783,24 @@ class Payrolls extends CI_Controller
                 //Untuk mengambil nilai harga deduction rumus nya adalah Gaji / 30 hari x jumlah ijinnya
                 // $arr_permit_type_amount .= round(($record['salary'] / 30) * $arr_permit_type_amount_qty) . ",";
                 // @$arr_permit_type_amount_b_total += round(($record['salary'] / 30) * $arr_permit_type_amount_qty) . ",";
-                if ($record['group_name'] == "MAGANG") {
+                // if ($record['group_name'] == "MAGANG") {
                     // $arr_permit_type_amount .= round((($record['salary'] - $arr_deduction_amount_total) / $hkw) * $arr_permit_type_amount_qty) . ",";
                     // @$arr_permit_type_amount_b_total += round((($record['salary'] - $arr_deduction_amount_total) / $hkw) * $arr_permit_type_amount_qty) . ",";
+                    // $arr_permit_type_amount .= round(($record['salary'] / $hkw) * $arr_permit_type_amount_qty) . ",";
+                    // @$arr_permit_type_amount_b_total += round(($record['salary'] / $hkw) * $arr_permit_type_amount_qty) . ",";
+                // } elseif ($count_allowance_number > 0) {
+                    // $arr_permit_type_amount .= round(($arr_allowance_amount_number / $hkw) * $arr_permit_type_amount_qty) . ",";
+                    // @$arr_permit_type_amount_b_total += round(($arr_allowance_amount_number / $hkw) * $arr_permit_type_amount_qty) . ",";
+                // } else {
+                    // $arr_permit_type_amount .= round((($record['salary'] + $arr_allowance_amount_total) / $hkw) * $arr_permit_type_amount_qty) . ",";
+                    // @$arr_permit_type_amount_b_total += round((($record['salary'] + $arr_allowance_amount_total) / $hkw) * $arr_permit_type_amount_qty) . ",";
+                // }
+                if ($record['group_name'] == "MAGANG") {
                     $arr_permit_type_amount .= round(($record['salary'] / $hkw) * $arr_permit_type_amount_qty) . ",";
                     @$arr_permit_type_amount_b_total += round(($record['salary'] / $hkw) * $arr_permit_type_amount_qty) . ",";
-                } elseif ($count_allowance_number > 0) {
-                    $arr_permit_type_amount .= round(($arr_allowance_amount_number / $hkw) * $arr_permit_type_amount_qty) . ",";
-                    @$arr_permit_type_amount_b_total += round(($arr_allowance_amount_number / $hkw) * $arr_permit_type_amount_qty) . ",";
                 } else {
-                    $arr_permit_type_amount .= round((($record['salary'] + $arr_allowance_amount_total) / $hkw) * $arr_permit_type_amount_qty) . ",";
-                    @$arr_permit_type_amount_b_total += round((($record['salary'] + $arr_allowance_amount_total) / $hkw) * $arr_permit_type_amount_qty) . ",";
+                    $arr_permit_type_amount .= round((($record['salary'] + $sum_allowance_tj) / $hkw) * $arr_permit_type_amount_qty) . ",";
+                    @$arr_permit_type_amount_b_total += round((($record['salary'] + $sum_allowance_tj) / $hkw) * $arr_permit_type_amount_qty) . ",";
                 }
             }
             $arr_permit_type_number_ex = explode(",", substr($arr_permit_type_number, 0, -1));
