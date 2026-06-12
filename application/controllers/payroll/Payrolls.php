@@ -1704,6 +1704,9 @@ class Payrolls extends CI_Controller
         $permit_type_d = $this->crud->reads('permit_types', [], ['payroll' => 'DEDUCTION']);
         $bpjs = $this->crud->reads('bpjs', ['status' => 0], [], "", "", "", ["number"]);
 
+        $id_allowances = [];
+        foreach ($allowance as $index => $row) { $id_allowances[strtolower(trim($row->number))] = $row->id; }
+
         $filter_from = $this->input->get('filter_from');
         $filter_to = $this->input->get('filter_to');
         $filter_division = $this->input->get('filter_division');
@@ -1798,13 +1801,48 @@ class Payrolls extends CI_Controller
             $filterGroupAll = 0;
         }
 
+        $dynamic_allowances = [];
+        $excluded_allowance_numbers = [
+            '20230217000001', // Tunjangan Tetap
+            '20230222000001', // Tunjangan Jabatan
+            '20230117000003', // Tunjangan Kinerja
+            '20221213000006', // Uang Makan 1
+            '20250916000001', // Uang Makan 2
+            '20221213000007'  // Uang Makan 3
+        ];
+        $excluded_allowance_names = [
+            'tunjangan tetap',
+            'tunjangan jabatan',
+            'tunjangan kinerja',
+            'tunjangan transport'
+        ];
+        $id_tunjangan_tetap = null;
+        $id_tunjangan_jabatan = null;
+        $id_tunjangan_kinerja = null;
+        foreach ($allowance as $row) {
+            $num = strtolower(trim($row->number));
+            $name = strtolower(trim($row->name));
+            if ($num == '20230217000001' || $name == 'tunjangan tetap') { $id_tunjangan_tetap = $row->id; }
+            if ($num == '20230222000001' || $name == 'tunjangan jabatan') { $id_tunjangan_jabatan = $row->id; }
+            if ($num == '20230117000003' || $name == 'tunjangan kinerja') { $id_tunjangan_kinerja = $row->id; }
+            if (in_array($num, $excluded_allowance_numbers) || in_array($name, $excluded_allowance_names)) {
+                continue;
+            }
+            $dynamic_allowances[] = $row;
+        }
+
         $th = "";
         if ($is_hl || $filterGroupAll) {
             $th .= " <th>Gaji Harian</th>
                     <th>Uang Makan</th>";
         }
         $th .= "
-            <th>Basic Salary</th>
+            <th>Basic Salary</th>";
+        foreach ($dynamic_allowances as $row) {
+            $th .= "
+            <th>" . $row->name . "</th>";
+        }
+        $th .= "
             <th>Tunjangan Tetap</th>
             <th>Tunjangan Jabatan</th>
             <th>Tunjangan Kinerja</th>
@@ -1893,6 +1931,7 @@ class Payrolls extends CI_Controller
         $sum_bpjs_kes_rate        = 0;
         // total untuk th2
         $sum_salary              = 0;
+        $sum_allowances          = array_fill(0, count($dynamic_allowances), 0);
         $sum_tunjangan_tetap     = 0;
         $sum_tunjangan_jabatan   = 0;
         $sum_tunjangan_kinerja   = 0;
@@ -1915,13 +1954,23 @@ class Payrolls extends CI_Controller
                 }
             }
             $is_hl_emp = in_array($record['group_id'], $hlGroups, true);
-            $potongan_lain = $record['loan_cooperative'] + $record['loan_bank'] + $record['loan_other'];
-            $arr_allowance = json_decode($record['allowence'], true);
+            $all_deduction = [];
+            foreach (json_decode($record['deduction']) as $key => $value) { $all_deduction[] = $value; }
+            $potongan_lain = $record['loan_cooperative'] + $record['loan_bank'] + $record['loan_other'] + array_sum($all_deduction);
+            $allowances = json_decode($record['allowence'], true);
             $th2 = "";
+            $arr_allowance = [];
+            foreach ($allowances as $key => $value) {
+                $arr_allowance[(isset($id_allowances[$key])) ? $id_allowances[$key] : $key] = floatval($value);
+            }
+            // die(json_encode($arr_allowance));
             if ($is_hl || $filterGroupAll) {
                 $gaji_harian = 0;
                 // ambil nilai uang makan
-                $uang_makan = isset($arr_allowance['um']) ? (float) $arr_allowance['um'] : 0;
+                $uang_makan = 0;
+                if (isset($arr_allowance['20221213000006'])) { $uang_makan = $arr_allowance['20221213000006']; }
+                if (isset($arr_allowance['20250916000001']) && empty($uang_makan)) { $uang_makan = $arr_allowance['20250916000001']; }
+                if (isset($arr_allowance['20221213000007']) && empty($uang_makan)) { $uang_makan = $arr_allowance['20221213000007']; }
 
                 if (floatval($record['salary']) == 0) {
                     // hitung total selain uang makan
@@ -1930,10 +1979,10 @@ class Payrolls extends CI_Controller
                         $gaji_harian += (float) $value;
                     }
                 }
-                if (!$is_hl_emp) {
-                    $gaji_harian = 0;
-                    $uang_makan = 0;
-                }
+                // if (!$is_hl_emp) {
+                //     $gaji_harian = 0;
+                //     $uang_makan = 0;
+                // }
                 if ($option === 'excel') {
                     $th2 .= '
                         <td style="mso-number-format:&quot;#,##0&quot;">'. round($gaji_harian, 0) .'</td>
@@ -1949,27 +1998,67 @@ class Payrolls extends CI_Controller
                 $sum_gaji_harian += $gaji_harian;
                 $sum_uang_makan  += $uang_makan;
             }
-                $tunjangan_tetap = $arr_allowance['tt'] ?? 0;
-                $tunjangan_jabatan = $arr_allowance['tj'] ?? 0;
-                $tunjangan_kinerja = $arr_allowance['tk'] ?? 0;
-                $tunjangan_transport = $arr_allowance['tr'] ?? 0;
+                $tunjangan_arr = [];
+                foreach ($dynamic_allowances as $row) {
+                    $val = 0;
+                    if (isset($arr_allowance[$row->id])) {
+                        $val = $arr_allowance[$row->id];
+                    } elseif (isset($arr_allowance[strtolower(trim($row->number))])) {
+                        $val = $arr_allowance[strtolower(trim($row->number))];
+                    } elseif (isset($arr_allowance[$row->number])) {
+                        $val = $arr_allowance[$row->number];
+                    }
+                    $tunjangan_arr[] = $val;
+                }
 
+                $tunjangan_tetap = 0;
+                if ($id_tunjangan_tetap && isset($arr_allowance[$id_tunjangan_tetap])) {
+                    $tunjangan_tetap = $arr_allowance[$id_tunjangan_tetap];
+                } elseif (isset($arr_allowance['20230217000001'])) {
+                    $tunjangan_tetap = $arr_allowance['20230217000001'];
+                }
+
+                $tunjangan_jabatan = 0;
+                if ($id_tunjangan_jabatan && isset($arr_allowance[$id_tunjangan_jabatan])) {
+                    $tunjangan_jabatan = $arr_allowance[$id_tunjangan_jabatan];
+                } elseif (isset($arr_allowance['20230222000001'])) {
+                    $tunjangan_jabatan = $arr_allowance['20230222000001'];
+                }
+
+                $tunjangan_kinerja = 0;
+                if ($id_tunjangan_kinerja && isset($arr_allowance[$id_tunjangan_kinerja])) {
+                    $tunjangan_kinerja = $arr_allowance[$id_tunjangan_kinerja];
+                } elseif (isset($arr_allowance['20230117000003'])) {
+                    $tunjangan_kinerja = $arr_allowance['20230117000003'];
+                }
+
+                $tunjangan_transport = 0;
+
+                $value_cols = [];
                 if ($option === 'excel') {
-                    $th2 .= '
-                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($record['salary'], 0) .'</td>
-                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($tunjangan_tetap, 0) .'</td>
-                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($tunjangan_jabatan, 0) .'</td>
-                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($tunjangan_kinerja, 0) .'</td>
-                        <td style="mso-number-format:&quot;#,##0&quot;">'. round($tunjangan_transport, 0) .'</td>
-                    ';
+                    $value_cols[] = round($record['salary'], 0);
+                    foreach ($tunjangan_arr as $val) {
+                        $value_cols[] = round($val, 0);
+                    }
+                    $value_cols[] = round($tunjangan_tetap, 0);
+                    $value_cols[] = round($tunjangan_jabatan, 0);
+                    $value_cols[] = round($tunjangan_kinerja, 0);
+                    $value_cols[] = round($tunjangan_transport, 0);
                 } else {
-                    $th2 .= '
-                        <td>'. number_format($record['salary'], 0, '.', ',') .'</td>
-                        <td>'. number_format($tunjangan_tetap, 0, '.', ',') .'</td>
-                        <td>'. number_format($tunjangan_jabatan, 0, '.', ',') .'</td>
-                        <td>'. number_format($tunjangan_kinerja, 0, '.', ',') .'</td>
-                        <td>'. number_format($tunjangan_transport, 0, '.', ',') .'</td>
-                    ';
+                    $value_cols[] = number_format($record['salary'], 0, '.', ',');
+                    foreach ($tunjangan_arr as $val) {
+                        $value_cols[] = number_format($val, 0, '.', ',');
+                    }
+                    $value_cols[] = number_format($tunjangan_tetap, 0, '.', ',');
+                    $value_cols[] = number_format($tunjangan_jabatan, 0, '.', ',');
+                    $value_cols[] = number_format($tunjangan_kinerja, 0, '.', ',');
+                    $value_cols[] = number_format($tunjangan_transport, 0, '.', ',');
+                }
+
+                foreach ($value_cols as $key => $value) {
+                    $style = "";
+                    if ($option === 'excel') { $style = 'style="mso-number-format:&quot;#,##0&quot;"'; }
+                    $th2 .= '<td '.$style.'>'. $value .'</td>';
                 }
 
                 $sum_salary              += $record['salary'];
@@ -1977,29 +2066,29 @@ class Payrolls extends CI_Controller
                 $sum_tunjangan_jabatan   += $tunjangan_jabatan;
                 $sum_tunjangan_kinerja   += $tunjangan_kinerja;
                 $sum_tunjangan_transport += $tunjangan_transport;
+                foreach ($tunjangan_arr as $key => $value) { $sum_allowances[$key] += $value; }
 
-            
-            if ($record['ter'] < 0 || $record['tax_allowance'] == 0) {
+            // if ($record['ter'] < 0 || $record['tax_allowance'] == 0) {
                 $tax_allowance = 0;
-            } else {
-                $tax_allowance = $record['ter'];
-            }
+            // } else {
+            //     $tax_allowance = $record['ter'];
+            // }
             $total_overtime = $record['overtime_amount_weekday'] + $record['overtime_amount_saturday'] + $record['overtime_amount_sunday'] + $record['overtime_amount_holiday'];
 
             $corr_plus = $record['correction_plus'];
 
-            if ($is_hl_emp) {
-                $total_all_allowance = $tax_allowance + $total_overtime + $gaji_harian + $corr_plus;
-            } else {
-                $total_all_allowance = $tax_allowance + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $total_overtime + $corr_plus;
-            }
+            // if ($is_hl_emp) {
+            //     $total_all_allowance = $tax_allowance + $total_overtime + $gaji_harian + $corr_plus;
+            // } else {
+                $total_all_allowance = $tax_allowance + array_sum($tunjangan_arr) + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $total_overtime + $corr_plus;
+            // }
 
             $bpjs_employee = json_decode($record['bpjs_employee'], true);
             $jp_emp = $bpjs_employee['jp_employee'] ?? 0;
             $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
             $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
 
-            $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+            $total_all_deduction = $record['total_all_deduction'] + $potongan_lain + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
 
             if ($option === 'excel') {
                 // ===== EXCEL (numeric, bisa dihitung) =====
@@ -2063,7 +2152,7 @@ class Payrolls extends CI_Controller
             $sum_jp_emp              += $jp_emp;
             $sum_bpjs_emp            += $bpjs_emp;
             $sum_jht_emp             += $jht_emp;
-            $sum_ter                 += $record['ter'];
+$sum_ter                 += $record['ter'];
             $sum_total_all_deduction += $total_all_deduction;
             $sum_net_income          += $record['net_income'];
             $sum_bpjs_rate           += $record['bpjs_rate'];
@@ -2083,22 +2172,31 @@ class Payrolls extends CI_Controller
                 ';
             }
         }
+
+        $sum_value_cols = [];
         if ($option === 'excel') {
-            $th2_total .= '
-                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_salary, 0) .'</td>
-                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_tunjangan_tetap, 0) .'</td>
-                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_tunjangan_jabatan, 0) .'</td>
-                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_tunjangan_kinerja, 0) .'</td>
-                <td style="mso-number-format:&quot;#,##0&quot;">'. round($sum_tunjangan_transport, 0) .'</td>
-            ';
+            $sum_value_cols[] = round($sum_salary, 0);
+            foreach ($sum_allowances as $val) {
+                $sum_value_cols[] = round($val, 0);
+            }
+            $sum_value_cols[] = round($sum_tunjangan_tetap, 0);
+            $sum_value_cols[] = round($sum_tunjangan_jabatan, 0);
+            $sum_value_cols[] = round($sum_tunjangan_kinerja, 0);
+            $sum_value_cols[] = round($sum_tunjangan_transport, 0);
         } else {
-            $th2_total .= '
-                <td>'. number_format($sum_salary, 0, ".", ",") .'</td>
-                <td>'. number_format($sum_tunjangan_tetap, 0, ".", ",") .'</td>
-                <td>'. number_format($sum_tunjangan_jabatan, 0, ".", ",") .'</td>
-                <td>'. number_format($sum_tunjangan_kinerja, 0, ".", ",") .'</td>
-                <td>'. number_format($sum_tunjangan_transport, 0, ".", ",") .'</td>
-            ';
+            $sum_value_cols[] = number_format($sum_salary, 0, ".", ",");
+            foreach ($sum_allowances as $val) {
+                $sum_value_cols[] = number_format($val, 0, ".", ",");
+            }
+            $sum_value_cols[] = number_format($sum_tunjangan_tetap, 0, ".", ",");
+            $sum_value_cols[] = number_format($sum_tunjangan_jabatan, 0, ".", ",");
+            $sum_value_cols[] = number_format($sum_tunjangan_kinerja, 0, ".", ",");
+            $sum_value_cols[] = number_format($sum_tunjangan_transport, 0, ".", ",");
+        }
+        foreach ($sum_value_cols as $key => $value) {
+            $style = "";
+            if ($option === 'excel') { $style = 'style="mso-number-format:&quot;#,##0&quot;"'; }
+            $th2_total .= '<td '.$style.'>'. $value .'</td>';
         }
 
         if ($option === 'excel') {
@@ -2147,19 +2245,20 @@ class Payrolls extends CI_Controller
 
         $html .= '</table><br></br>';
 
+        $colspan_ttd = 8 + ($is_hl || $filterGroupAll ? 2 : 0) + 5 + count($dynamic_allowances) + 15 - 2;
         $html .= '
             <table id="ttd">
                 <tr>
-                    <th style="width: 62%;" colspan="22"></th>
+                    <th style="width: 62%;" colspan="' . $colspan_ttd . '"></th>
                     <th colspan="2" style="width: 10%; border: 1px solid #ddd;">Approval By</th>
                 </tr>
                 <tr>
-                    <th style="width: 62%; style="height: 65px" colspan="22"></th>
+                    <th style="width: 62%; height: 65px;" colspan="' . $colspan_ttd . '"></th>
                     <th style="height: 65px; width: 13%; border: 1px solid #ddd;"></th>
                     <th style="height: 65px; width: 13%; border: 1px solid #ddd;"></th>
                 </tr>
                 <tr>
-                    <th style="width: 62%;" colspan="22"></th>
+                    <th style="width: 62%;" colspan="' . $colspan_ttd . '"></th>
                     <th style="width: 10%; border: 1px solid #ddd;">Rendhika Harsono</th>
                     <th style="width: 10%; border: 1px solid #ddd;">Askara Harsono</th>
                 </tr>
@@ -2305,7 +2404,38 @@ class Payrolls extends CI_Controller
             $sum_bpjs_rate            = 0;
             $sum_bpjs_kes_rate        = 0;
             // total untuk th2
+            $dynamic_allowances = [];
+            $excluded_allowance_numbers = [
+                '20230217000001', // Tunjangan Tetap
+                '20230222000001', // Tunjangan Jabatan
+                '20230117000003', // Tunjangan Kinerja
+                '20221213000006', // Uang Makan 1
+                '20250916000001', // Uang Makan 2
+                '20221213000007'  // Uang Makan 3
+            ];
+            $excluded_allowance_names = [
+                'tunjangan tetap',
+                'tunjangan jabatan',
+                'tunjangan kinerja',
+                'tunjangan transport'
+            ];
+            $id_tunjangan_tetap = null;
+            $id_tunjangan_jabatan = null;
+            $id_tunjangan_kinerja = null;
+            foreach ($allowance as $row) {
+                $num = strtolower(trim($row->number));
+                $name = strtolower(trim($row->name));
+                if ($num == '20230217000001' || $name == 'tunjangan tetap') { $id_tunjangan_tetap = $row->id; }
+                if ($num == '20230222000001' || $name == 'tunjangan jabatan') { $id_tunjangan_jabatan = $row->id; }
+                if ($num == '20230117000003' || $name == 'tunjangan kinerja') { $id_tunjangan_kinerja = $row->id; }
+                if (in_array($num, $excluded_allowance_numbers) || in_array($name, $excluded_allowance_names)) {
+                    continue;
+                }
+                $dynamic_allowances[] = $row;
+            }
+
             $sum_salary              = 0;
+            $sum_allowances          = array_fill(0, count($dynamic_allowances), 0);
             $sum_tunjangan_tetap     = 0;
             $sum_tunjangan_jabatan   = 0;
             $sum_tunjangan_kinerja   = 0;
@@ -2360,19 +2490,22 @@ class Payrolls extends CI_Controller
                     "departement_sub_name" => $record["departement_sub_name"],
                 ];
                 $is_hl_emp = in_array($record['group_id'], $hlGroups, true);
-                $potongan_lain = $record['loan_cooperative'] + $record['loan_bank'] + $record['loan_other'];
+                $all_deduction = [];
+                foreach (json_decode($record['deduction']) as $key => $value) { $all_deduction[] = $value; }
+                $potongan_lain = $record['loan_cooperative'] + $record['loan_bank'] + $record['loan_other'] + array_sum($all_deduction);
                 $allowances = json_decode($record['allowence'], true);
                 $arr_allowance = [];
                 foreach ($allowances as $key => $value) {
-                    $arr_allowance[(isset($id_allowances[$key])) ? $id_allowances[$key] : $key] = $value;
+                    $arr_allowance[(isset($id_allowances[$key])) ? $id_allowances[$key] : $key] = floatval($value);
                 }
+                // die(json_encode($arr_allowance));
                 if ($is_hl || $filterGroupAll) {
                     $gaji_harian = 0;
                     // ambil nilai uang makan (only pti)
                     $uang_makan = 0;
-                    if (isset($arr_allowance['20221213000006'])) { $uang_makan = floatval($arr_allowance['20221213000006']); }
-                    elseif (isset($arr_allowance['20250916000001'])) { $uang_makan = floatval($arr_allowance['20250916000001']); }
-                    elseif (isset($arr_allowance['20221213000007'])) { $uang_makan = floatval($arr_allowance['20221213000007']); }
+                    if (isset($arr_allowance['20221213000006'])) { $uang_makan = $arr_allowance['20221213000006']; }
+                    if (isset($arr_allowance['20250916000001']) && empty($uang_makan)) { $uang_makan = $arr_allowance['20250916000001']; }
+                    if (isset($arr_allowance['20221213000007']) && empty($uang_makan)) { $uang_makan = $arr_allowance['20221213000007']; }
 
                     if (floatval($record['salary']) == 0) {
                         // hitung total selain uang makan
@@ -2381,72 +2514,109 @@ class Payrolls extends CI_Controller
                             $gaji_harian += (float) $value;
                         }
                     }
-                    if (!$is_hl_emp) {
-                        $gaji_harian = 0;
-                        $uang_makan = 0;
-                    }
-                    $data["gaji_harian"] = number_format($gaji_harian, 0, "", ",");
-                    $data["uang_makan"] = number_format($uang_makan, 0, "", ",");
+                    // if (!$is_hl_emp) {
+                    //     $gaji_harian = 0;
+                    //     $uang_makan = 0;
+                    // }
+                    $data["gaji_harian"] = $gaji_harian;
+                    $data["uang_makan"] = $uang_makan;
 
                     $sum_gaji_harian += $gaji_harian;
                     $sum_uang_makan  += $uang_makan;
                 }
                 // BRI, KI, PTI, DUMMY
-                $tunjangan_tetap = $arr_allowance['20230119000002'] ?? $arr_allowance['20230221000001'] ?? $arr_allowance['20230217000001'] ?? $arr_allowance['20230221000001'] ?? 0;
-                $tunjangan_jabatan = $arr_allowance['20230119000003'] ?? $arr_allowance['20230117000002'] ?? $arr_allowance['20230222000001'] ?? $arr_allowance['20230117000002'] ?? 0;
-                $tunjangan_kinerja = $arr_allowance['20230119000004'] ?? $arr_allowance['20230117000003'] ?? $arr_allowance['20230117000003'] ?? 0;
+                $tunjangan_tetap = 0;
+                if ($id_tunjangan_tetap && isset($arr_allowance[$id_tunjangan_tetap])) {
+                    $tunjangan_tetap = $arr_allowance[$id_tunjangan_tetap];
+                } elseif (isset($arr_allowance['20230217000001'])) {
+                    $tunjangan_tetap = $arr_allowance['20230217000001'];
+                }
+
+                $tunjangan_jabatan = 0;
+                if ($id_tunjangan_jabatan && isset($arr_allowance[$id_tunjangan_jabatan])) {
+                    $tunjangan_jabatan = $arr_allowance[$id_tunjangan_jabatan];
+                } elseif (isset($arr_allowance['20230222000001'])) {
+                    $tunjangan_jabatan = $arr_allowance['20230222000001'];
+                }
+
+                $tunjangan_kinerja = 0;
+                if ($id_tunjangan_kinerja && isset($arr_allowance[$id_tunjangan_kinerja])) {
+                    $tunjangan_kinerja = $arr_allowance[$id_tunjangan_kinerja];
+                } elseif (isset($arr_allowance['20230117000003'])) {
+                    $tunjangan_kinerja = $arr_allowance['20230117000003'];
+                }
+
                 $tunjangan_transport = 0;
 
-                $data["salary"] = number_format($record['salary'], 0, "", ",");
-                $data["tunjangan_tetap"] = number_format($tunjangan_tetap, 0, "", ",");
-                $data["tunjangan_jabatan"] = number_format($tunjangan_jabatan, 0, "", ",");
-                $data["tunjangan_kinerja"] = number_format($tunjangan_kinerja, 0, "", ",");
-                $data["tunjangan_transport"] = number_format($tunjangan_transport, 0, "", ",");
+                $data["salary"] = $record['salary'];
+
+                // Dynamic allowances
+                $tunjangan_arr = [];
+                foreach ($dynamic_allowances as $row) {
+                    $val = 0;
+                    if (isset($arr_allowance[$row->id])) {
+                        $val = $arr_allowance[$row->id];
+                    } elseif (isset($arr_allowance[strtolower(trim($row->number))])) {
+                        $val = $arr_allowance[strtolower(trim($row->number))];
+                    } elseif (isset($arr_allowance[$row->number])) {
+                        $val = $arr_allowance[$row->number];
+                    }
+                    $data["allowance_" . $row->id] = $val;
+                    $tunjangan_arr[] = $val;
+                }
+
+                $data["tunjangan_tetap"] = $tunjangan_tetap;
+                $data["tunjangan_jabatan"] = $tunjangan_jabatan;
+                $data["tunjangan_kinerja"] = $tunjangan_kinerja;
+                $data["tunjangan_transport"] = $tunjangan_transport;
 
                 $sum_salary              += $record['salary'];
+                foreach ($tunjangan_arr as $key => $val) {
+                    $sum_allowances[$key] += $val;
+                }
                 $sum_tunjangan_tetap     += $tunjangan_tetap;
                 $sum_tunjangan_jabatan   += $tunjangan_jabatan;
                 $sum_tunjangan_kinerja   += $tunjangan_kinerja;
                 $sum_tunjangan_transport += $tunjangan_transport;
 
                 
-                if ($record['ter'] < 0) {
+                // if ($record['ter'] < 0) {
                     $tax_allowance = 0;
-                } else {
-                    $tax_allowance = $record['ter'];
-                }
+                // } else {
+                //     $tax_allowance = $record['ter'];
+                // }
                 $total_overtime = $record['overtime_amount_weekday'] + $record['overtime_amount_saturday'] + $record['overtime_amount_sunday'] + $record['overtime_amount_holiday'];
 
                 $corr_plus = $record['correction_plus'];
 
-                if ($is_hl_emp) {
-                    $total_all_allowance = $tax_allowance + $total_overtime + $gaji_harian + $corr_plus;
-                } else {
-                    $total_all_allowance = $tax_allowance + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $total_overtime + $corr_plus;
-                }
+                // if ($is_hl_emp) {
+                //     $total_all_allowance = $tax_allowance + $total_overtime + $gaji_harian + $corr_plus;
+                // } else {
+                    $total_all_allowance = $tax_allowance + array_sum($tunjangan_arr) + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $total_overtime + $corr_plus;
+                // }
 
                 $bpjs_employee = json_decode($record['bpjs_employee'], true);
                 $jp_emp = $bpjs_employee['jp_employee'] ?? 0;
                 $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
                 $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
 
-                $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+                $total_all_deduction = $record['total_all_deduction'] + $potongan_lain + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
 
-                $data["corr_plus"] = number_format($corr_plus, 0, "", ",");
-                $data["total_overtime"] = number_format($total_overtime, 0, "", ",");
-                $data["tax_allowance"] = number_format($tax_allowance, 0, "", ",");
-                $data["total_all_allowance"] = number_format($total_all_allowance, 0, "", ",");
-                $data["total_all_deduction"] = number_format($record["total_all_deduction"], 0, "", ",");
-                $data["potongan_lain"] = number_format($potongan_lain, 0, "", ",");
-                $data["jp_emp"] = number_format($jp_emp, 0, "", ",");
-                $data["bpjs_emp"] = number_format($bpjs_emp, 0, "", ",");
-                $data["jht_emp"] = number_format($jht_emp, 0, "", ",");
-                $data["ter"] = number_format($record["ter"], 0, "", ",");
-                $data["total_all_deduction2"] = number_format($total_all_deduction, 0, "", ",");
-                $data["ter2"] = number_format($record["ter"], 0, "", ",");
-                $data["net_income"] = number_format($record["net_income"], 0, "", ",");
-                $data["bpjs_rate"] = number_format($record["bpjs_rate"], 0, "", ",");
-                $data["bpjs_kes_rate"] = number_format($record["bpjs_kes_rate"], 0, "", ",");
+                $data["corr_plus"] = $corr_plus;
+                $data["total_overtime"] = $total_overtime;
+                $data["tax_allowance"] = $tax_allowance;
+                $data["total_all_allowance"] = $total_all_allowance;
+                $data["total_all_deduction"] = $record["total_all_deduction"];
+                $data["potongan_lain"] = $potongan_lain;
+                $data["jp_emp"] = $jp_emp;
+                $data["bpjs_emp"] = $bpjs_emp;
+                $data["jht_emp"] = $jht_emp;
+                $data["ter"] = $record["ter"];
+                $data["total_all_deduction2"] = $total_all_deduction;
+                $data["ter2"] = $record["ter"];
+                $data["net_income"] = $record["net_income"];
+                $data["bpjs_rate"] = $record["bpjs_rate"];
+                $data["bpjs_kes_rate"] = $record["bpjs_rate"];
 
                 $no++;
                 $sum_total_correction_plus += $corr_plus;
@@ -2462,38 +2632,49 @@ class Payrolls extends CI_Controller
                 $sum_total_all_deduction += $total_all_deduction;
                 $sum_net_income          += $record['net_income'];
                 $sum_bpjs_rate           += $record['bpjs_rate'];
-                $sum_bpjs_kes_rate       += $record['bpjs_kes_rate'];
+                $sum_bpjs_kes_rate       += $record['bpjs_rate'];
                 // die(json_encode($data));
                 array_push($datas, json_decode(json_encode($data)));
             }
             $data = ["total_1" => "", "total_2" => "", "total_3" => "", "total_4" => "", "total_5" => "", "total_6" => "", "total_7" => ""];
             if ($is_hl || $filterGroupAll) {
-                $data["sum_gaji_harian"] = number_format($sum_gaji_harian, 0, "", ",");
-                $data["sum_uang_makan"] = number_format($sum_uang_makan, 0, "", ",");
+                $data["sum_gaji_harian"] = $sum_gaji_harian;
+                $data["sum_uang_makan"] = $sum_uang_makan;
             }
-            $data["sum_salary"] = number_format($sum_salary, 0, "", ",");
-            $data["sum_tunjangan_tetap"] = number_format($sum_tunjangan_tetap, 0, "", ",");
-            $data["sum_tunjangan_jabatan"] = number_format($sum_tunjangan_jabatan, 0, "", ",");
-            $data["sum_tunjangan_kinerja"] = number_format($sum_tunjangan_kinerja, 0, "", ",");
-            $data["sum_tunjangan_transport"] = number_format($sum_tunjangan_transport, 0, "", ",");
-            $data["sum_total_correction_plus"] = number_format($sum_total_correction_plus, 0, "", ",");
-            $data["sum_total_overtime"] = number_format($sum_total_overtime, 0, "", ",");
-            $data["sum_tax_allowance"] = number_format($sum_tax_allowance, 0, "", ",");
-            $data["sum_total_all_allowance"] = number_format($sum_total_all_allowance, 0, "", ",");
-            $data["sum_deduction_absence"] = number_format($sum_deduction_absence, 0, "", ",");
-            $data["sum_potongan_lain"] = number_format($sum_potongan_lain, 0, "", ",");
-            $data["sum_jp_emp"] = number_format($sum_jp_emp, 0, "", ",");
-            $data["sum_bpjs_emp"] = number_format($sum_bpjs_emp, 0, "", ",");
-            $data["sum_jht_emp"] = number_format($sum_jht_emp, 0, "", ",");
-            $data["sum_ter"] = number_format($sum_ter, 0, "", ",");
-            $data["sum_total_all_deduction"] = number_format($sum_total_all_deduction, 0, "", ",");
-            $data["sum_ter2"] = number_format($sum_ter, 0, "", ",");
-            $data["sum_net_income"] = number_format($sum_net_income, 0, "", ",");
-            $data["sum_bpjs_rate"] = number_format($sum_bpjs_rate, 0, "", ",");
-            $data["sum_bpjs_kes_rate"] = number_format($sum_bpjs_kes_rate, 0, "", ",");
+            $data["sum_salary"] = $sum_salary;
+            foreach ($sum_allowances as $key => $val) {
+                $data["sum_allowances_" . $key] = $val;
+            }
+            $data["sum_tunjangan_tetap"] = $sum_tunjangan_tetap;
+            $data["sum_tunjangan_jabatan"] = $sum_tunjangan_jabatan;
+            $data["sum_tunjangan_kinerja"] = $sum_tunjangan_kinerja;
+            $data["sum_tunjangan_transport"] = $sum_tunjangan_transport;
+            $data["sum_total_correction_plus"] = $sum_total_correction_plus;
+            $data["sum_total_overtime"] = $sum_total_overtime;
+            $data["sum_tax_allowance"] = $sum_tax_allowance;
+            $data["sum_total_all_allowance"] = $sum_total_all_allowance;
+            $data["sum_deduction_absence"] = $sum_deduction_absence;
+            $data["sum_potongan_lain"] = $sum_potongan_lain;
+            $data["sum_jp_emp"] = $sum_jp_emp;
+            $data["sum_bpjs_emp"] = $sum_bpjs_emp;
+            $data["sum_jht_emp"] = $sum_jht_emp;
+            $data["sum_ter"] = $sum_ter;
+            $data["sum_total_all_deduction"] = $sum_total_all_deduction;
+            $data["sum_ter2"] = $sum_ter;
+            $data["sum_net_income"] = $sum_net_income;
+            $data["sum_bpjs_rate"] = $sum_bpjs_rate;
+            $data["sum_bpjs_kes_rate"] = $sum_bpjs_kes_rate;
             array_push($datas, json_decode(json_encode($data)));
 
-            $columns = ['No', 'Employee ID', 'Full Name', 'Status', 'No. KTP', 'Status PTKP', 'Job Position', 'Organization', 'Basic Salary', 'Tunjangan Tetap', 'Tunjangan Jabatan', 'Tunjangan Kinerja', 'Tunjangan Transport', 'Correction Plus', 'Total Overtime', 'Tax Allowance', 'Total Allowance', 'Potongan Absen', 'Potongan Lain-Lain', 'Jaminan Pensiun Employee', 'BPJSK Employee', 'JHT Employee', 'PPH 21', 'Total Deduction', 'PPH 21 Payment', 'Take Home Pay', 'BPJS TK Rate', 'BPJS Kes Rate'];
+            $columns = ['No', 'Employee ID', 'Full Name', 'Status', 'No. KTP', 'Status PTKP', 'Job Position', 'Organization', 'Basic Salary'];
+            foreach ($dynamic_allowances as $row) {
+                $columns[] = $row->name;
+            }
+            $columns[] = 'Tunjangan Tetap';
+            $columns[] = 'Tunjangan Jabatan';
+            $columns[] = 'Tunjangan Kinerja';
+            $columns[] = 'Tunjangan Transport';
+            $columns = array_merge($columns, ['Correction Plus', 'Total Overtime', 'Tax Allowance', 'Total Allowance', 'Potongan Absen', 'Potongan Lain-Lain', 'Jaminan Pensiun Employee', 'BPJSK Employee', 'JHT Employee', 'PPH 21', 'Total Deduction', 'PPH 21 Payment', 'Take Home Pay', 'BPJS TK Rate', 'BPJS Kes Rate']);
             if ($is_hl || $filterGroupAll) { array_splice($columns, 8, 0, ['Gaji Harian', 'Uang Makan']); }
             $last_index = count($columns) - 1;
             $title = 'Generate Payroll Report';

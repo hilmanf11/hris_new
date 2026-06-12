@@ -1883,10 +1883,14 @@ class Payroll_harian_lepas extends CI_Controller
                 $sum_gaji_harian += $gaji_harian;
                 $sum_uang_makan  += $uang_makan;
             }
-                $tunjangan_tetap = $arr_allowance['tt'] ?? 0;
-                $tunjangan_jabatan = $arr_allowance['tj'] ?? 0;
-                $tunjangan_kinerja = $arr_allowance['tk'] ?? 0;
-                $tunjangan_transport = $arr_allowance['tr'] ?? 0;
+                // $tunjangan_tetap = $arr_allowance['tt'] ?? 0;
+                // $tunjangan_jabatan = $arr_allowance['tj'] ?? 0;
+                // $tunjangan_kinerja = $arr_allowance['tk'] ?? 0;
+                // $tunjangan_transport = $arr_allowance['tr'] ?? 0;
+                $tunjangan_tetap = 0;
+                $tunjangan_jabatan = 0;
+                $tunjangan_kinerja = 0;
+                $tunjangan_transport = 0;
 
                 if ($option === 'excel') {
                     $th2 .= '
@@ -1913,28 +1917,34 @@ class Payroll_harian_lepas extends CI_Controller
                 $sum_tunjangan_transport += $tunjangan_transport;
 
             
-            if ($record['ter'] < 0 || $record['tax_allowance'] == 0) {
+            // if ($record['ter'] < 0 || $record['tax_allowance'] == 0) {
                 $tax_allowance = 0;
-            } else {
-                $tax_allowance = $record['ter'];
-            }
-            $total_overtime = $record['overtime_amount_weekday'] + $record['overtime_amount_saturday'] + $record['overtime_amount_sunday'] + $record['overtime_amount_holiday'];
+            // } else {
+            //     $tax_allowance = $record['ter'];
+            // }
+            // $total_overtime = $record['overtime_amount_weekday'] + $record['overtime_amount_saturday'] + $record['overtime_amount_sunday'] + $record['overtime_amount_holiday'];
+            $total_overtime = 0;
 
             $corr_plus = $record['correction_plus'];
 
-            if ($is_hl_emp) {
-                $total_all_allowance = $tax_allowance + $total_overtime + $gaji_harian + $corr_plus;
-            } else {
-                $total_all_allowance = $tax_allowance + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $total_overtime + $corr_plus;
-            }
+            $total_all_allowance = $tax_allowance + $total_overtime + $corr_plus;
+            // if ($is_hl_emp) {
+            //     $total_all_allowance += $gaji_harian;
+            // } else {
+                $total_all_allowance += $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja;
+            // }
 
             $bpjs_employee = json_decode($record['bpjs_employee'], true);
-            $jp_emp = $bpjs_employee['jp_employee'] ?? 0;
-            $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
-            $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
+            // $jp_emp = $bpjs_employee['jp_employee'] ?? 0;
+            // $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
+            // $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
+            $jp_emp = 0;
+            $bpjs_emp = 0;
+            $jht_emp = 0;
 
             // $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
-            $total_all_deduction = 0 + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+            // $total_all_deduction = 0 + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+            $total_all_deduction = 0;
 
             if ($option === 'excel') {
                 // ===== EXCEL (numeric, bisa dihitung) =====
@@ -1943,7 +1953,7 @@ class Payroll_harian_lepas extends CI_Controller
                     <td style="mso-number-format:&quot;#,##0&quot;">'. round($total_overtime, 0) .'</td>
                     <td style="mso-number-format:&quot;#,##0&quot;">'. round($tax_allowance, 0) .'</td>
                     <td style="mso-number-format:&quot;#,##0&quot;">'. round($total_all_allowance, 0) .'</td>
-                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($record["total_all_deduction"], 0) .'</td>
+                    <td style="mso-number-format:&quot;#,##0&quot;">'. round($record["correction_minus"], 0) .'</td>
                     <td style="mso-number-format:&quot;#,##0&quot;">'. round($potongan_lain, 0) .'</td>
                     <td style="mso-number-format:&quot;#,##0&quot;">'. round($jp_emp, 0) .'</td>
                     <td style="mso-number-format:&quot;#,##0&quot;">'. round($bpjs_emp, 0) .'</td>
@@ -1962,7 +1972,7 @@ class Payroll_harian_lepas extends CI_Controller
                     <td>'. number_format($total_overtime, 0, ".", ",") .'</td>
                     <td>'. number_format($tax_allowance, 0, ".", ",") .'</td>
                     <td>'. number_format($total_all_allowance, 0, ".", ",") .'</td>
-                    <td>'. number_format($record["total_all_deduction"], 0, ".", ",") .'</td>
+                    <td>'. number_format($record["correction_minus"], 0, ".", ",") .'</td>
                     <td>'. number_format($potongan_lain, 0, ".", ",") .'</td>
                     <td>'. number_format($jp_emp, 0, ".", ",") .'</td>
                     <td>'. number_format($bpjs_emp, 0, ".", ",") .'</td>
@@ -2326,9 +2336,13 @@ class Payroll_harian_lepas extends CI_Controller
                     $sum_uang_makan  += $uang_makan;
                 }
                 // BRI, KI, PTI, DUMMY
-                $tunjangan_tetap = $arr_allowance['20230119000002'] ?? $arr_allowance['20230221000001'] ?? $arr_allowance['20230217000001'] ?? $arr_allowance['20230221000001'] ?? 0;
-                $tunjangan_jabatan = $arr_allowance['20230119000003'] ?? $arr_allowance['20230117000002'] ?? $arr_allowance['20230222000001'] ?? $arr_allowance['20230117000002'] ?? 0;
-                $tunjangan_kinerja = $arr_allowance['20230119000004'] ?? $arr_allowance['20230117000003'] ?? $arr_allowance['20230117000003'] ?? 0;
+                // $tunjangan_tetap = $arr_allowance['20230119000002'] ?? $arr_allowance['20230221000001'] ?? $arr_allowance['20230217000001'] ?? $arr_allowance['20230221000001'] ?? 0;
+                // $tunjangan_jabatan = $arr_allowance['20230119000003'] ?? $arr_allowance['20230117000002'] ?? $arr_allowance['20230222000001'] ?? $arr_allowance['20230117000002'] ?? 0;
+                // $tunjangan_kinerja = $arr_allowance['20230119000004'] ?? $arr_allowance['20230117000003'] ?? $arr_allowance['20230117000003'] ?? 0;
+                // $tunjangan_transport = 0;
+                $tunjangan_tetap = 0;
+                $tunjangan_jabatan = 0;
+                $tunjangan_kinerja = 0;
                 $tunjangan_transport = 0;
 
                 $data["salary"] = 0;
@@ -2344,12 +2358,13 @@ class Payroll_harian_lepas extends CI_Controller
                 $sum_tunjangan_transport += $tunjangan_transport;
 
                 
-                if ($record['ter'] < 0) {
+                // if ($record['ter'] < 0) {
                     $tax_allowance = 0;
-                } else {
-                    $tax_allowance = $record['ter'];
-                }
-                $total_overtime = $record['overtime_amount_weekday'] + $record['overtime_amount_saturday'] + $record['overtime_amount_sunday'] + $record['overtime_amount_holiday'];
+                // } else {
+                //     $tax_allowance = $record['ter'];
+                // }
+                // $total_overtime = $record['overtime_amount_weekday'] + $record['overtime_amount_saturday'] + $record['overtime_amount_sunday'] + $record['overtime_amount_holiday'];
+                $total_overtime = 0;
 
                 $corr_plus = $record['correction_plus'];
 
@@ -2358,22 +2373,26 @@ class Payroll_harian_lepas extends CI_Controller
                 // } else {
                 //     $total_all_allowance = $tax_allowance + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $total_overtime + $corr_plus;
                 // }
-                $total_all_allowance = $record['income'] + $uang_makan + 0 + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $tunjangan_transport + $corr_plus + $tax_allowance + $total_overtime;
+                $total_all_allowance = 0 + $tunjangan_tetap + $tunjangan_jabatan + $tunjangan_kinerja + $tunjangan_transport + $corr_plus + $tax_allowance + $total_overtime;
 
                 $bpjs_employee = json_decode($record['bpjs_employee'], true);
-                $jp_emp = $bpjs_employee['jp_employee'] ?? 0;
-                $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
-                $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
+                // $jp_emp = $bpjs_employee['jp_employee'] ?? 0;
+                // $bpjs_emp = $bpjs_employee['bpjs_employee'] ?? 0;
+                // $jht_emp = $bpjs_employee['jht_employee'] ?? 0;
+                $jp_emp = 0;
+                $bpjs_emp = 0;
+                $jht_emp = 0;
 
                 // $total_all_deduction = $record['total_all_deduction'] + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
-                $total_all_deduction = 0 + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+                // $total_all_deduction = 0 + $jp_emp + $bpjs_emp + $jht_emp + $record['ter'];
+                $total_all_deduction = 0;
 
                 $data["corr_plus"] = number_format($corr_plus, 0, "", ",");
                 $data["total_overtime"] = number_format($total_overtime, 0, "", ",");
                 $data["tax_allowance"] = number_format($tax_allowance, 0, "", ",");
                 $data["total_all_allowance"] = number_format($total_all_allowance, 0, "", ",");
-                // $data["total_all_deduction"] = number_format($record["total_all_deduction"], 0, "", ",");
-                $data["total_all_deduction"] = number_format(0, 0, "", ",");
+                $data["total_all_deduction"] = number_format($record["correction_minus"], 0, "", ",");
+                // $data["total_all_deduction"] = number_format(0, 0, "", ",");
                 $data["potongan_lain"] = number_format($potongan_lain, 0, "", ",");
                 $data["jp_emp"] = number_format($jp_emp, 0, "", ",");
                 $data["bpjs_emp"] = number_format($bpjs_emp, 0, "", ",");
@@ -2390,8 +2409,8 @@ class Payroll_harian_lepas extends CI_Controller
                 $sum_total_overtime      += $total_overtime;
                 $sum_tax_allowance       += $tax_allowance;
                 $sum_total_all_allowance += $total_all_allowance;
-                // $sum_deduction_absence   += $record['total_all_deduction'];
-                $sum_deduction_absence   += 0;
+                $sum_deduction_absence   += $record['correction_minus'];
+                // $sum_deduction_absence   += 0;
                 $sum_potongan_lain       += $potongan_lain;
                 $sum_jp_emp              += $jp_emp;
                 $sum_bpjs_emp            += $bpjs_emp;
