@@ -1112,7 +1112,7 @@ class Attandance_days extends CI_Controller
                 $arrAttandance = [];
                 if (isset($attendances_by_employee[$data['employee_number']])) {
                     foreach ($attendances_by_employee[$data['employee_number']] as $attendance) {
-                        $arrAttandance[] = ["date_in" => $attendance['date_in'], "time_in" => $attendance['time_in'], "date_out" => $attendance['date_out'], "time_out" => $attendance['time_out']];
+                        $arrAttandance[] = ["number" => $attendance['number'], "date_in" => $attendance['date_in'], "time_in" => $attendance['time_in'], "date_out" => $attendance['date_out'], "time_out" => $attendance['time_out']];
                     }
                 }
 
@@ -1195,7 +1195,50 @@ class Attandance_days extends CI_Controller
                             $remarks = $changeDayRemarks;
                         }
                     } else {
-                        if (@$data['days'] == "5") {
+                        if (@$data['days'] == "4") {
+                            $status = "";
+                            $remarks = "";
+                            if (!empty($resignation) && strtotime($working_date) >= strtotime($resignation['resign_date'])) {
+                                $status = "RESIGN";
+                                $remarks = $resignation['remarks'];
+                            } elseif (strtotime($data['date_sign']) > strtotime($working_date)) {
+                                $status = "NOT JOIN YET";
+                            }
+
+                            if (empty($status)) {
+                                foreach ($arrAttandance as $arrA) {
+                                    if (empty($status)) {
+                                        $q = "SELECT MIN(date_in) AS date FROM attandances WHERE number = '".$arrA['number']."'";
+                                        $start_date = new DateTime($this->db->query($q)->row()->date);
+                                        if ($working_date == $arrA['date_in']) {
+                                            $date_in = $arrA['time_in'];
+                                            $time_in = $arrA['time_in'];
+                                            $time_out = $arrA['time_out'];
+                                            $status = $this->cekStatusMasuk($arrShift, $date_in);
+                                        } elseif (in_array((($start_date->diff(new DateTime(date('Y-m-d', $i)))->days + 1) % 6), [5,0])) { $status = "OFF SECURITY"; }
+                                    }
+                                }
+                                foreach ($arrHoliday as $arrH) {
+                                    if (empty($status)) {
+                                        if ($working_date == $arrH['trans_date']) {
+                                            $status = "HOLIDAY";
+                                            $remarks = $arrH['description'];
+                                        }
+                                    }
+                                }
+                                foreach ($arrPermit as $arrP) {
+                                    if (empty($status)) {
+                                        if ($working_date == $arrP['permit_date']) {
+                                            $status = "PERMIT";
+                                            $permit = $arrP['permit_name'];
+                                            $remarks = $arrP['note'];
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (empty($status)) { $status = "ABSENCE"; }
+                        } elseif (@$data['days'] == "5") {
                             if (date('w', $i) !== '0' && date('w', $i) !== '6') {
                                 if(!in_array($working_date, $arrAbsence)){
                                     $status = "ABSENCE";
@@ -1307,9 +1350,10 @@ class Attandance_days extends CI_Controller
                         } else {
                             // Jika tidak ada kehadiran, cek apakah status adalah PERMIT, ABSENCE, HOLIDAY, dll
                             // Untuk status ini, kita tetap tampilkan karena tidak ada time_in
-                            if ($status == "PERMIT" || $status == "ABSENCE" || $status == "HOLIDAY" || 
-                                $status == "WEEKEND" || $status == "RESIGN" || $status == "NOT JOIN YET" || 
-                                $status == "UN SETTING" || $status == "CHANGE DAY START" || $status == "CHANGE DAY END") {
+                            if ($status == "PERMIT" || $status == "ABSENCE" || $status == "HOLIDAY" ||
+                                $status == "WEEKEND" || $status == "RESIGN" || $status == "NOT JOIN YET" ||
+                                $status == "UN SETTING" || $status == "CHANGE DAY START" || $status == "CHANGE DAY END" ||
+                                $status == "OFF SECURITY") {
                                 $showThisDay = true;
                             }
                         }
@@ -1329,7 +1373,7 @@ class Attandance_days extends CI_Controller
                                 $total_attendance_records++;
                             }
 
-                            if ($status == "WEEKEND") {
+                            if ($status == "WEEKEND" || $status == "OFF SECURITY") {
                                 $style = "style='color:red; font-weight:bold;'";
                             } elseif ($status == "PERMIT") {
                                 $style = "style='color:blue; font-weight:bold;'";

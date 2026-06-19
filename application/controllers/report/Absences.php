@@ -120,7 +120,7 @@ class Absences extends CI_Controller
 
             $records = $this->db->get()->result_array();
 
-
+            // die($this->db->last_query());
 
             //Config
 
@@ -302,7 +302,7 @@ class Absences extends CI_Controller
 
                     $employees = $this->db->get()->result_array();
 
-
+                    // die($this->db->last_query());
 
                     $mp = 0;
 
@@ -336,21 +336,38 @@ class Absences extends CI_Controller
 
                     foreach ($employees as $employee) {
 
-                        $weekday = [];
+                        $q = "SELECT MIN(date_in) AS date FROM attandances WHERE number = '".$employee['number']."'";
+                        $start_date = new DateTime($this->db->query($q)->row()->date);
+                        $resignation = $this->crud->read("resignations", [], ["employee_id" => $employee['id']]);
+                        $weekend_day = [];
+                        $weekday_day = [];
 
-                        $weekday2 = [];
+                        // $weekday = [];
 
-                        $weekend = [];
+                        // $weekday2 = [];
 
-                        $weekend2 = [];
+                        // $weekend = [];
+
+                        // $weekend2 = [];
 
 
 
                         for ($i = $start; $i <= $finish; $i += (60 * 60 * 24)) {
 
                             $working_date = date('Y-m-d', $i);
+                            $week = date('w', $i);
 
-    
+                            if ($employee['days'] == "4") {
+                                if (in_array((($start_date->diff(new DateTime($working_date))->days + 1) % 6), [5,0]))
+                                    { $weekend_day[] = $working_date; }
+                                elseif (@$resignation->resign_date < $working_date) { $weekday_day[] = $working_date; }
+                            } else {
+                                $weekend = ["0"]; //minggu doang libur
+                                if ($employee['days'] == "5") { $weekend[] = "6"; } //tambah sabtu
+
+                                if (in_array($week, $weekend)) { $weekend_day[] = $working_date; }
+                                elseif (@$resignation->resign_date < $working_date) { $weekday_day[] = $working_date; }
+                            }
 
                             $this->db->select('*');
 
@@ -366,69 +383,69 @@ class Absences extends CI_Controller
 
                             //Jika tanggal yg di looping bukan hari sabtu dan minggu
 
-                            if (date('w', $i) !== '0' && date('w', $i) !== '6') {
+                            // if (date('w', $i) !== '0' && date('w', $i) !== '6') {
 
                                 //Hari kerja
 
-                                if ($employee['date_sign'] <= $working_date) {
+                                // if ($employee['date_sign'] <= $working_date) {
 
-                                    if (empty($resignation)) {
+                                    // if (empty($resignation)) {
 
-                                        $weekday[] = date('Y-m-d', $i);
+                                        // $weekday[] = date('Y-m-d', $i);
 
-                                    }
+                                    // }
 
-                                }
+                                // }
 
-                            } else {
+                            // } else {
 
                                 //Hari libur
 
-                                $weekend[] = date('Y-m-d', $i);
+                                // $weekend[] = date('Y-m-d', $i);
 
-                            }
+                            // }
 
     
 
-                            if (date('w', $i) !== '0') {
+                            // if (date('w', $i) !== '0') {
 
                                 //Hari kerja
 
-                                if ($employee['date_sign'] <= $working_date) {
+                                // if ($employee['date_sign'] <= $working_date) {
 
-                                    if (empty($resignation)) {
+                                    // if (empty($resignation)) {
 
-                                        $weekday2[] = date('Y-m-d', $i);
+                                        // $weekday2[] = date('Y-m-d', $i);
 
-                                    }
+                                    // }
 
-                                }
+                                // }
 
-                            } else {
+                            // } else {
 
                                 //Hari libur
 
-                                $weekend2[] = date('Y-m-d', $i);
+                                // $weekend2[] = date('Y-m-d', $i);
 
-                            }
+                            // }
 
                         }
 
     
 
-                        if ($employee['days'] == "6") {
+                        // if ($employee['days'] == "6") {
 
-                            $weekend_day = $weekend2;
+                        //     $weekend_day = $weekend2;
 
-                            $weekday_day = $weekday2;
+                        //     $weekday_day = $weekday2;
 
-                        } else {
+                        // } else {
 
-                            $weekend_day = $weekend;
+                        //     $weekend_day = $weekend;
 
-                            $weekday_day = $weekday;
+                        //     $weekday_day = $weekday;
 
-                        }
+                        // }
 
 
 
@@ -804,5 +821,14 @@ class Absences extends CI_Controller
 
     }
 
+    // public function print()
+    // {
+    //     $date_from = $this->input->get('filter_from');
+    //     $date_to = $this->input->get('filter_to');
+    //     $division = $this->input->get('filter_division');
+    //     $departement = $this->input->get('filter_departement');
+    //     $departement_sub = $this->input->get('filter_departement_sub');
+    //     $employee = $this->input->get('filter_employee');
+    // }
 }
 

@@ -181,55 +181,75 @@ class Attandance_summary extends CI_Controller
                 $total_days = 0;
                 $total_late = 0;
                 foreach ($employees as $data) {
-                    $weekday = [];
-                    $weekday2 = [];
-                    $weekend = [];
-                    $weekend2 = [];
+                    $q = "SELECT MIN(date_in) AS date FROM attandances WHERE number = '".$data['number']."'";
+                    $start_date = new DateTime($this->db->query($q)->row()->date);
+                    $resignation = $this->crud->read("resignations", [], ["employee_id" => $data['employee_id']]);
+                    $weekend_day = [];
+                    $weekday_day = [];
+                    // $weekday = [];
+                    // $weekday2 = [];
+                    // $weekend = [];
+                    // $weekend2 = [];
                     for ($i = $start; $i <= $finish; $i += (60 * 60 * 24)) {
-                        $working_date = date('Y-m-d', $i);
-                        $this->db->select('*');
-                        $this->db->from('resignations');
-                        $this->db->where('employee_id', $data['employee_id']);
-                        $this->db->where('resign_date <', $working_date);
-                        $resignation = $this->db->get()->row();
-                        //Jika tanggal yg di looping bukan hari sabtu dan minggu
-                        if (date('w', $i) !== '0' && date('w', $i) !== '6') {
-                            //Hari kerja
-                            if ($data['date_sign'] <= $working_date) {
-                                if (empty($resignation)) {
-                                    $weekday[] = date('Y-m-d', $i);
-                                }
-                            }
+                        $week = date('w', $i);
+                        $date = date('Y-m-d', $i);
+                        if ($data['days'] == "4") {
+                            if (in_array((($start_date->diff(new DateTime($date))->days + 1) % 6), [5,0]))
+                                { $weekend_day[] = $date; }
+                            elseif (@$resignation->resign_date < $date) { $weekday_day[] = $date; }
                         } else {
-                            //Hari libur
-                            $weekend[] = date('Y-m-d', $i);
+                            $weekend = ["0"]; //minggu doang libur
+                            if ($data['days'] == "5") { $weekend[] = "6"; } //tambah sabtu
+
+                            if (in_array($week, $weekend)) { $weekend_day[] = $date; }
+                            elseif (@$resignation->resign_date < $date) { $weekday_day[] = $date; }
                         }
-                        if (date('w', $i) !== '0') {
-                            //Hari kerja
-                            if ($data['date_sign'] <= $working_date) {
-                                if (empty($resignation)) {
-                                    $weekday2[] = date('Y-m-d', $i);
-                                }
-                            }
-                        } else {
-                            //Hari libur
-                            $weekend2[] = date('Y-m-d', $i);
-                        }
+
+                        // $working_date = date('Y-m-d', $i);
+                        // $this->db->select('*');
+                        // $this->db->from('resignations');
+                        // $this->db->where('employee_id', $data['employee_id']);
+                        // $this->db->where('resign_date <', $working_date);
+                        // $resignation = $this->db->get()->row();
+                        // //Jika tanggal yg di looping bukan hari sabtu dan minggu
+                        // if (date('w', $i) !== '0' && date('w', $i) !== '6') {
+                        //     //Hari kerja
+                        //     if ($data['date_sign'] <= $working_date) {
+                        //         if (empty($resignation)) {
+                        //             $weekday[] = date('Y-m-d', $i);
+                        //         }
+                        //     }
+                        // } else {
+                        //     //Hari libur
+                        //     $weekend[] = date('Y-m-d', $i);
+                        // }
+                        // if (date('w', $i) !== '0') {
+                        //     //Hari kerja
+                        //     if ($data['date_sign'] <= $working_date) {
+                        //         if (empty($resignation)) {
+                        //             $weekday2[] = date('Y-m-d', $i);
+                        //         }
+                        //     }
+                        // } else {
+                        //     //Hari libur
+                        //     $weekend2[] = date('Y-m-d', $i);
+                        // }
                     }
-                    if ($data['days'] == "6") {
-                        $weekend_day = $weekend2;
-                        $weekday_day = $weekday2;
-                    } else {
-                        $weekend_day = $weekend;
-                        $weekday_day = $weekday;
-                    }
+                    // if ($data['days'] == "6") {
+                    //     $weekend_day = $weekend2;
+                    //     $weekday_day = $weekday2;
+                    // } else {
+                    //     $weekend_day = $weekend;
+                    //     $weekday_day = $weekday;
+                    // }
+                    // die(var_dump($weekday_day));
                     //Tanggal merah di master calendar
                     $this->db->select('trans_date');
                     $this->db->from('calendars');
                     $this->db->where('trans_date >=', $data['date_sign']);
                     $this->db->where("trans_date between '$filter_from' and '$filter_to'");
                     $this->db->where('description !=', "Weekend");
-                    if (count($weekend2) > 0) {
+                    if ($data['days'] == "6" && count($weekend_day) > 0) {
                         $this->db->where_not_in('trans_date', $weekend2);
                     }
                     $calendar = $this->db->get()->result_array();
@@ -248,7 +268,7 @@ class Attandance_summary extends CI_Controller
                     if (count($weekend_day) > 0) {
                         $this->db->where_not_in('date_in', $weekend_day);
                     }
-                    if (count($w_calendars) > 0) {
+                    if (count($w_calendars) > 0 && $data['days'] != "4") {
                         $this->db->where_not_in('date_in', $w_calendars);
                     }
                     $this->db->group_by('date_in');
