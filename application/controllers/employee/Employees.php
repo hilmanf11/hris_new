@@ -404,6 +404,14 @@ class Employees extends CI_Controller
             return $y . $m . $d;
         }
     }
+    public function readAge($date = "")
+    {
+        $start  = date_create($date);
+        $end = date_create(); // waktu sekarang
+        $diff  = date_diff($start, $end);
+
+        return $diff->y.' Years';
+    }
 
     //GET LATEST CUTOFF PERIOD
     private function getLatestCutoffPeriod()
@@ -1284,7 +1292,10 @@ class Employees extends CI_Controller
                     k.name as marital_name,
                     l.number as source_number,
                     l.name as source_name,
-                    n.name as shift_name');
+                    m.resign_date AS date_resign,
+                    n.name as shift_name,
+                    o.level AS level_education,
+                    o.degree');
             $this->db->from('employees a');
             $this->db->join('divisions c', 'c.id = a.division_id');
             $this->db->join('departements d', 'd.id = a.departement_id');
@@ -1298,6 +1309,7 @@ class Employees extends CI_Controller
             $this->db->join('resignations m', 'a.id = m.employee_id', 'left');
             $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
             $this->db->join('shifts n', 'f.shift_id = n.id', 'left');
+            $this->db->join('employee_educations o', 'a.number = o.number', 'left');
             $this->db->where('a.deleted', 0);
             $this->db->where_not_in('a.contract_id', [20221119000003, 20250704000001]);
             $this->db->where_not_in('a.group_id', [20221119000002, 20251124000001]);
@@ -1347,6 +1359,7 @@ class Employees extends CI_Controller
                 <th width="20">No</th>
                 <th>Employee ID</th>
                 <th>Fullname</th>
+                <th>Status</th>
                 <th>Prefered Name</th>
                 <th>ID Division</th>
                 <th>Division</th>
@@ -1366,11 +1379,16 @@ class Employees extends CI_Controller
                 <th>Source</th>
                 <th>Shift Type</th>
                 <th>Join Date</th>
+                <th>Sign Date</th>
                 <th>Contract Expired</th>
+                <th>Resign Date</th>
                 <th>Fit Of Service</th>
+                <th>Level of Education</th>
+                <th>Degree</th>
                 <th>Address</th>
                 <th>Place Birth</th>
                 <th>Birthday</th>
+                <th>Age</th>
                 <th>Gender</th>
                 <th>Blood</th>
                 <th>Religion</th>
@@ -1408,6 +1426,7 @@ class Employees extends CI_Controller
                     <td>' . $no . '</td>
                     <td class="str">' . $data['number'] . '</td>
                     <td>' . $data['name'] . '</td>
+                    <td>' . (($data['status'] == 0) ? 'Active' : 'In-active') . '</td>
                     <td>' . $data['nickname'] . '</td>
                     <td><b style="color:red;">' . $data['division_number'] . '</b></td>
                     <td>' . $data['division_name'] . '</td>
@@ -1427,11 +1446,16 @@ class Employees extends CI_Controller
                     <td>' . $data['source_name'] . '</td>
                     <td>' . $data['shift_name'] . '</td>
                     <td>' . $data['date_sign'] . '</td>
+                    <td>' . $data['date_sign'] . '</td>
                     <td>' . $data['date_expired'] . '</td>
+                    <td>' . $data['date_resign'] . '</td>
                     <td>' . $this->readService($data['date_sign']) . '</td>
+                    <td>' . $data['level_education'] . '</td>
+                    <td>' . $data['degree'] . '</td>
                     <td>' . $data['address'] . '</td>
                     <td>' . $data['place_birth'] . '</td>
                     <td>' . $data['birthday'] . '</td>
+                    <td style="width: 200px;">' . $this->readAge($data['birthday']) . '</td>
                     <td>' . $data['gender'] . '</td>
                     <td>' . $data['blood'] . '</td>
                     <td>' . $data['religion_name'] . '</td>
