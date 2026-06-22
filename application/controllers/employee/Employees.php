@@ -1294,8 +1294,8 @@ class Employees extends CI_Controller
                     l.name as source_name,
                     m.resign_date AS date_resign,
                     n.name as shift_name,
-                    o.level AS level_education,
-                    o.degree');
+                    p.level AS level_education,
+                    p.degree');
             $this->db->from('employees a');
             $this->db->join('divisions c', 'c.id = a.division_id');
             $this->db->join('departements d', 'd.id = a.departement_id');
@@ -1309,7 +1309,10 @@ class Employees extends CI_Controller
             $this->db->join('resignations m', 'a.id = m.employee_id', 'left');
             $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
             $this->db->join('shifts n', 'f.shift_id = n.id', 'left');
-            $this->db->join('employee_educations o', 'a.number = o.number', 'left');
+            $this->db->join("(".
+                "SELECT number, MAX(end) AS end_date FROM employee_educations GROUP BY number"
+            .") o", 'a.number = o.number', 'left');
+            $this->db->join('employee_educations p', 'a.number = p.number AND o.end_date = p.end', 'left');
             $this->db->where('a.deleted', 0);
             $this->db->where_not_in('a.contract_id', [20221119000003, 20250704000001]);
             $this->db->where_not_in('a.group_id', [20221119000002, 20251124000001]);
