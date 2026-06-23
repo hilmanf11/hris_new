@@ -211,9 +211,8 @@ class Home extends CI_Controller
             ->join("departement_subs e", "b.departement_sub_id = e.id")
             ->join("positions f", "a.position_id = f.id")
             ->join("contracts g", "a.contract_id = g.id")
-        ->where("a.status", '0')
-        ->where("b.status", '0')
-        ->where("b.contract_id !=", '20221119000005')
+            ->join('resignations h', 'b.id = h.employee_id', 'left')
+        ->where(["a.status" => '0', "b.status" => '0', "b.contract_id !=" => '20221119000005', "h.id" => NULL])
         ->group_start()
             ->where("DATE(NOW()) BETWEEN DATE_SUB(a.date_expired, INTERVAL 30 DAY) AND a.date_expired")
             ->or_where("a.attachment IS NULL")
@@ -542,7 +541,7 @@ class Home extends CI_Controller
                     "position_id" => $post['position_agreement'],
                     "group_id" => $post['group'],
                     "contract_id" => $post['emp_type'],
-                    "date_sign" => $post['date_sign'],
+                    "date_contract" => $post['date_sign'],
                     "date_expired" => $post['date_expired']
                 ];
                 $this->crud->update('employees', ["number" => $post['emp_id']], $data);

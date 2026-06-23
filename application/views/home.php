@@ -390,7 +390,7 @@
 
 		</div>
 
-		<table id="dg_approval" class="easyui-datagrid" style="width:100%;" toolbar="#toolbar_approval" data-options="fitColumns: true, rownumbers: true"></table>
+		<table id="dg_approval" class="easyui-datagrid" style="width: 100%; height: 100%;" toolbar="#toolbar_approval" data-options="fitColumns: true, rownumbers: true"></table>
 
 	</div>
 
@@ -460,7 +460,7 @@
 					<legend>Agreement</legend>
 					<table style="width: 100%;">
 						<tr>
-							<td>Date Sign</td>
+							<td>Date Sign Contract</td>
 							<td><input id="date_sign" class="easyui-datebox" required></td>
 						</tr>
 						<tr>
@@ -745,7 +745,7 @@
             	{field: 'expired', title: 'Contract Expired', width: '120', halign: 'center', align: 'center'},
             	{field: 'note', title: 'Note', width: '300', halign: 'center'},
             	{field: 'act', title: 'Action', width: '100', halign: 'center', align: 'center', formatter: function (value, row, index) { return '<a href="javascript:;" class="easyui-linkbutton" onclick="viewHistory('
-            		+"'"+window.btoa(JSON.stringify(row))+"'"+')"><i class="fa fa-file-pen"></i></a>'; }}
+            		+"'"+window.btoa(JSON.stringify(row))+"'"+')"><i class="fa fa-pencil-square-o"></i></a>'; }}
             ]],
             onLoadSuccess: function () { $('.easyui-linkbutton').linkbutton(); }
 		}).datagrid('enableFilter');
@@ -3843,11 +3843,59 @@
 
 				}).datagrid('enableFilter');
 
+			} else if (table == "employee_requests") {
+				$('#dg_approval').datagrid({
+					url: '<?= base_url('approvals/approvalEmployeeRequests/') ?>' + approved_to + "/" + approved_by,
+					singleSelect: true,
+					pagination: true,
+					rownumbers: true,
+					columns: [[
+						{field: 'request_by', title: 'Request By', halign: 'center'},
+						{field: 'request_date', title: 'Request Date', halign: 'center', align: 'center'},
+						{field: 'due_date', title: 'Due Date', halign: 'center', align: 'center'},
+						{field: 'request_form', title: 'Request Form', halign: 'center'},
+						{field: 'division_name', title: 'Division', halign: 'center'},
+						{field: 'departement_name', title: 'Departement', halign: 'center'},
+						{field: 'departement_sub_name', title: 'Departement Sub', halign: 'center'},
+						{field: 'position', title: 'Position', halign: 'center'},
+						{field: 'request', title: 'Request Type', halign: 'center'},
+						{field: 'qty', title: 'Request Qty', halign: 'center', align: 'center'},
+						{field: 'description', title: 'Note', halign: 'center'},
+						{field: 'attachment_pmk', title: 'PMK Form', halign: 'center', align:'center', formatter: formatBtnAttachment},
+						{field: 'attachment_so', title: 'Organizational Structure', halign: 'center', align:'center', formatter: formatBtnAttachment},
+						{field: 'attachment_job', title: 'Job Desc', halign: 'center', align:'center', formatter: formatBtnAttachment},
+						{field: 'attachment_mp', title: 'MP Need Analysis', halign: 'center', align:'center', formatter: formatBtnAttachment},
+						{field: 'action', align: 'center', title: "Action", formatter: function(val, row) {
+								var approve = "approve('" + row.id + "','" + table + "')";
+								var disapprove = "disapprove('" + row.id + "','" + table + "')";
+								var a = '<a class="btn btn-success w-50" style="pointer-events: visible; opacity:1;" onclick="' + approve + '"><i class="fa fa-check"></i></a>';
+								var b = '<a class="btn btn-danger w-50" style="pointer-events: visible; opacity:1;" onclick="' + disapprove + '"><i class="fa fa-times"></i></a>';
+								return a + " " + b;
+							}
+						}
+					]],
+				}).datagrid('enableFilter');
 			}
-
 		}
-
 	}
+
+    function formatBtnAttachment(value, row, index) { return (value == '' || value == null) ? '' : '<a href="javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="btnAttachment('+"'"+window.btoa(value)+"','"+this.field+"'"+')"><i class="fa fa-download"></i> Download</a>'; }
+    function btnAttachment(file, field) {
+        var name = window.atob(file);
+        var ext = '.'+name.split('.')[1];
+        var date = new Date();
+        var y = date.getFullYear();
+        var m = (date.getMonth()+1).toString().padStart(2, '0');
+        var d = (date.getDate()).toString().padStart(2, '0');
+        var a = document.createElement('a');
+
+        a.href = '<?= base_url('assets/document/reqruitment/attachment/') ?>'+name;
+        a.download = field+'_'+y+m+d+ext;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
 
 	function approveLnd(id, tablename, createdBy) {
 		$.messager.confirm('Warning', 'Are you sure you want to approve this data?', function(r) {
@@ -3896,8 +3944,6 @@
 		$('#dg_approval').datagrid('toExcel', 'approvals.xls');
 
 	}
-
-
 
 	function notification() {
 

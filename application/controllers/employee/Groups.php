@@ -68,6 +68,18 @@ class Groups extends CI_Controller
 
     //GET DATA
 
+    public function readAll()
+
+    {
+
+        $post = isset($_POST['q']) ? $_POST['q'] : "";
+
+        $send = $this->crud->reads('groups', ["name" => $post]);
+
+        echo json_encode($send);
+
+    }
+
     public function reads()
 
     {

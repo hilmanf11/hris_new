@@ -100,7 +100,7 @@
                 <input style="width:60%;" name="employee_name" id="employee_name" required="" class="easyui-textbox">
             </div>
             <div class="fitem">
-                <span style="width:35%; display:inline-block;">Date Sign</span>
+                <span style="width:35%; display:inline-block;">Date Sign Contract</span>
                 <input style="width:60%;" name="date_sign" id="date_sign" required="" class="easyui-datebox">
             </div>
             <div class="fitem">
@@ -419,7 +419,7 @@
         });
 
         $('#group_id').combobox({
-            url: '<?php echo base_url('employee/groups/reads'); ?>',
+            url: '<?php echo base_url('employee/groups/readAll'); ?>',
             valueField: 'id',
             textField: 'name',
             prompt: 'Choose Group'
@@ -486,7 +486,7 @@
                 );
 
                 if (format >= $('#date_expired').datebox('getValue'))
-                    { toastr.warning('Please select date sign < date expired!', 'Warning'); }
+                    { toastr.warning('Please select date sign contract < date expired!', 'Warning'); }
             }
         });
 
@@ -502,7 +502,7 @@
                 );
 
                 if ($('#date_sign').datebox('getValue') >= format)
-                    { toastr.warning('Please select date sign < date expired!', 'Warning'); }
+                    { toastr.warning('Please select date sign contract < date expired!', 'Warning'); }
             }
         });
 

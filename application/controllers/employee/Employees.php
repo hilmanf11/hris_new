@@ -248,7 +248,7 @@ class Employees extends CI_Controller
             "TRIM(a.bank_branch) AS bank_branch,".
             "COALESCE(a.status, 0) AS status,".
             "COALESCE(TRIM(b.id), '') AS resign"
-        )->from("employees a")->join("resignations b", "a.id = b.employee_id")->where('a.status', 1);
+        )->from("employees a")->join("resignations b", "a.id = b.employee_id");
             // ->where_not_in('a.contract_id', [20221119000003, 20250704000001])
             // ->where('a.group_id !=', 20221119000002)
         if (!empty($post)) {
@@ -499,53 +499,77 @@ class Employees extends CI_Controller
         $filter_services = $this->input->get('filter_services');
         $filter_expired = $this->input->get('filter_expired');
         $filter_shift = $this->input->get('filter_shift');
-        $filter_status = $this->input->get('filter_status');
+        $filter_status = $this->input->get('filter_status') ?? 0;
         $filter_resign = $this->input->get('filter_resign');
         $filter_from_join = base64_decode($this->input->get('filter_from_join'));
         $filter_to_join = base64_decode($this->input->get('filter_to_join'));
 
         $aprvDepartement = $this->checkApprovalAccess('employees');
         $today = date("Y-m-d");
+        $wheres = [];
 
         if ($filter_expired == "0") {
-            $whereExpired = $this->db->where("a.date_expired < '$today' and a.date_expired != '0000-00-00'");
+            $wheres["(a.date_expired <"] = $today;
+            // $whereExpired = $this->db->where("a.date_expired < '$today' and a.date_expired != '0000-00-00'");
         } elseif ($filter_expired == "1") {
+            $wheres["(a.date_expired"] = $today;
             $whereExpired = $this->db->where("a.date_expired = '$today' and a.date_expired != '0000-00-00'");
         } elseif ($filter_expired == "2") {
-            $tomorrow =  date("Y-m-d", strtotime("+1 day", strtotime($today)));
-            $whereExpired = $this->db->where("a.date_expired = '$tomorrow' and a.date_expired != '0000-00-00'");
+            $wheres["(a.date_expired"] = date("Y-m-d", strtotime("+1 day", strtotime($today)));
+            // $tomorrow =  date("Y-m-d", strtotime("+1 day", strtotime($today)));
+            // $whereExpired = $this->db->where("a.date_expired = '$tomorrow' and a.date_expired != '0000-00-00'");
         } elseif ($filter_expired == "3") {
-            $weeks =  date("Y-m-d", strtotime("+7 day", strtotime($today)));
-            $whereExpired = $this->db->where("a.date_expired between '$today' and '$weeks' and a.date_expired != '0000-00-00'");
+            $wheres["(a.date_expired BETWEEN"] = "'$today' AND ".date("Y-m-d", strtotime("+7 day", strtotime($today)));
+            // $weeks =  date("Y-m-d", strtotime("+7 day", strtotime($today)));
+            // $whereExpired = $this->db->where("a.date_expired between '$today' and '$weeks' and a.date_expired != '0000-00-00'");
         } elseif ($filter_expired == "4") {
-            $months =  date("Y-m-d", strtotime("+1 month", strtotime($today)));
-            $whereExpired = $this->db->where("a.date_expired between '$today' and '$months' and a.date_expired != '0000-00-00'");
+            $wheres["(a.date_expired BETWEEN"] = "'$today' AND ".date("Y-m-d", strtotime("+1 month", strtotime($today)));
+            // $months =  date("Y-m-d", strtotime("+1 month", strtotime($today)));
+            // $whereExpired = $this->db->where("a.date_expired between '$today' and '$months' and a.date_expired != '0000-00-00'");
         } else {
-            $whereExpired = "";
+            // $whereExpired = "";
         }
+        if (!empty($wheres)) { $wheres["a.date_expired !="] = "0000-00-00')"; }
 
         if ($filter_services == "1") {
-            $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) <", 365);
-            $whereService2 = "";
+            $wheres["datediff(current_date(), a.date_sign) <"] = 365;
+            // $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) <", 365);
+            // $whereService2 = "";
         } elseif ($filter_services == "2") {
-            $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 365);
-            $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 730);
+            $wheres["datediff(current_date(), a.date_sign) >"] = 365;
+            $wheres["datediff(current_date(), a.date_sign) <"] = 730;
+            // $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 365);
+            // $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 730);
         } elseif ($filter_services == "5") {
+            $wheres["datediff(current_date(), a.date_sign) >"] = 730;
+            $wheres["datediff(current_date(), a.date_sign) <"] = 1825;
             $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 730);
             $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 1825);
         } elseif ($filter_services == "8") {
+            $wheres["datediff(current_date(), a.date_sign) >"] = 1825;
+            $wheres["datediff(current_date(), a.date_sign) <"] = 2944;
             $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 1825);
             $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 2944);
         } elseif ($filter_services == "10") {
-            $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 2944);
-            $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 3650);
+            $wheres["datediff(current_date(), a.date_sign) >"] = 2944;
+            $wheres["datediff(current_date(), a.date_sign) <"] = 3650;
+            // $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 2944);
+            // $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 3650);
         } elseif ($filter_services == "11") {
-            $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 3650);
-            $whereService2 = "";
+            $wheres["datediff(current_date(), a.date_sign) >"] = 3650;
+            // $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 3650);
+            // $whereService2 = "";
         } else {
-            $whereService1 = "";
-            $whereService2 = "";
+            // $whereService1 = "";
+            // $whereService2 = "";
         }
+
+        if ($filter_from_join != ""  && $filter_to_join != "") {
+            $wheres["a.date_sign BETWEEN"] = "'$filter_from_join' AND '$filter_to_join'";
+        }
+
+        $wheres["i.resign_date IS ".(($filter_resign == "1") ? "NOT" : "")." NULL"] = NULL;
+        $wheres["a.deleted"] = 0;
 
         $page   = $this->input->post('page');
         $rows   = $this->input->post('rows');
@@ -557,66 +581,57 @@ class Employees extends CI_Controller
         $data  = array();
         $totalRows = 0;
 
-        if ($filter_resign != "1" || $filter_status != "0") {
-            //Select Query
-            $this->db->select('a.*,
-                    c.name as division_name, 
-                    d.name as departement_name, 
-                    e.name as departement_sub_name,
-                    e.proses,
-                    e.sub_proses,
-                    (case when a.job_type is null then e.type else a.job_type end) as type, 
-                    g.name as position_name,
-                    h.name as contract_name,
-                    i.resign_date,
-                    (CASE WHEN i.resign_date IS NOT NULL THEN LAST_DAY(i.resign_date) ELSE NULL END) as cutoff_date,
-                    j.name as shift_name');
-            $this->db->from('employees a');
-            $this->db->join('divisions c', 'c.id = a.division_id');
-            $this->db->join('departements d', 'd.id = a.departement_id');
-            $this->db->join('departement_subs e', 'e.id = a.departement_sub_id');
-            $this->db->join('positions g', 'g.id = a.position_id', 'left');
-            $this->db->join('contracts h', 'h.id = a.contract_id', 'left');
-            $this->db->join('resignations i', 'a.id = i.employee_id', 'left');
-            $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
-            $this->db->join('shifts j', 'f.shift_id = j.id', 'left');
-            $this->db->where('a.deleted', 0);
-            $this->db->where_not_in('a.contract_id', [20221119000003, 20250704000001]);
-            $this->db->where_not_in('a.group_id', [20221119000002, 20251124000001]);
-            if($filter_from_join != ""  && $filter_to_join != ""){
-                $this->db->where("a.date_sign between '$filter_from_join' and '$filter_to_join'");
-            }
-            $this->db->where("i.resign_date is ".(($filter_resign == "1") ? 'not' : '')." null");
-            $this->db->like('a.status', $filter_status);
-            $this->db->like('a.departement_id', $aprvDepartement);
-            $whereService1;
-            $whereService2;
-            $whereExpired;
-            $this->db->like("a.division_id", $filter_divisions);
-            $this->db->like("a.departement_id", $filter_departements);
-            $this->db->like("a.departement_sub_id", $filter_departement_subs);
-            $this->db->like("a.id", $filter_employees);
-            $this->db->like("a.position_id", $filter_positions);
-            $this->db->like("a.contract_id", $filter_contracts);
-            $this->db->like("a.group_id", $filter_groups);
-            $this->db->like("a.religion_id", $filter_religions);
-            $this->db->like("a.marital_id", $filter_maritals);
-            if($filter_shift != ""){
-                $this->db->like("j.id", $filter_shift);
-            }
-            $this->db->order_by('a.name', 'ASC');
-            // die($this->db->get_compiled_select());
-            //Total Data
-            $totalRows = $this->db->count_all_results('', false);
-            //Limit 1 - 10
-            $this->db->limit($rows, $offset);
-            //Get Data Array
-            $records = $this->db->get()->result_array();
+        //Select Query
+        $this->db->select('a.*,
+                c.name as division_name, 
+                d.name as departement_name, 
+                e.name as departement_sub_name,
+                e.proses,
+                e.sub_proses,
+                (case when a.job_type is null then e.type else a.job_type end) as type, 
+                g.name as position_name,
+                h.name as contract_name,
+                i.resign_date,
+                (CASE WHEN i.resign_date IS NOT NULL THEN LAST_DAY(i.resign_date) ELSE NULL END) as cutoff_date,
+                j.name as shift_name');
+        $this->db->from('employees a');
+        $this->db->join('divisions c', 'c.id = a.division_id');
+        $this->db->join('departements d', 'd.id = a.departement_id');
+        $this->db->join('departement_subs e', 'e.id = a.departement_sub_id');
+        $this->db->join('positions g', 'g.id = a.position_id', 'left');
+        $this->db->join('contracts h', 'h.id = a.contract_id', 'left');
+        $this->db->join('resignations i', 'a.id = i.employee_id', 'left');
+        $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
+        $this->db->join('shifts j', 'f.shift_id = j.id', 'left');
+        $this->db->where($wheres);
+        $this->db->where_not_in('a.contract_id', [20221119000003, 20250704000001]);
+        $this->db->where_not_in('a.group_id', [20221119000002, 20251124000001]);
+        $this->db->like('a.status', $filter_status);
+        $this->db->like('a.departement_id', $aprvDepartement);
+        $this->db->like("a.division_id", $filter_divisions);
+        $this->db->like("a.departement_id", $filter_departements);
+        $this->db->like("a.departement_sub_id", $filter_departement_subs);
+        $this->db->like("a.id", $filter_employees);
+        $this->db->like("a.position_id", $filter_positions);
+        $this->db->like("a.contract_id", $filter_contracts);
+        $this->db->like("a.group_id", $filter_groups);
+        $this->db->like("a.religion_id", $filter_religions);
+        $this->db->like("a.marital_id", $filter_maritals);
+        if($filter_shift != ""){
+            $this->db->like("j.id", $filter_shift);
+        }
+        $this->db->order_by('a.name', 'ASC');
+        // die($this->db->get_compiled_select());
+        //Total Data
+        $totalRows = $this->db->count_all_results('', false);
+        //Limit 1 - 10
+        $this->db->limit($rows, $offset);
+        //Get Data Array
+        $records = $this->db->get()->result_array();
 
-            //Mapping Data
-            foreach ($records as $record) {
-                $data[] =  array_merge($record, array("service" => $this->readService($record['date_sign'])));
-            }
+        //Mapping Data
+        foreach ($records as $record) {
+            $data[] =  array_merge($record, array("service" => $this->readService($record['date_sign'])));
         }
 
         $result['total'] = $totalRows;
@@ -1219,128 +1234,145 @@ class Employees extends CI_Controller
         $filter_services = $this->input->get('filter_services');
         $filter_expired = $this->input->get('filter_expired');
         $filter_shift = $this->input->get('filter_shift');
-        $filter_status = $this->input->get('filter_status');
+        $filter_status = $this->input->get('filter_status') ?? 0;
         $filter_resign = $this->input->get('filter_resign');
         $filter_from_join = base64_decode($this->input->get('filter_from_join'));
         $filter_to_join = base64_decode($this->input->get('filter_to_join'));
 
         $aprvDepartement = $this->checkApprovalAccess('employees');
 
+        $wheres = [];
         $today = date("Y-m-d");
         if ($filter_expired == "0") {
-            $whereExpired = $this->db->where("a.date_expired < '$today' and a.date_expired != '0000-00-00'");
+            $wheres["(a.date_expired <"] = $today;
+            // $whereExpired = $this->db->where("a.date_expired < '$today' and a.date_expired != '0000-00-00'");
         } elseif ($filter_expired == "1") {
+            $wheres["(a.date_expired"] = $today;
             $whereExpired = $this->db->where("a.date_expired = '$today' and a.date_expired != '0000-00-00'");
         } elseif ($filter_expired == "2") {
-            $tomorrow =  date("Y-m-d", strtotime("+1 day", strtotime($today)));
-            $whereExpired = $this->db->where("a.date_expired = '$tomorrow' and a.date_expired != '0000-00-00'");
+            $wheres["(a.date_expired"] = date("Y-m-d", strtotime("+1 day", strtotime($today)));
+            // $tomorrow =  date("Y-m-d", strtotime("+1 day", strtotime($today)));
+            // $whereExpired = $this->db->where("a.date_expired = '$tomorrow' and a.date_expired != '0000-00-00'");
         } elseif ($filter_expired == "3") {
-            $weeks =  date("Y-m-d", strtotime("+7 day", strtotime($today)));
-            $whereExpired = $this->db->where("a.date_expired between '$today' and '$weeks' and a.date_expired != '0000-00-00'");
+            $wheres["(a.date_expired BETWEEN"] = "'$today' AND ".date("Y-m-d", strtotime("+7 day", strtotime($today)));
+            // $weeks =  date("Y-m-d", strtotime("+7 day", strtotime($today)));
+            // $whereExpired = $this->db->where("a.date_expired between '$today' and '$weeks' and a.date_expired != '0000-00-00'");
         } elseif ($filter_expired == "4") {
-            $months =  date("Y-m-d", strtotime("+1 month", strtotime($today)));
-            $whereExpired = $this->db->where("a.date_expired between '$today' and '$months' and a.date_expired != '0000-00-00'");
+            $wheres["(a.date_expired BETWEEN"] = "'$today' AND ".date("Y-m-d", strtotime("+1 month", strtotime($today)));
+            // $months =  date("Y-m-d", strtotime("+1 month", strtotime($today)));
+            // $whereExpired = $this->db->where("a.date_expired between '$today' and '$months' and a.date_expired != '0000-00-00'");
         } else {
-            $whereExpired = "";
+            // $whereExpired = "";
         }
+        if (!empty($wheres)) { $wheres["a.date_expired !="] = "0000-00-00')"; }
 
         if ($filter_services == "1") {
-            $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) <", 365);
-            $whereService2 = "";
+            $wheres["datediff(current_date(), a.date_sign) <"] = 365;
+            // $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) <", 365);
+            // $whereService2 = "";
         } elseif ($filter_services == "2") {
-            $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 365);
-            $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 730);
+            $wheres["datediff(current_date(), a.date_sign) >"] = 365;
+            $wheres["datediff(current_date(), a.date_sign) <"] = 730;
+            // $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 365);
+            // $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 730);
         } elseif ($filter_services == "5") {
+            $wheres["datediff(current_date(), a.date_sign) >"] = 730;
+            $wheres["datediff(current_date(), a.date_sign) <"] = 1825;
             $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 730);
             $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 1825);
         } elseif ($filter_services == "8") {
+            $wheres["datediff(current_date(), a.date_sign) >"] = 1825;
+            $wheres["datediff(current_date(), a.date_sign) <"] = 2944;
             $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 1825);
             $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 2944);
         } elseif ($filter_services == "10") {
-            $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 2944);
-            $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 3650);
+            $wheres["datediff(current_date(), a.date_sign) >"] = 2944;
+            $wheres["datediff(current_date(), a.date_sign) <"] = 3650;
+            // $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 2944);
+            // $whereService2 = $this->db->where("datediff(current_date(), a.date_sign) <", 3650);
         } elseif ($filter_services == "11") {
-            $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 3650);
-            $whereService2 = "";
+            $wheres["datediff(current_date(), a.date_sign) >"] = 3650;
+            // $whereService1 = $this->db->where("datediff(current_date(), a.date_sign) >", 3650);
+            // $whereService2 = "";
         } else {
-            $whereService1 = "";
-            $whereService2 = "";
+            // $whereService1 = "";
+            // $whereService2 = "";
         }
+
+        if ($filter_from_join != ""  && $filter_to_join != "") {
+            $wheres["a.date_sign BETWEEN"] = "'$filter_from_join' AND '$filter_to_join'";
+        }
+
+        $wheres["m.resign_date IS ".(($filter_resign == "1") ? "NOT" : "")." NULL"] = NULL;
+        $wheres["a.deleted"] = 0;
 
         $records  = array();
         $totalRows = 0;
 
-        if ($filter_resign != "1" || $filter_status != "0") {
-            $this->db->select('a.*, 
-                    c.number as division_number, 
-                    c.name as division_name, 
-                    d.number as departement_number, 
-                    d.name as departement_name, 
-                    e.number as departement_sub_number, 
-                    e.name as departement_sub_name,
-                    (case when a.job_type is null then e.type else a.job_type end) as type,
-                    g.level,
-                    g.number as position_number,
-                    g.name as position_name,
-                    h.number as contract_number,
-                    h.name as contract_name,
-                    i.number as group_number,
-                    i.name as group_name,
-                    j.number as religion_number,
-                    j.name as religion_name,
-                    k.number as marital_number,
-                    k.name as marital_name,
-                    l.number as source_number,
-                    l.name as source_name,
-                    m.resign_date AS date_resign,
-                    n.name as shift_name,
-                    p.level AS level_education,
-                    p.degree');
-            $this->db->from('employees a');
-            $this->db->join('divisions c', 'c.id = a.division_id');
-            $this->db->join('departements d', 'd.id = a.departement_id');
-            $this->db->join('departement_subs e', 'e.id = a.departement_sub_id');
-            $this->db->join('positions g', 'g.id = a.position_id', 'left');
-            $this->db->join('contracts h', 'h.id = a.contract_id', 'left');
-            $this->db->join('groups i', 'i.id = a.group_id', 'left');
-            $this->db->join('religions j', 'j.id = a.religion_id', 'left');
-            $this->db->join('maritals k', 'k.id = a.marital_id', 'left');
-            $this->db->join('sources l', 'l.id = a.source_id', 'left');
-            $this->db->join('resignations m', 'a.id = m.employee_id', 'left');
-            $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
-            $this->db->join('shifts n', 'f.shift_id = n.id', 'left');
-            $this->db->join("(".
-                "SELECT number, MAX(end) AS end_date FROM employee_educations GROUP BY number"
-            .") o", 'a.number = o.number', 'left');
-            $this->db->join('employee_educations p', 'a.number = p.number AND o.end_date = p.end', 'left');
-            $this->db->where('a.deleted', 0);
-            $this->db->where_not_in('a.contract_id', [20221119000003, 20250704000001]);
-            $this->db->where_not_in('a.group_id', [20221119000002, 20251124000001]);
-            if($filter_from_join != ""  && $filter_to_join != ""){
-                $this->db->where("a.date_sign between '$filter_from_join' and '$filter_to_join'");
-            }
-            $this->db->where("m.resign_date is ".(($filter_resign == "1") ? 'not' : '')." null");
-            $this->db->like('a.status', $filter_status);
-            $this->db->like('a.departement_id', $aprvDepartement);
-            $whereService1;
-            $whereService2;
-            $whereExpired;
-            $this->db->like("a.division_id", $filter_divisions);
-            $this->db->like("a.departement_id", $filter_departements);
-            $this->db->like("a.departement_sub_id", $filter_departement_subs);
-            $this->db->like("a.id", $filter_employees);
-            $this->db->like("a.position_id", $filter_positions);
-            $this->db->like("a.contract_id", $filter_contracts);
-            $this->db->like("a.group_id", $filter_groups);
-            $this->db->like("a.religion_id", $filter_religions);
-            $this->db->like("a.marital_id", $filter_maritals);
-            if($filter_shift != ""){
-                $this->db->like("n.id", $filter_shift);
-            }
-            $this->db->order_by('a.name', 'ASC');
-            $this->db->group_by('a.number', 'ASC');
-            $records = $this->db->get()->result_array();
+        $this->db->select('a.*, 
+                c.number as division_number, 
+                c.name as division_name, 
+                d.number as departement_number, 
+                d.name as departement_name, 
+                e.number as departement_sub_number, 
+                e.name as departement_sub_name,
+                (case when a.job_type is null then e.type else a.job_type end) as type,
+                g.level,
+                g.number as position_number,
+                g.name as position_name,
+                h.number as contract_number,
+                h.name as contract_name,
+                i.number as group_number,
+                i.name as group_name,
+                j.number as religion_number,
+                j.name as religion_name,
+                k.number as marital_number,
+                k.name as marital_name,
+                l.number as source_number,
+                l.name as source_name,
+                m.resign_date AS date_resign,
+                n.name as shift_name,
+                p.level AS level_education,
+                p.degree');
+        $this->db->from('employees a');
+        $this->db->join('divisions c', 'c.id = a.division_id');
+        $this->db->join('departements d', 'd.id = a.departement_id');
+        $this->db->join('departement_subs e', 'e.id = a.departement_sub_id');
+        $this->db->join('positions g', 'g.id = a.position_id', 'left');
+        $this->db->join('contracts h', 'h.id = a.contract_id', 'left');
+        $this->db->join('groups i', 'i.id = a.group_id', 'left');
+        $this->db->join('religions j', 'j.id = a.religion_id', 'left');
+        $this->db->join('maritals k', 'k.id = a.marital_id', 'left');
+        $this->db->join('sources l', 'l.id = a.source_id', 'left');
+        $this->db->join('resignations m', 'a.id = m.employee_id', 'left');
+        $this->db->join('shift_employees f', 'a.id = f.employee_id', 'left');
+        $this->db->join('shifts n', 'f.shift_id = n.id', 'left');
+        $this->db->join("(".
+            "SELECT number, MAX(end) AS end_date FROM employee_educations GROUP BY number"
+        .") o", 'a.number = o.number', 'left');
+        $this->db->join('employee_educations p', 'a.number = p.number AND o.end_date = p.end', 'left');
+        $this->db->where($wheres);
+        $this->db->where_not_in('a.contract_id', [20221119000003, 20250704000001]);
+        $this->db->where_not_in('a.group_id', [20221119000002, 20251124000001]);
+        $this->db->like('a.status', $filter_status);
+        $this->db->like('a.departement_id', $aprvDepartement);
+        $this->db->like("a.division_id", $filter_divisions);
+        $this->db->like("a.departement_id", $filter_departements);
+        $this->db->like("a.departement_sub_id", $filter_departement_subs);
+        $this->db->like("a.id", $filter_employees);
+        $this->db->like("a.position_id", $filter_positions);
+        $this->db->like("a.contract_id", $filter_contracts);
+        $this->db->like("a.group_id", $filter_groups);
+        $this->db->like("a.religion_id", $filter_religions);
+        $this->db->like("a.marital_id", $filter_maritals);
+        if($filter_shift != ""){
+            $this->db->like("n.id", $filter_shift);
         }
+        $this->db->order_by('a.name', 'ASC');
+        $this->db->group_by('a.number', 'ASC');
+        // die($this->db->get_compiled_select());
+        $records = $this->db->get()->result_array();
+        // }
 
         $html = '<html><head><title>Print Data</title></head><style>body {font-family: Arial, Helvetica, sans-serif;}#customers {border-collapse: collapse;width: 100%;font-size: 12px;}#customers td, #customers th {border: 1px solid #ddd;padding: 2px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 2px;padding-bottom: 2px;text-align: left;color: black;}</style><body>
         <style> .str{ mso-number-format:\@; } </style>

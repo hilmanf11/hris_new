@@ -132,7 +132,7 @@ class Approvals extends CI_Controller
 
                     "contract_id" => $agreements->contract_id,
 
-                    "date_sign" => $agreements->date_sign,
+                    "date_contract" => $agreements->date_sign,
 
                     "date_expired" => $agreements->date_expired,
 
@@ -285,157 +285,86 @@ class Approvals extends CI_Controller
 
 
     public function approve()
-
     {
-
+        $stat = true;
         $id = $this->input->post('id');
-
         $tablename = $this->input->post('tablename');
-
         $data = $this->crud->read($tablename, [], ["id" => $id]);
-
         $user = $this->crud->read('users', [], ["username" => $data->approved_by]);
+        $where_approval = ["table_name" => $tablename, "departement_id" => @$user->departement_id];
 
-        $approval = $this->crud->read('approvals', [], ["table_name" => $tablename, "departement_id" => @$user->departement_id]);
+        if ($tablename == 'employee_requests') {
+            $where_approval["data_json"] = json_encode(["type" => ($data->request_form == 'PKL') ? 'pkl' : 'other']);
+        }
 
-
-
+        $approval = $this->crud->read('approvals', [], $where_approval);
         if ($data->approved == 1) {
-
             $users_id = @$approval->user_approval_2;
-
             $approved = 2;
-
         } elseif ($data->approved == 2) {
-
             $users_id = @$approval->user_approval_3;
-
             $approved = 3;
-
         } elseif ($data->approved == 3) {
-
             $users_id = @$approval->user_approval_4;
-
             $approved = 4;
-
         } elseif ($data->approved == 4) {
-
             $users_id = @$approval->user_approval_5;
-
             $approved = 5;
-
         } else {
-
             $users_id = "";
-
             $approved = 0;
-
         }
-
-
-
-        //Approval Mutation
-
-        if ($tablename == "mutations" && $users_id == "") {
-
-            $mutations = $this->crud->read('mutations', [], ["id" => $id]);
-
-            $postEmployee = array(
-
-                "division_id" => $mutations->division_id,
-
-                "departement_id" => $mutations->departement_id,
-
-                "departement_sub_id" => $mutations->departement_sub_id
-
-            );
-
-
-
-            if($mutations->type == "PERMANENT"){
-
-                $send = $this->db->update('employees', $postEmployee, ["id" => $mutations->employee_id]);
-
-                if($send){
-
-                    echo json_encode(array("title" => "Approved", "message" => "Data Approved Successfully", "theme" => "success"));
-
-                } else {
-
-                    echo log_message('error', 'There is an error in your system or data');
-
-                }
-
-            }
-
-        }
-
-
-
-        //Approval Agreement
-
-        if ($tablename == "agreements" && $users_id == "") {
-
-            $agreements = $this->crud->read('agreements', [], ["id" => $id]);
-
-            $postEmployee = array(
-
-                "position_id" => $agreements->position_id,
-
-                "group_id" => $agreements->group_id,
-
-                "contract_id" => $agreements->contract_id,
-
-                "date_sign" => $agreements->date_sign,
-
-                "date_expired" => $agreements->date_expired,
-
-            );
-
-
-
-            $send = $this->db->update('employees', $postEmployee, ["number" => $agreements->number]);
-
-            if($send){
-
-                echo json_encode(array("title" => "Approved", "message" => "Data Approved Successfully", "theme" => "success"));
-
-            } else {
-
-                echo log_message('error', 'There is an error in your system or data');
-
-            }
-
-        }
-
-
-
-        $values = array(
-
+        $values = [
             "approved_by" => $this->session->username,
-
             "approved_date" => date('Y-m-d H:i:s'),
-
             "approved_to" => $users_id,
+            "approved" => $approved
+        ];
 
-            "approved" => $approved,
-
-        );
-
-
-
-        $send = $this->db->update($tablename, $values, ["id" => $id]);
-
-        if($send){
-
-            echo json_encode(array("title" => "Approved", "message" => "Data Approved Successfully", "theme" => "success"));
-
-        } else {
-
-            echo log_message('error', 'There is an error in your system or data');
-
+        if ($users_id == "") {
+            if ($tablename == "mutations") {
+                $mutations = $this->crud->read('mutations', [], ["id" => $id]);
+                if ($mutations->type == "PERMANENT") {
+                    $stat = $this->db->update(
+                        'employees',
+                        [
+                            "division_id" => $mutations->division_id,
+                            "departement_id" => $mutations->departement_id,
+                            "departement_sub_id" => $mutations->departement_sub_id
+                        ],
+                        ["id" => $mutations->employee_id]
+                    );
+                }
+            } elseif ($tablename == "agreements") {
+                $agreements = $this->crud->read('agreements', [], ["id" => $id]);
+                $stat = $this->db->update(
+                    'employees',
+                    [
+                        "position_id" => $agreements->position_id,
+                        "group_id" => $agreements->group_id,
+                        "contract_id" => $agreements->contract_id,
+                        "date_contract" => $agreements->date_sign,
+                        "date_expired" => $agreements->date_expired
+                    ],
+                    ["number" => $agreements->number]
+                );
+            }
         }
 
+        if ($tablename == "employee_requests") {
+            $data = json_decode($this->crud->read('employee_requests', [], ["id" => $id])->approved_data) ?? [];
+            array_push($data, [
+                "by" => $values["approved_by"],
+                "date" => $values["approved_date"]
+            ]);
+            $values["approved_data"] = json_encode($data);
+        }
+
+        if ($stat) { $stat = $this->db->update($tablename, $values, ["id" => $id]); }
+
+        echo ($stat)
+            ? json_encode(array("title" => "Approved", "message" => "Data Approved Successfully", "theme" => "success"))
+            : log_message('error', 'There is an error in your system or data');
     }
 
 
@@ -718,138 +647,106 @@ class Approvals extends CI_Controller
 
     {
 
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('cash_carries a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
-        $cash_carries = $this->db->get()->result_object();
-
-
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('payrolls a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
-        $payrolls = $this->db->get()->result_object();
-
-
-
-        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        // $this->db->from('payroll_harian_lepas a');
-
-        // $this->db->join('users b', 'a.approved_by = b.username');
-
-        // $this->db->join('users c', 'a.approved_to = c.username');
-
-        // $this->db->where('a.approved_to', $this->session->username);
-
-        // $this->db->group_by('a.approved_by');
-
-        // $payroll_harian_lepas = $this->db->get()->result_object();
-
-        
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('setup_salaries a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
-        $setup_salaries = $this->db->get()->result_object();
-
-
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('permits a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
-        $permits = $this->db->get()->result_object();
-
-
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('change_days a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
-        $change_days = $this->db->get()->result_object();
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-		$this->db->from('lnd_request_training_approvals_history a');
-		$this->db->join('users b', 'a.approved_by = b.username');
-		$this->db->join('users c', 'a.approved_to = c.username');
-        $this->db->join('lnd_request_training lrt', 'a.trainingRequestId = lrt.requestTrainingId');
-		$this->db->where('a.approved_to', $this->session->username);
-        $this->db->where('a.status', 0);
-		$this->db->group_by('a.approved_by');
-		$lnd_request_training_approvals_history = $this->db->get()->result_object();
-
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('setup_allowances a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
-        $setup_allowances = $this->db->get()->result_object();
+        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        // ->from('cash_carries a')
+        //     ->join('users b', 'a.approved_by = b.username')
+        //     ->join('users c', 'a.approved_to = c.username')
+        // ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
+        // die($this->db->get_compiled_select());
+        // $cash_carries = $this->db->get()->result_object();
         // die($this->db->last_query());
 
-        $totalRows = (count($cash_carries) + count($payrolls) + count($setup_salaries) + count($permits) + count($change_days) + count($lnd_request_training_approvals_history) + count($setup_allowances));
+        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        // ->from('payrolls a')
+        //     ->join('users b', 'a.approved_by = b.username')
+        //     ->join('users c', 'a.approved_to = c.username')
+        // ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
+        // die($this->db->get_compiled_select());
+        // $payrolls = $this->db->get()->result_object();
+        // die($this->db->last_query());
 
-        if ($totalRows > 0) {
+        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        // ->from('payroll_harian_lepas a')
+        //     ->join('users b', 'a.approved_by = b.username')
+        //     ->join('users c', 'a.approved_to = c.username')
+        // ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
+        // die($this->db->get_compiled_select());
+        // $payroll_harian_lepas = $this->db->get()->result_object();
+        // die($this->db->last_query());
 
-            echo '<span class="badge">' . $totalRows . '</span>';
+        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        // ->from('setup_salaries a')
+        //     ->join('users b', 'a.approved_by = b.username')
+        //     ->join('users c', 'a.approved_to = c.username')
+        // ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
+        // die($this->db->get_compiled_select());
+        // $setup_salaries = $this->db->get()->result_object();
+        // die($this->db->last_query());
 
-        } else {
+        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        // ->from('permits a')
+        //     ->join('users b', 'a.approved_by = b.username')
+        //     ->join('users c', 'a.approved_to = c.username')
+        // ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
+        // die($this->db->get_compiled_select());
+        // $permits = $this->db->get()->result_object();
+        // die($this->db->last_query());
 
-            echo '';
+        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        // ->from('change_days a')
+        //     ->join('users b', 'a.approved_by = b.username')
+        //     ->join('users c', 'a.approved_to = c.username')
+        // ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
+        // die($this->db->get_compiled_select());
+        // $change_days = $this->db->get()->result_object();
+        // die($this->db->last_query());
 
+        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        // ->from('lnd_request_training_approvals_history a')
+        //     ->join('users b', 'a.approved_by = b.username')
+        //     ->join('users c', 'a.approved_to = c.username')
+        //     ->join('lnd_request_training lrt', 'a.trainingRequestId = lrt.requestTrainingId')
+        // ->where('a.approved_to', $this->session->username)->where('a.status', 0)->group_by('a.approved_by');
+        // die($this->db->get_compiled_select());
+		// $lnd_request_training_approvals_history = $this->db->get()->result_object();
+        // die($this->db->last_query());
+
+        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        // ->from('setup_allowances a')
+        //     ->join('users b', 'a.approved_by = b.username')
+        //     ->join('users c', 'a.approved_to = c.username')
+        // ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
+        // die($this->db->get_compiled_select());
+        // $setup_allowances = $this->db->get()->result_object();
+        // die($this->db->last_query());
+
+        // $totalRows = count($cash_carries) + count($payrolls) + count($setup_salaries) + count($permits) + count($change_days) + count($lnd_request_training_approvals_history) + count($setup_allowances);
+
+        $totalRows = 0;
+        $tables = [
+            'cash_carries',
+            'payrolls',
+            'setup_salaries',
+            'permits',
+            'change_days',
+            'lnd_request_training_approvals_history',
+            'setup_allowances',
+            'employee_requests'
+        ];
+
+        foreach ($tables as $key => $value) {
+            $this->db->select("a.id")->from($value." a")
+                ->join("users b", "a.approved_by = b.username")
+                ->join("users c", "a.approved_to = c.username")
+            ->where("a.approved_to", $this->session->username)->group_by("a.approved_by");
+            // if ($key == 3) { die($this->db->get_compiled_select()); }
+            $totalRows += $this->db->get()->num_rows();
+            // if ($key == 3) { die(var_dump($totalRows)); }
+            // if (!empty($totalRows)) { die($value); }
+            // $totalRows += $this->db->where("approved_to", $this->session->username)->count_all_results($value);
         }
 
+        echo ($totalRows > 0) ? '<span class="badge">' . $totalRows . '</span>' : '';
     }
 
 
@@ -859,233 +756,139 @@ class Approvals extends CI_Controller
     {
 
         //Cash Carries
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar, e.name AS group_name');
-
-        $this->db->from('cash_carries a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->join('employees d', 'a.employee_id = d.id');
-
-        $this->db->join('groups e', 'd.group_id = e.id');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        // $this->db->group_by('a.approved_by');
-        $this->db->group_by(['a.approved_by', 'a.approved_to', 'b.name', 'b.avatar', 'e.name']);
-
+        $this->db->distinct()->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar, e.name AS group_name')
+        ->from('cash_carries a')
+            ->join('users b', 'a.approved_by = b.username')
+            ->join('users c', 'a.approved_to = c.username')
+            ->join('employees d', 'a.employee_id = d.id')
+            ->join('groups e', 'd.group_id = e.id')
+        ->where('a.approved_to', $this->session->username)
+            // ->group_by('a.approved_by')
+            ->group_by(['a.approved_by', 'a.approved_to', 'b.name', 'b.avatar', 'e.name']);
         $cash_carries = $this->db->get()->result_object();
         // die($this->db->last_query());
 
-
-
         //Payrolls
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('payrolls a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
+        $this->db->distinct()->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        ->from('payrolls a')
+            ->join('users b', 'a.approved_by = b.username')
+            ->join('users c', 'a.approved_to = c.username')
+        ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
         $payrolls = $this->db->get()->result_object();
 
-
-
         //Payroll Harian Lepas
-
-        // $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        // $this->db->from('payroll_harian_lepas a');
-
-        // $this->db->join('users b', 'a.approved_by = b.username');
-
-        // $this->db->join('users c', 'a.approved_to = c.username');
-
-        // $this->db->where('a.approved_to', $this->session->username);
-
-        // $this->db->group_by('a.approved_by');
-
+        // $this->db->distinct()->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        // ->from('payroll_harian_lepas a')
+        //     ->join('users b', 'a.approved_by = b.username')
+        //     ->join('users c', 'a.approved_to = c.username')
+        // ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
         // $payroll_harian_lepas = $this->db->get()->result_object();
 
-
-
         //Setup Salary
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('setup_salaries a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
+        $this->db->distinct()->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        ->from('setup_salaries a')
+            ->join('users b', 'a.approved_by = b.username')
+            ->join('users c', 'a.approved_to = c.username')
+        ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
         $setup_salaries = $this->db->get()->result_object();
 
-
-
         //Permits
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('permits a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
+        $this->db->distinct()->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        ->from('permits a')
+            ->join('users b', 'a.approved_by = b.username')
+            ->join('users c', 'a.approved_to = c.username')
+        ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
         $permits = $this->db->get()->result_object();
 
-
-
         //Change Days
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('change_days a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
+        $this->db->distinct()->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        ->from('change_days a')
+            ->join('users b', 'a.approved_by = b.username')
+            ->join('users c', 'a.approved_to = c.username')
+        ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
         $change_days = $this->db->get()->result_object();
 
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-		$this->db->from('lnd_request_training_approvals_history a');
-		$this->db->join('users b', 'a.approved_by = b.username');
-		$this->db->join('users c', 'a.approved_to = c.username');
-		$this->db->join('lnd_request_training lrt', 'a.trainingRequestId = lrt.requestTrainingId');
-		$this->db->where('a.approved_to', $this->session->username);
-        $this->db->where('a.status', 0);
-		$this->db->group_by('a.approved_by');
+        //lnd_request_training_approvals_history
+        $this->db->distinct()->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        ->from('lnd_request_training_approvals_history a')
+            ->join('users b', 'a.approved_by = b.username')
+            ->join('users c', 'a.approved_to = c.username')
+            ->join('lnd_request_training lrt', 'a.trainingRequestId = lrt.requestTrainingId')
+        ->where('a.approved_to', $this->session->username)->where('a.status', 0)->group_by('a.approved_by');
 		$lnd_request_training_approvals_history = $this->db->get()->result_object();
 
-
         //Setup Allowances
-
-        $this->db->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar');
-
-        $this->db->from('setup_allowances a');
-
-        $this->db->join('users b', 'a.approved_by = b.username');
-
-        $this->db->join('users c', 'a.approved_to = c.username');
-
-        $this->db->where('a.approved_to', $this->session->username);
-
-        $this->db->group_by('a.approved_by');
-
+        $this->db->distinct()->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        ->from('setup_allowances a')
+            ->join('users b', 'a.approved_by = b.username')
+            ->join('users c', 'a.approved_to = c.username')
+        ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
         $setup_allowances = $this->db->get()->result_object();
+
+        //Requests
+        $this->db->distinct()->select('b.name as fullname, a.approved_to, a.approved_by, b.avatar')
+        ->from('employee_requests a')
+            ->join('users b', 'a.approved_by = b.username')
+            ->join('users c', 'a.approved_to = c.username')
+        ->where('a.approved_to', $this->session->username)->group_by('a.approved_by');
+        // die($this->db->get_compiled_select());
+        $employee_requests = $this->db->get()->result_object();
 
 
         if (count($cash_carries) > 0) {
-
             foreach ($cash_carries as $cash_carry) {
-                $name = 'cash_carries'.(($cash_carry->group_name == 'HARIAN LEPAS') ? '_harian_lepas' : '');
-
+                $name = 'cash_carries'.((in_array($cash_carry->group_name, ['HARIAN LEPAS 1', 'HARIAN LEPAS 2'])) ? '_harian_lepas' : '');
                 $this->approvalMessage($cash_carry->avatar, $cash_carry->fullname, $cash_carry->approved_to, $cash_carry->approved_by, $name);
             }
-
         }
 
-
-
-        if(count($payrolls) > 0) {
-
+        if (count($payrolls) > 0) {
             foreach ($payrolls as $payroll) {
-
                 $this->approvalMessage($payroll->avatar, $payroll->fullname, $payroll->approved_to, $payroll->approved_by, "payrolls");
-
             }
-
         }
 
-
-
-        // if(count($payroll_harian_lepas) > 0) {
-
+        // if (count($payroll_harian_lepas) > 0) {
         //     foreach ($payroll_harian_lepas as $payroll_hl) {
-
         //         $this->approvalMessage($payroll_hl->avatar, $payroll_hl->fullname, $payroll_hl->approved_to, $payroll_hl->approved_by, "payroll_harian_lepas");
-
         //     }
-
         // }
 
-
-
-        if(count($setup_salaries) > 0) {
-
+        if (count($setup_salaries) > 0) {
             foreach ($setup_salaries as $setup_salarie) {
-
                 $this->approvalMessage($setup_salarie->avatar, $setup_salarie->fullname, $setup_salarie->approved_to, $setup_salarie->approved_by, "setup_salaries");
-
             }
-
         }
 
-
-
-        if(count($permits) > 0) {
-
+        if (count($permits) > 0) {
             foreach ($permits as $permit) {
-
                 $this->approvalMessage($permit->avatar, $permit->fullname, $permit->approved_to, $permit->approved_by, "permits");
-
             }
-
         }
 
-
-
-        if(count($change_days) > 0) {
-
+        if (count($change_days) > 0) {
             foreach ($change_days as $change_day) {
-
                 $this->approvalMessage($change_day->avatar, $change_day->fullname, $change_day->approved_to, $change_day->approved_by, "change_days");
-
             }
-
         }
 
-        if(count($lnd_request_training_approvals_history) > 0) {
+        if (count($lnd_request_training_approvals_history) > 0) {
 			foreach ($lnd_request_training_approvals_history as $val) {
 				$this->approvalMessage($val->avatar, $val->fullname, $val->approved_to, $val->approved_by, "lnd_request_training_approvals_history");
 			}
 		}
 
-        if(count($setup_allowances) > 0) {
-
+        if (count($setup_allowances) > 0) {
             foreach ($setup_allowances as $setup_allowance) {
-
                 $this->approvalMessage($setup_allowance->avatar, $setup_allowance->fullname, $setup_allowance->approved_to, $setup_allowance->approved_by, "setup_allowances");
-
             }
-
         }
 
-
+        if (count($employee_requests) > 0) {
+            foreach ($employee_requests as $request) {
+                $this->approvalMessage($request->avatar, $request->fullname, $request->approved_to, $request->approved_by, "employee_requests");
+            }
+        }
     }
 
 
@@ -2010,5 +1813,25 @@ class Approvals extends CI_Controller
         die(json_encode($records));
     }
 
+    public function approvalEmployeeRequests($approved_to, $approved_by)
+    {
+        $this->db->select(
+            "a.*,".
+            "c.name as division_name,".
+            "d.name as departement_name,".
+            "e.name as departement_sub_name,".
+            "b.name as position"
+        )->from("employee_requests a")
+            ->join("positions b", "a.position_id = b.id")
+            ->join("divisions c", "a.division_id = c.id")
+            ->join("departements d", "a.departement_id = d.id")
+            ->join("departement_subs e", "a.departement_sub_id = e.id")
+            ->where("a.deleted", 0)
+            ->like("a.approved_to", $approved_to)
+            ->like("a.approved_by", $approved_by)
+        ->order_by("a.due_date");
+
+        die(json_encode($this->db->get()->result()));
+    }
 }
 

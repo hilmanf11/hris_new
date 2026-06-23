@@ -178,14 +178,14 @@ class Agreements extends CI_Controller
                 $approval = $this->crud->read('approvals', [], ["table_name" => "agreements"]);
                 $attachment = $this->crud->upload('attachment', ['pdf', 'docx'], 'assets/document/agreement/');
                 $postEmployee = [
-                    "employee_name" => $post['employee_name'],
+                    "name" => $post['employee_name'],
                     "division_id" => $post['division_id'],
                     "departement_id" => $post['departement_id'],
                     "departement_sub_id" => $post['departement_sub_id'],
                     "position_id" => $post['position_id'],
                     "group_id" => $post['group_id'],
                     "contract_id" => $post['contract_id'],
-                    "date_sign" => $post['date_sign'],
+                    "date_contract" => $post['date_sign'],
                     "date_expired" => $post['date_expired'],
                 ];
 
@@ -222,7 +222,7 @@ class Agreements extends CI_Controller
                 "position_id" => $post['position_id'],
                 "group_id" => $post['group_id'],
                 "contract_id" => $post['contract_id'],
-                "date_sign" => $post['date_sign'],
+                "date_contract" => $post['date_sign'],
                 "date_expired" => $post['date_expired'],
             ];
 

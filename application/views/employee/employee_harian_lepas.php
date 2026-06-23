@@ -17,6 +17,7 @@
             <th rowspan="2" data-options="field:'contract_name',width:100,halign:'center'">Employee Type</th>
             <th rowspan="2" data-options="field:'shift_name',width:100,halign:'center'">Shift Type</th>
             <th rowspan="2" data-options="field:'date_sign',width:100,halign:'center',formatter:FormatterDate">Join Date</th>
+            <th rowspan="2" data-options="field:'date_contract',width:100,halign:'center',formatter:FormatterDate">Sign Date</th>
             <th rowspan="2" data-options="field:'date_expired',width:100,halign:'center',formatter:FormatterDate">Contract<br>Expired</th>
             <th rowspan="2" data-options="field:'resign_date',width:100,halign:'center',formatter:FormatterDate">Resign Date</th>
             <th rowspan="2" data-options="field:'service',width:180,halign:'center'">Fit Of Service</th>
