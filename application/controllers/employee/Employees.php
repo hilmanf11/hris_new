@@ -508,28 +508,19 @@ class Employees extends CI_Controller
         $today = date("Y-m-d");
         $wheres = [];
 
+        $whereExpired = "";
         if ($filter_expired == "0") {
-            $wheres["(a.date_expired <"] = $today;
-            // $whereExpired = $this->db->where("a.date_expired < '$today' and a.date_expired != '0000-00-00'");
+            $whereExpired = "< '$today'";
         } elseif ($filter_expired == "1") {
-            $wheres["(a.date_expired"] = $today;
-            $whereExpired = $this->db->where("a.date_expired = '$today' and a.date_expired != '0000-00-00'");
+            $whereExpired = "= '$today'";
         } elseif ($filter_expired == "2") {
-            $wheres["(a.date_expired"] = date("Y-m-d", strtotime("+1 day", strtotime($today)));
-            // $tomorrow =  date("Y-m-d", strtotime("+1 day", strtotime($today)));
-            // $whereExpired = $this->db->where("a.date_expired = '$tomorrow' and a.date_expired != '0000-00-00'");
+            $whereExpired = "= '".date("Y-m-d", strtotime("+1 day", strtotime($today)))."'";
         } elseif ($filter_expired == "3") {
-            $wheres["(a.date_expired BETWEEN"] = "'$today' AND ".date("Y-m-d", strtotime("+7 day", strtotime($today)));
-            // $weeks =  date("Y-m-d", strtotime("+7 day", strtotime($today)));
-            // $whereExpired = $this->db->where("a.date_expired between '$today' and '$weeks' and a.date_expired != '0000-00-00'");
+            $whereExpired = "BETWEEN '$today' AND '".date("Y-m-d", strtotime("+7 day", strtotime($today)))."'";
         } elseif ($filter_expired == "4") {
-            $wheres["(a.date_expired BETWEEN"] = "'$today' AND ".date("Y-m-d", strtotime("+1 month", strtotime($today)));
-            // $months =  date("Y-m-d", strtotime("+1 month", strtotime($today)));
-            // $whereExpired = $this->db->where("a.date_expired between '$today' and '$months' and a.date_expired != '0000-00-00'");
-        } else {
-            // $whereExpired = "";
+            $whereExpired = "BETWEEN '$today' AND '".date("Y-m-d", strtotime("+1 month", strtotime($today)))."'";
         }
-        if (!empty($wheres)) { $wheres["a.date_expired !="] = "0000-00-00')"; }
+        if (!empty($whereExpired)) { $wheres["(a.date_expired $whereExpired AND a.date_expired != '0000-00-00')"] = NULL; }
 
         if ($filter_services == "1") {
             $wheres["datediff(current_date(), a.date_sign) <"] = 365;
@@ -565,7 +556,7 @@ class Employees extends CI_Controller
         }
 
         if ($filter_from_join != ""  && $filter_to_join != "") {
-            $wheres["a.date_sign BETWEEN"] = "'$filter_from_join' AND '$filter_to_join'";
+            $wheres["a.date_sign BETWEEN '$filter_from_join' AND '$filter_to_join'"] = NULL;
         }
 
         $wheres["i.resign_date IS ".(($filter_resign == "1") ? "NOT" : "")." NULL"] = NULL;
@@ -1241,30 +1232,21 @@ class Employees extends CI_Controller
 
         $aprvDepartement = $this->checkApprovalAccess('employees');
 
-        $wheres = [];
         $today = date("Y-m-d");
+        $whereExpired = "";
+        $wheres = [];
         if ($filter_expired == "0") {
-            $wheres["(a.date_expired <"] = $today;
-            // $whereExpired = $this->db->where("a.date_expired < '$today' and a.date_expired != '0000-00-00'");
+            $whereExpired = "< '$today'";
         } elseif ($filter_expired == "1") {
-            $wheres["(a.date_expired"] = $today;
-            $whereExpired = $this->db->where("a.date_expired = '$today' and a.date_expired != '0000-00-00'");
+            $whereExpired = "= '$today'";
         } elseif ($filter_expired == "2") {
-            $wheres["(a.date_expired"] = date("Y-m-d", strtotime("+1 day", strtotime($today)));
-            // $tomorrow =  date("Y-m-d", strtotime("+1 day", strtotime($today)));
-            // $whereExpired = $this->db->where("a.date_expired = '$tomorrow' and a.date_expired != '0000-00-00'");
+            $whereExpired = "= '".date("Y-m-d", strtotime("+1 day", strtotime($today)))."'";
         } elseif ($filter_expired == "3") {
-            $wheres["(a.date_expired BETWEEN"] = "'$today' AND ".date("Y-m-d", strtotime("+7 day", strtotime($today)));
-            // $weeks =  date("Y-m-d", strtotime("+7 day", strtotime($today)));
-            // $whereExpired = $this->db->where("a.date_expired between '$today' and '$weeks' and a.date_expired != '0000-00-00'");
+            $whereExpired = "BETWEEN '$today' AND '".date("Y-m-d", strtotime("+7 day", strtotime($today)))."'";
         } elseif ($filter_expired == "4") {
-            $wheres["(a.date_expired BETWEEN"] = "'$today' AND ".date("Y-m-d", strtotime("+1 month", strtotime($today)));
-            // $months =  date("Y-m-d", strtotime("+1 month", strtotime($today)));
-            // $whereExpired = $this->db->where("a.date_expired between '$today' and '$months' and a.date_expired != '0000-00-00'");
-        } else {
-            // $whereExpired = "";
+            $whereExpired = "BETWEEN '$today' AND '".date("Y-m-d", strtotime("+1 month", strtotime($today)))."'";
         }
-        if (!empty($wheres)) { $wheres["a.date_expired !="] = "0000-00-00')"; }
+        if (!empty($whereExpired)) { $wheres["(a.date_expired $whereExpired AND a.date_expired != '0000-00-00')"] = NULL; }
 
         if ($filter_services == "1") {
             $wheres["datediff(current_date(), a.date_sign) <"] = 365;
@@ -1300,7 +1282,7 @@ class Employees extends CI_Controller
         }
 
         if ($filter_from_join != ""  && $filter_to_join != "") {
-            $wheres["a.date_sign BETWEEN"] = "'$filter_from_join' AND '$filter_to_join'";
+            $wheres["a.date_sign BETWEEN '$filter_from_join' AND '$filter_to_join'"] = NULL;
         }
 
         $wheres["m.resign_date IS ".(($filter_resign == "1") ? "NOT" : "")." NULL"] = NULL;
