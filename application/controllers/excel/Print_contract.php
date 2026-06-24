@@ -61,7 +61,7 @@ class Print_contract extends CI_Controller
             foreach ($kolomB as $key => $value) { array_push($fields, $value[0]); }
 
             $this->db->distinct()->select(
-                 "a.created_date AS date,"
+                 "a.date_sign AS date,"
                 ."COALESCE(TRIM(b.contract_id),'') AS contract,"
                 ."TRIM(a.pwkt_no) AS pwkt,"
                 ."COALESCE(TRIM(b.name), '') AS fullname,"
