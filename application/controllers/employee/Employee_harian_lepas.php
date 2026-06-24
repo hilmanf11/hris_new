@@ -1362,6 +1362,7 @@ class Employee_harian_lepas extends CI_Controller
                 <th>Source</th>
                 <th>Shift Type</th>
                 <th>Join Date</th>
+                <th>Sign Date</th>
                 <th>Contract Expired</th>
                 <th>Fit Of Service</th>
                 <th>Address</th>
@@ -1423,6 +1424,7 @@ class Employee_harian_lepas extends CI_Controller
                     <td>' . $data['source_name'] . '</td>
                     <td>' . $data['shift_name'] . '</td>
                     <td>' . $data['date_sign'] . '</td>
+                    <td>' . $data['date_contract'] . '</td>
                     <td>' . $data['date_expired'] . '</td>
                     <td>' . $this->readService($data['date_sign']) . '</td>
                     <td>' . $data['address'] . '</td>

@@ -1481,7 +1481,7 @@ class Employees extends CI_Controller
                     <td>' . $data['source_name'] . '</td>
                     <td>' . $data['shift_name'] . '</td>
                     <td>' . $data['date_sign'] . '</td>
-                    <td>' . $data['date_sign'] . '</td>
+                    <td>' . $data['date_contract'] . '</td>
                     <td>' . $data['date_expired'] . '</td>
                     <td>' . $data['date_resign'] . '</td>
                     <td>' . $this->readService($data['date_sign']) . '</td>
