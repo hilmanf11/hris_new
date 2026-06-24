@@ -127,7 +127,7 @@ class Employees extends CI_Controller
                         a.job_type,
 
                         m.resign_date AS date_resign,
-                        n.name as shift_name,
+                        n.name as shift_type,
                         p.level AS level_education,
                         p.degree,
                         a.date_sign AS sign_date,

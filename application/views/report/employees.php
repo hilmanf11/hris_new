@@ -170,6 +170,8 @@
 
                             <option value="job_type">Job Type</option>
 
+                            <option value="shift_type">Shift Type</option>
+
                         </select>
 
                     </div>
