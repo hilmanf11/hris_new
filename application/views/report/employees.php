@@ -82,6 +82,8 @@
 
                             <option value="name">Name</option>
 
+                            <option value="status">Status</option>
+
                             <option value="nickname">Nick Name</option>
 
                             <option value="division_name">Division</option>
@@ -106,13 +108,23 @@
 
                             <option value="date_sign">Sign In</option>
 
+                            <option value="sign_date">Sign Date</option>
+
                             <option value="date_expired">Sign Expired</option>
+
+                            <option value="date_resign">Resign Date</option>
+
+                            <option value="level_education">Level of Education</option>
+
+                            <option value="degree">Degree</option>
 
                             <option value="address">Address</option>
 
                             <option value="place_birth">Place Birth</option>
 
                             <option value="birthday">Birthday</option>
+
+                            <option value="age">Age</option>
 
                             <option value="gender">Gender</option>
 

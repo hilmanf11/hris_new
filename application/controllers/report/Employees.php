@@ -57,6 +57,14 @@ class Employees extends CI_Controller
         }
 
     }
+    public function readAge($date = "")
+    {
+        $start  = date_create($date);
+        $end = date_create(); // waktu sekarang
+        $diff  = date_diff($start, $end);
+
+        return $diff->y.' Years';
+    }
 
 
 
@@ -116,7 +124,14 @@ class Employees extends CI_Controller
 
                         l.name as religion_name,
 
-                        a.job_type");
+                        a.job_type,
+
+                        m.resign_date AS date_resign,
+                        n.name as shift_name,
+                        p.level AS level_education,
+                        p.degree,
+                        a.date_sign AS sign_date,
+                        a.birthday AS age");
 
                 $this->db->from('employees a');
 
@@ -141,6 +156,14 @@ class Employees extends CI_Controller
                 $this->db->join('maritals k', 'k.id = a.marital_id', 'left');
 
                 $this->db->join('religions l', 'l.id = a.religion_id', 'left');
+
+                $this->db->join('resignations m', 'a.id = m.employee_id', 'left');
+                $this->db->join('shift_employees q', 'a.id = q.employee_id', 'left');
+                $this->db->join('shifts n', 'q.shift_id = n.id', 'left');
+                $this->db->join("(".
+                    "SELECT number, MAX(end) AS end_date FROM employee_educations GROUP BY number"
+                .") o", 'a.number = o.number', 'left');
+                $this->db->join('employee_educations p', 'a.number = p.number AND o.end_date = p.end', 'left');
 
                 $this->db->where('a.deleted', 0);
 
@@ -168,7 +191,7 @@ class Employees extends CI_Controller
 
                 }
 
-                $header .= "<th width='80'>STATUS</th>";
+                // $header .= "<th width='80'>STATUS</th>";
 
                 $header .= "</tr>";
 
@@ -284,15 +307,23 @@ class Employees extends CI_Controller
 
                     for ($z = 0; $z < count($form['filter_column']); $z++) {
 
-                        if($form['filter_column'][$z] == "education"){
+                        if ($form['filter_column'][$z] == "education"){
 
                             $content .= "<td style='mso-number-format:\@;'>" . @$employee_education->level . "</td>";
 
-                        }elseif($form['filter_column'][$z] == "job_type"){
+                        } elseif ($form['filter_column'][$z] == "job_type"){
 
                             $content .= "<td style='mso-number-format:\@;'>" . ($data['job_type'] ? $data['job_type'] : '-') . "</td>";
 
-                        }else{
+                        } elseif ($form['filter_column'][$z] == "status") {
+
+                            $content .= "   <td " . $style . ">" . $status . "</td>";
+
+                        } elseif ($form['filter_column'][$z] == "age") {
+
+                            $content .= '   <td style="width: 200px;">' . $this->readAge($data['age']) . '</td>';
+
+                        } else {
 
                             $content .= "<td style='mso-number-format:\@;'>" . $data[$form['filter_column'][$z]] . "</td>";
 
@@ -300,15 +331,7 @@ class Employees extends CI_Controller
 
                     }
 
-
-
-                    $content .= "   <td " . $style . ">" . $status . "</td>
-
-                                </tr>";
-
-
-
-                    $html .= $content;
+                    $html .= $content."</tr>";
 
                     $no++;
 
