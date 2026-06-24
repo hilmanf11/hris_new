@@ -104,8 +104,6 @@
 
                             <option value="religion_name">Religion</option>
 
-                            <option value="education">Education</option>
-
                             <option value="date_sign">Sign In</option>
 
                             <option value="sign_date">Sign Date</option>
