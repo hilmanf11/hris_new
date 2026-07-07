@@ -989,7 +989,7 @@ class Payroll_harian_lepas extends CI_Controller
             }
             $checkPayroll = $this->crud->read("payroll_harian_lepas", [], ["employee_id" => $record['id'], "period_start" => $period_start]);
             if (!empty($checkPayroll->employee_id)) {
-                echo json_encode(array("title" => "Duplicate", "message" => "Duplicate Employee", "theme" => "error"));
+                echo json_encode(array("title" => "Duplicate", "message" => $record['id']." has already been created in period ".$period_start, "theme" => "error"));
             } else {
                 $send = $this->crud->create('payroll_harian_lepas', $result);
                 if ($send) {

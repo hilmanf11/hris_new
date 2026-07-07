@@ -42,12 +42,22 @@
                         <input style="width:60%;" id="filter_source" name="filter_source" class="easyui-combobox">
                     </div>
                     <div class="fitem">
+                        <span style="width:35%; display:inline-block;"></span>
+                        <a href="javascript:;" class="easyui-linkbutton" onclick="filter()"><i class="fa fa-search"></i> Filter Data</a>
+                    </div>
+                </div>
+                <div style="width: 50%; float:left;">
+                    <div class="fitem">
                         <span style="width:35%; display:inline-block;">Employee</span>
                         <input style="width:60%;" id="filter_employee" class="easyui-combogrid">
                     </div>
                     <div class="fitem">
-                        <span style="width:35%; display:inline-block;"></span>
-                        <a href="javascript:;" class="easyui-linkbutton" onclick="filter()"><i class="fa fa-search"></i> Filter Data</a>
+                        <span style="width:35%; display:inline-block;">Status</span>
+                        <select style="width:60%;" id="filter_status" class="easyui-combobox" data-options="panelHeight:'auto'">
+                            <option value="">Choose All</option>
+                            <option value="0">Active</option>
+                            <option value="1">Resign</option>
+                        </select>
                     </div>
                 </div>
             </fieldset>
@@ -56,7 +66,7 @@
     <?= $button ?>
 </div>
 
-<div id="dlg_generate" class="easyui-dialog" title="Generating Data" data-options="closed: true,modal:true,closable: false" style="width: 500px; padding:10px; top: 20px;">
+<div id="dlg_generate" class="easyui-dialog" title="Generating Data" data-options="closed: true,modal:true,closable: true" style="width: 500px; padding:10px; top: 20px;">
     <div class="alert alert-warning" role="alert">
         Please wait until the generate process is complete
     </div>
@@ -64,9 +74,7 @@
     <center><b id="p_start">0</b> Of <b id="p_finish">0</b></center>
     <div id="p_remarks" class="easyui-panel" style="width:460px; height:200px; padding:10px; margin-top: 10px;">
         <p>History Generate</p>
-        <ul id="remarks">
-
-        </ul>
+        <ul id="remarks"></ul>
     </div>
 </div>
 
@@ -74,6 +82,7 @@
 <iframe id="printout" src="<?= base_url('payroll/payroll_pkl/print') ?>" style="width: 100%;" hidden></iframe>
 
 <script>
+    var data_failed = [];
     function add() {
         var filter_from = $("#filter_from").combogrid('getValue');
         var filter_to = $("#filter_to").textbox('getValue');
@@ -123,6 +132,7 @@
                                                 type: 'get',
                                                 data: url,
                                                 success: function(result) {
+                                                    data_failed = [];
                                                     $('#dlg_generate').dialog('open');
                                                     Swal.close();
                                                     var json = eval('(' + result + ')');
@@ -145,17 +155,29 @@
                                                                         var title = "<b style='color: green;'>" + result.title + "</b> | " + result.message;
                                                                     } else {
                                                                         var title = "<b style='color: red;'>" + result.title + "</b> | " + result.message;
+                                                                        data_failed.push(result.title + " | " + result.message);
                                                                     }
                                                                     $("#p_remarks").append(title + "<br>");
                                                                     requestData(total, json, number + 1, value);
 
                                                                     if (number == total) {
+                                                                        var obj = {
+                                                                            title: 'Generate Completed',
+                                                                            text: 'Generate payroll has been completed, please check the generated payroll data, if an error occurs, please generate it again before the data is approved',
+                                                                            icon: 'success'
+                                                                        };
+                                                                        if (data_failed.length != 0) {
+                                                                            obj.reverseButtons = true;
+                                                                            obj.showCancelButton = true;
+                                                                            obj.confirmButtonText = "Download Failed";
+                                                                            obj.cancelButtonText = "OK";
+                                                                            obj.confirmButtonColor = "#d33";
+                                                                            obj.cancelButtonColor = "#3085d6";
+                                                                        }
                                                                         $('#dlg_generate').dialog('close');
-                                                                        Swal.fire(
-                                                                            'Generate Completed',
-                                                                            'Generate payroll has been completed, please check the generated payroll data, if an error occurs, please generate it again before the data is approved',
-                                                                            'success'
-                                                                        );
+                                                                        Swal.fire(obj).then((result) => {
+                                                                            if (result.isConfirmed && data_failed.length != 0) { downloadFailed(); }
+                                                                        });
                                                                     }
                                                                 },
                                                                 fail: function(jqXHR, textStatus) {
@@ -204,6 +226,7 @@
                                 type: 'get',
                                 data: url,
                                 success: function(result) {
+                                    data_failed = [];
                                     $('#dlg_generate').dialog('open');
                                     Swal.close();
                                     var json = eval('(' + result + ')');
@@ -226,17 +249,29 @@
                                                         var title = "<b style='color: green;'>" + result.title + "</b> | " + result.message;
                                                     } else {
                                                         var title = "<b style='color: red;'>" + result.title + "</b> | " + result.message;
+                                                        data_failed.push(result.title + " | " + result.message);
                                                     }
                                                     $("#p_remarks").append(title + "<br>");
                                                     requestData(total, json, number + 1, value);
 
                                                     if (number == total) {
+                                                        var obj = {
+                                                            title: 'Generate Completed',
+                                                            text: 'Generate payroll has been completed, please check the generated payroll data, if an error occurs, please generate it again before the data is approved',
+                                                            icon: 'success'
+                                                        };
+                                                        if (data_failed.length != 0) {
+                                                            obj.reverseButtons = true;
+                                                            obj.showCancelButton = true;
+                                                            obj.confirmButtonText = "Download Failed";
+                                                            obj.cancelButtonText = "OK";
+                                                            obj.confirmButtonColor = "#d33";
+                                                            obj.cancelButtonColor = "#3085d6";
+                                                        }
                                                         $('#dlg_generate').dialog('close');
-                                                        Swal.fire(
-                                                            'Generate Completed',
-                                                            'Generate payroll has been completed, please check the generated payroll data, if an error occurs, please generate it again before the data is approved',
-                                                            'success'
-                                                        );
+                                                        Swal.fire(obj).then((result) => {
+                                                            if (result.isConfirmed && data_failed.length != 0) { downloadFailed(); }
+                                                        });
                                                     }
                                                 },
                                                 fail: function(jqXHR, textStatus) {
@@ -311,11 +346,13 @@
         var filter_to = $("#filter_to").textbox('getValue');
         var filter_source = $("#filter_source").combobox('getValue');
         var filter_employee = $("#filter_employee").combogrid('getValue');
+        var filter_status = $("#filter_status").combobox('getValue');
 
         var url = "?filter_from=" + filter_from +
             "&filter_to=" + filter_to +
             "&filter_source=" + filter_source +
-            "&filter_employee=" + filter_employee;
+            "&filter_employee=" + filter_employee +
+            "&filter_status=" + filter_status;
 
         if (filter_from == "" || filter_to == "") {
             toastr.warning("Please Enter Cut Off Period");
@@ -340,11 +377,13 @@
         var filter_to = $("#filter_to").textbox('getValue');
         var filter_source = $("#filter_source").combobox('getValue');
         var filter_employee = $("#filter_employee").combogrid('getValue');
+        var filter_status = $("#filter_status").combobox('getValue');
 
         var url = "?filter_from=" + filter_from +
             "&filter_to=" + filter_to +
             "&filter_source=" + filter_source +
-            "&filter_employee=" + filter_employee;
+            "&filter_employee=" + filter_employee +
+            "&filter_status=" + filter_status;
 
         if (filter_from == "" || filter_to == "") {
             toastr.warning("Please Enter Cut Off Period");
@@ -469,5 +508,25 @@
         const formatter = new Intl.NumberFormat('id-ID');
 
         return "<b>" + formatter.format(value) + "</b>";
+    }
+
+    function downloadFailed() {
+        const blob = new Blob([data_failed.join('\r\n')], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const now = new Date();
+  
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0'); 
+        const date = String(now.getDate()).padStart(2, '0');
+
+        const hour = String(now.getHours()).padStart(2, '0');
+        const minute = String(now.getMinutes()).padStart(2, '0');
+        const second = String(now.getSeconds()).padStart(2, '0');
+
+        link.href = url;
+        link.download = "Generate Payroll PKL, failed generate ("+year+"-"+month+"-"+date+" "+hour+";"+minute+";"+second+").txt";
+        link.click();
+        URL.revokeObjectURL(url);
     }
 </script>

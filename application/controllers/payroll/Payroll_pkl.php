@@ -192,7 +192,7 @@ class Payroll_pkl extends CI_Controller
 
             $filter_employee = $this->input->get('filter_employee');
 
-
+            $filter_status = $this->input->get('filter_status');
 
             $page   = $this->input->post('page');
 
@@ -216,7 +216,7 @@ class Payroll_pkl extends CI_Controller
 
             $this->db->from('payroll_pkl a');
 
-            $this->db->join('employees b', 'a.employee_id = b.id and b.status = 0');
+            $this->db->join('employees b', 'a.employee_id = b.id');
 
             $this->db->join('account_coa c', 'b.division_id = c.division_id and b.departement_id = c.departement_id and b.position_id = c.position_id and b.contract_id = c.contract_id', 'left');
 
@@ -229,6 +229,8 @@ class Payroll_pkl extends CI_Controller
                 $this->db->where('period_start =', $filter_from);
 
             }
+
+            if (!empty($filter_status)) { $this->db->where('b.status', intval($filter_status)); }
 
             $this->db->like('a.employee_id', $filter_employee);
 
@@ -258,7 +260,7 @@ class Payroll_pkl extends CI_Controller
 
             $records = $this->db->get()->result_array();
 
-
+            // die($this->db->last_query());
 
             $datas = array();
 
@@ -412,7 +414,7 @@ class Payroll_pkl extends CI_Controller
 
                 $this->db->where('a.status', 0);
 
-                $this->db->where('b.absence', 'YES');
+                $this->db->where('b.attandance', 'YES');
 
                 $this->db->where('a.employee_id', $record['id']);
 
@@ -422,7 +424,7 @@ class Payroll_pkl extends CI_Controller
 
                 $permit = $this->db->get()->row();
 
-
+                // die($this->db->last_query());
 
                 //Change Days
 
@@ -623,14 +625,10 @@ class Payroll_pkl extends CI_Controller
 
 
             $allowence3 = ($payroll_3 * @$allowance_3->amount);
-
             $allowence2 = ($payroll_2 * @$allowance_2->amount);
-
             $allowence1 = ($payroll_1 * @$allowance_1->amount);
-
             $allowence = ($allowence1 + $allowence2 + $allowence3);
-
-
+            // die('('.$payroll_3.' * '.@$allowance_3->amount.') + ('.$payroll_2.' * '.@$allowance_2->amount.') + ('.$payroll_1.' * '.@$allowance_1->amount.')');
 
             // if ($attandance_count == 0) {
 
@@ -853,7 +851,7 @@ class Payroll_pkl extends CI_Controller
 
         $filter_employee = $this->input->get('filter_employee');
 
-
+        $filter_status = $this->input->get('filter_status');
 
         //Config
 
@@ -879,7 +877,7 @@ class Payroll_pkl extends CI_Controller
 
         $this->db->join('divisions e', 'b.division_id = e.id');
 
-	$this->db->where('b.status', 0);
+        if (!empty($filter_status)) { $this->db->where('b.status', intval($filter_status)); }
 
         if ($filter_from != "" && $filter_to != "") {
 
