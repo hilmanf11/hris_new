@@ -95,8 +95,11 @@ class Employees extends CI_Controller
                 die('<h3 style="color:red;">PLEASE CHOOSE DISPLAY COLUMN</h3>');
 
             } else {
-
-                $this->db->select("a.*, 
+                $field_level_education = (in_array("level_education", $form['filter_column']))
+                    ? "p.level AS level_education,"
+                    : "";
+                $field_degree = (in_array("degree", $form['filter_column'])) ? "p.degree," : "";
+                $this->db->distinct()->select("a.*, 
 
                         (case when a.date_expired = '0000-00-00' then '-' else a.date_expired end) as date_expired,
 
@@ -128,8 +131,8 @@ class Employees extends CI_Controller
 
                         m.resign_date AS date_resign,
                         n.name as shift_type,
-                        p.level AS level_education,
-                        p.degree,
+                        ".$field_level_education."
+                        ".$field_degree."
                         a.date_sign AS sign_date,
                         a.birthday AS age");
 
@@ -179,9 +182,9 @@ class Employees extends CI_Controller
 
                 $this->db->order_by('a.name', 'ASC');
 
+                // die($this->db->get_compiled_select());
+
                 $records = $this->db->get()->result_array();
-
-
 
                 $header = "<tr><th width='20'>No</th>";
 

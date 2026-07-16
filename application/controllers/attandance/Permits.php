@@ -204,26 +204,40 @@ class Permits extends CI_Controller
             $date_from = strtotime($post['date_from']);
             $date_to = strtotime($post['date_to']);
 
+            // $this->db->distinct()->select("b.days")->from("shift_employees a")
+            // ->join("shift_details b", "a.shift_id = b.shift_id")->where(["a.employee_id" => $post['employee_id']]);
+            // $shift = $this->db->get()->row()->days;
+
+            $plant_sub_dept = '20240813000001'; // KI
+            // $plant_sub_dept = '20260304000001'; // BRI
+
             $send = "";
             $leave = $post['leave'];
             for ($i = $date_from; $i <= $date_to; $i += (60 * 60 * 24)) {
                 $permit_date = date('Y-m-d', $i);
 
-                $attandance = $this->db->select('a.*')
-                ->from('attandances a')->join('employees b', 'a.number = b.number')
-                ->where("b.id", $post['employee_id'])->where("a.date_in", $permit_date)->get()->row();
+                $mp = $this->crud->read("employees", [], ["id" => $post['employee_id']]);
+                $count_attandance = $this->db->from('attandances a')->join('employees b', 'a.number = b.number')
+                ->where("b.id", $post['employee_id'])->where("a.date_in", $permit_date)->count_all_results();
+                // die($this->db->last_query());
 
-                $permit = $this->db->select('*')->from('permits')
-                ->where("employee_id", $post['employee_id'])->where("permit_date", $permit_date)->get()->row();
+                $this->db->select('b.attandance')->from('permits a')
+                    ->join('permit_types b', 'a.permit_type_id = b.id')
+                    ->where("a.employee_id", $post['employee_id'])
+                    ->where("a.permit_date", $permit_date);
+                $count_permit = $this->db->count_all_results();
+                $permit = false;
+                // die($this->db->last_query());
+                if ($count_permit != 0) { $permit = $this->db->get()->row_array()['attandance'] == 'YES'; }
 
-                if (!empty($attandance)) {
-                    echo json_encode(array("title" => "Available", "message" => "The attandance for this employee and date in has been created", "theme" => "error"));
-                    exit;
-                } elseif (!empty($permit)) {
+                if ($permit) {
                     echo json_encode(array("title" => "Available", "message" => "The permit requestion for this employee and permit date has been created", "theme" => "error"));
                     exit;
+                } elseif ($count_attandance != 0) {
+                    echo json_encode(array("title" => "Available", "message" => "The attandance for this employee and date in has been created", "theme" => "error"));
+                    exit;
                 } else {
-                    if (date('w', $i) !== '0') {
+                    if (date('w', $i) !== '0' || $mp->departement_sub_id == $plant_sub_dept) {
                         $attachment = $this->crud->upload('attachment', ['pdf', 'png', 'jpg', 'jpeg'], 'assets/image/attandance/');
                         $post_final = array(
                             "employee_id" => $post['employee_id'],
@@ -258,6 +272,7 @@ class Permits extends CI_Controller
         if ($this->input->post()) {
             $id   = base64_decode($this->input->get('id'));
             $post = $this->input->post();
+            unset($post['working_day']);
             $attachment = $this->crud->upload('attachment', ['pdf', 'png', 'jpg', 'jpeg'], 'assets/image/attandance/');
             $post_final = array_merge($post, ["attachment" => $attachment]);
             $send = $this->crud->update('permits', ["id" => $id], $post_final);
@@ -362,13 +377,20 @@ class Permits extends CI_Controller
 
                         for ($i = $date_from; $i <= $date_to; $i += (60 * 60 * 24)) {
                             $permit_date = date('Y-m-d', $i);
-                            $this->db->select('*');
-                            $this->db->from('permits');
-                            $this->db->where("employee_id", $employee->id);
-                            $this->db->where("permit_date", $permit_date);
+                            $this->db->select('*')->from('permits')->where([
+                                "employee_id" => $employee->id,
+                                "permit_date" => $permit_date
+                            ]);
                             $permit = $this->db->get()->row();
 
-                            if (!empty($permit)) {
+                            $this->db->distinct()->select('TRIM(id) AS id, TRIM(number) AS number')->from('attandances')
+                            ->where(["number" => $employee->number, "date_in" => $permit_date]);
+                            $attandance = $this->db->get()->row();
+
+                            if (!empty($attandance)) {
+                                echo json_encode(array("title" => "Available", "message" => "Permit date already exists in the attendance module", "theme" => "error"));
+                                exit;
+                            } elseif (!empty($permit)) {
                                 echo json_encode(array("title" => "Available", "message" => "The permit requestion for this employee and permit date has been created", "theme" => "error"));
                                 exit;
                             } else {
