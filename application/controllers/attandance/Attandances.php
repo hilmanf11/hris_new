@@ -312,7 +312,14 @@ class Attandances extends CI_Controller
                 $attandance = $this->db->get()->row();
                 // die(var_dump($attandance));
 
-                if (empty($attandance)) {
+                $this->db->select('*')->from('permits')->where(["employee_id" => $employee->id, "permit_date" => $date_in]);
+                $permit = $this->db->get()->row();
+
+                if (!empty($permit)) {
+                    $message['theme'] = "warning";
+                    $message['title'] = "Warning";
+                    $message['message'] = "Attendances already exists in permit for ID $employee->number on $date_in!";
+                } elseif (empty($attandance)) {
                     $is_weekday = date('w', strtotime($date_in)) != 6;
                     $shift = null;
                     $ends = [];
@@ -389,7 +396,7 @@ class Attandances extends CI_Controller
 
                     $message['title'] = "Created";
                     $message['message'] .= " Create data Check In";
-                } else {$message['message'] .= " Update data Check In"; }
+                } else { $message['message'] .= " Update data Check In"; }
 
                 $send[($type_in) ? 'time_in' : 'time_out'] = $time_in;
                 // die(var_dump($send));

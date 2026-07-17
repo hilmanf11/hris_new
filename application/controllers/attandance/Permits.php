@@ -388,7 +388,7 @@ class Permits extends CI_Controller
                             $attandance = $this->db->get()->row();
 
                             if (!empty($attandance)) {
-                                echo json_encode(array("title" => "Available", "message" => "Permit date already exists in the attendance module", "theme" => "error"));
+                                echo json_encode(array("title" => "Available", "message" => "Permit date already exists in attendance for ID $employee->number on $permit_date", "theme" => "error"));
                                 exit;
                             } elseif (!empty($permit)) {
                                 echo json_encode(array("title" => "Available", "message" => "The permit requestion for this employee and permit date has been created", "theme" => "error"));
