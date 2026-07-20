@@ -298,7 +298,10 @@ class Resignations extends CI_Controller
             $reasons = $this->crud->read('reason_resignations', ["number" => $data['reason_code']]);
 
             if (!empty($employees)) {
-                if (!empty($reasons)) {
+                $resignations = $this->crud->read('resignations', ["employee_id" => $employees->id]);
+                if (!empty($resignations)) {
+                    echo json_encode(array("title" => "Failed", "message" => $data['employee_number'] . " Employee ID is Already Registered", "theme" => "error"));
+                } elseif (!empty($reasons)) {
                     $date_1 = new DateTime($data['request_date']);
                     $date_2 = new DateTime($data['resign_date']);
                     $day = $date_2->diff($date_1)->days + 1;
