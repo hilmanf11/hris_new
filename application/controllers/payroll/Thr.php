@@ -210,33 +210,45 @@ class Thr extends CI_Controller
             $username = $this->session->username;
 
             $q = "SELECT a.*, 
-                    b.name as division_name,
-                    c.name as departement_name,
-                    d.name as departement_sub_name,
-                    d.type,
-                    f.id as contract_id,
-                    f.name as `contract_name`,
-                    g.name as position_name,
-                    g.level,
-                    i.id as group_id,
-                    i.name as group_name,
-                    n.name as shift_name,
-                    l.name as shift_name_2,
-                    l.days,
-                    p.amount as salary,
-                    p.bpjs,
-                    q.number as marital,
-                    q.ter_type,
-                    a.tax_id,
-                    o.thr_fee,
-                    e.total_all_allowance,
-                    e.bpjs_company,
-                    e.ter
-                FROM employees a
+                b.name as division_name,
+                c.name as departement_name,
+                d.name as departement_sub_name,
+                d.type,
+                f.id as contract_id,
+                f.name as `contract_name`,
+                g.name as position_name,
+                g.level,
+                i.id as group_id,
+                i.name as group_name,
+                n.name as shift_name,
+                l.name as shift_name_2,
+                l.days,
+                p.amount as salary,
+                p.bpjs,
+                q.number as marital,
+                q.ter_type,
+                a.tax_id,
+                o.thr_fee,
+                e.total_all_allowance,
+                e.bpjs_company,
+                e.ter,
+                e.total_income
+            FROM employees a
                 JOIN divisions b ON a.division_id = b.id
                 JOIN departements c ON a.departement_id = c.id
                 JOIN departement_subs d ON a.departement_sub_id = d.id
-                JOIN payrolls e ON a.id = e.employee_id and e.period_end = '$filter_period'
+                JOIN (
+                    SELECT DISTINCT
+                        employee_id,
+                        0 AS total_all_allowance,
+                        '{\"jht_company\":0,\"jp_company\":0}' AS bpjs_company,
+                        0 AS ter,
+                        total_income
+                    FROM payroll_pkl WHERE LEFT(period_end, 7) = '$filter_period'
+                    UNION
+                    SELECT DISTINCT employee_id, total_all_allowance, bpjs_company, ter, 0 AS total_income
+                    FROM payrolls WHERE period_end = '$filter_period'
+                ) e ON a.id = e.employee_id
                 LEFT JOIN contracts f ON a.contract_id = f.id
                 LEFT JOIN positions g ON a.position_id = g.id
                 LEFT JOIN groups i ON a.group_id = i.id
@@ -247,15 +259,14 @@ class Thr extends CI_Controller
                 LEFT JOIN setup_salaries p ON p.employee_id = a.id
                 LEFT JOIN maritals q ON a.marital_id = q.id
                 JOIN privilege_groups m ON i.id = m.group_id and m.username = '$username' and m.status = '1'
-                WHERE a.deleted = 0 and a.status = 0
+            WHERE a.deleted = 0 and a.status = 0
                 AND a.division_id LIKE '%$filter_division%'
                 AND a.departement_id LIKE '%$filter_departement%'
                 AND a.departement_sub_id LIKE '%$filter_departement_sub%'
                 AND a.contract_id LIKE '%$filter_employee_type%'
                 AND a.id LIKE '%$filter_employee%'
                 AND a.group_id LIKE '%$filter_group%'
-                GROUP BY a.id
-                ORDER BY b.name ASC, c.name ASC, d.name ASC, a.number, a.name ASC";
+            GROUP BY a.id ORDER BY b.name ASC, c.name ASC, d.name ASC, a.number, a.name ASC";
             // die($q);
             $query = $this->db->query($q);
             $records = $query->result_array();
@@ -319,16 +330,28 @@ class Thr extends CI_Controller
 
             //Menghitung jika fit for service lebih dari 12 bulan
             if($record['group_name'] == "PKL"){
-                if($numBulan < 3){
-                    $allowance = $this->crud->read("allowance_students", [], ["group_id" => $record['group_id'], "months" => "2", "type" => "THR"]);
-                }elseif($numBulan == 3){
-                    $allowance = $this->crud->read("allowance_students", [], ["group_id" => $record['group_id'], "months" => "3", "type" => "THR"]);
-                }elseif($numBulan > 3){
-                    $allowance = $this->crud->read("allowance_students", [], ["group_id" => $record['group_id'], "months" => "4", "type" => "THR"]);
-                }
+                $income = $record['total_income'];
+                $total = $record['total_income'];
 
-                $thr = $allowance->amount;
-            }else{
+                $months = "4";
+                if ($numBulan < 3) { $months = "2"; }
+                elseif ($numBulan == 3) { $months = "3"; }
+                $thr = $this->crud->read("allowance_students", [], [
+                    "group_id" => $record['group_id'],
+                    "months" => $months,
+                    "type" => "THR"
+                ])->amount;
+
+                $months = ($numBulan >= 3) ? "3" : $numBulan;
+                $salary = $this->crud->read("allowance_students", [], [
+                    "group_id" => $record['group_id'],
+                    "months" => $months,
+                    "type" => "SALARY"
+                ])->amount;
+            } else {
+                $bpjs = json_decode($record['bpjs_company'], true);
+                $income = $record['total_all_allowance'] - $bpjs['jht_company'] - $bpjs['jp_company'];
+                $total = $salary + $totalAllowence;
                 if ($record['source_id'] == "") {
                     if ($numBulan >= 12) {
                         $thr = ($salary + $totalAllowence);
@@ -366,9 +389,8 @@ class Thr extends CI_Controller
             // } else {
             //     $pph_final = 0;
             // }
-            
-            $bpjs = json_decode($record['bpjs_company'], true);
-            $income_thr = (($record['total_all_allowance'] - $bpjs['jht_company'] - $bpjs['jp_company']) + $thr);
+
+            $income_thr = $income + $thr;
 
             //Rumus TER
             $this->db->select("number, ter");
@@ -401,9 +423,9 @@ class Thr extends CI_Controller
                     "tax_id" => $record['tax_id'],
                     "salary" => $salary,
                     "allowence" => $totalAllowence,
-                    "total" => ($salary + $totalAllowence),
+                    "total" => $total,
                     "thr" => $thr,
-                    "income" => ($record['total_all_allowance'] - $bpjs['jht_company'] - $bpjs['jp_company']),
+                    "income" => $income,
                     "income_thr" => $income_thr,
                     "pph" => ($ter),
                     "total_thr" => ($thr - $ter),
@@ -566,6 +588,7 @@ class Thr extends CI_Controller
                 <th>Source</th>
                 <th>Join Date</th>
                 <th>Cutoff</th>
+                <th>THR Type</th>
                 <th>Fit of Services</th>
                 <th>Position</th>
                 <th>Marital</th>
@@ -590,6 +613,7 @@ class Thr extends CI_Controller
                             <td>' . $data['source_name'] . '</td>
                             <td>' . date("d F Y", strtotime($data['date_sign'])) . '</td>
                             <td>' . date("d F Y", strtotime($data['cutoff'])) . '</td>
+                            <td>' . $data['type'] . '</td>
                             <td>' . $data['services'] . '</td>
                             <td>' . $data['position_name'] . '</td>
                             <td>' . $data['marital'] . '</td>
