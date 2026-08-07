@@ -87,6 +87,7 @@ class Cash_carries extends CI_Controller
         $filter_employee = $this->input->get('filter_employee');
 
         $filter_group = $this->input->get('filter_group');
+        $filter_group = (empty($filter_group)) ? [] : explode(",", $this->input->get('filter_group'));
 
         $filter_bank = $this->input->get('filter_bank');
 
@@ -162,14 +163,16 @@ class Cash_carries extends CI_Controller
 
         $this->db->like('b.departement_sub_id', $filter_departement_sub);
 
-        $this->db->like('b.group_id', $filter_group);
+        if (!empty($filter_group)) {
+            $this->db->where_in('b.group_id', $filter_group);
+        }
 
         $this->db->like('b.bank_name', $filter_bank);
 
         $this->db->group_by("b.id");
 
         $this->db->order_by('b.name', 'ASC');
-
+        // die($this->db->get_compiled_select());
         //Get Data Array
 
         $cash_carries = $this->db->get()->result_array();
@@ -959,6 +962,7 @@ class Cash_carries extends CI_Controller
             $filter_departement_sub = $this->input->get('filter_departement_sub');
             $filter_employee = $this->input->get('filter_employee');
             $filter_group = $this->input->get('filter_group');
+            $filter_group = (empty($filter_group)) ? [] : explode(",", $this->input->get('filter_group'));
             $filter_bank = $this->input->get('filter_bank');
             $username = $this->session->username;
 
@@ -1016,8 +1020,8 @@ class Cash_carries extends CI_Controller
             if ($filter_departement_sub != "") {
                 $this->db->like('b.departement_sub_id', $filter_departement_sub);
             }
-            if ($filter_group != "") {
-                $this->db->like('b.group_id', $filter_group);
+            if (!empty($filter_group)) {
+                $this->db->where_in('b.group_id', $filter_group);
             }
             if ($filter_bank != "") {
                 $this->db->like('b.bank_name', $filter_bank);
@@ -1243,6 +1247,7 @@ class Cash_carries extends CI_Controller
             $filter_departement_sub = $this->input->get('filter_departement_sub');
             $filter_employee = $this->input->get('filter_employee');
             $filter_group = $this->input->get('filter_group');
+            $filter_group = (empty($filter_group)) ? [] : explode(",", $this->input->get('filter_group'));
             $filter_bank = $this->input->get('filter_bank');
             $username = $this->session->username;
 
@@ -1309,8 +1314,8 @@ class Cash_carries extends CI_Controller
             if ($filter_departement_sub != "") {
                 $this->db->like('b.departement_sub_id', $filter_departement_sub);
             }
-            if ($filter_group != "") {
-                $this->db->like('b.group_id', $filter_group);
+            if (!empty($filter_group)) {
+                $this->db->where_in('b.group_id', $filter_group);
             }
             if ($filter_bank != "") {
                 $this->db->like('b.bank_name', $filter_bank);

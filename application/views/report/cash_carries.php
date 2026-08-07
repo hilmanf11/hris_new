@@ -194,7 +194,7 @@
 
         var filter_employee = $("#filter_employee").combogrid('getValue');
 
-        var filter_group = $("#filter_group").combobox('getValue');
+        var filter_group = $("#filter_group").combobox('getValues');
 
         var filter_bank = $("#filter_bank").combobox('getValue');
 
@@ -317,7 +317,7 @@
 
         var filter_employee = $("#filter_employee").combogrid('getValue');
 
-        var filter_group = $("#filter_group").combobox('getValue');
+        var filter_group = $("#filter_group").combobox('getValues');
 
         var filter_bank = $("#filter_bank").combobox('getValue');
 
@@ -365,7 +365,7 @@
 
         var filter_employee = $("#filter_employee").combogrid('getValue');
 
-        var filter_group = $("#filter_group").combobox('getValue');
+        var filter_group = $("#filter_group").combobox('getValues');
 
         var filter_bank = $("#filter_bank").combobox('getValue');
 
@@ -652,6 +652,8 @@
         $("#filter_group").combobox({
 
             url: '<?= base_url('report/cash_carries/readGroups') ?>',
+
+            multiple: true,
 
             valueField: 'id',
 
