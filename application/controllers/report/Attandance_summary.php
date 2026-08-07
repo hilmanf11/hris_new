@@ -129,6 +129,7 @@ class Attandance_summary extends CI_Controller
                         <th style="text-align:center;" rowspan="2">Departement Sub</th>
                         <th style="text-align:center;" rowspan="2">Employee ID</th>
                         <th style="text-align:center;" rowspan="2">Employee Name</th>
+                        <th style="text-align:center;" rowspan="2">Position</th>
                         <th style="text-align:center;" rowspan="2">Group</th>
                         <th style="text-align:center;" rowspan="2">Shift</th>
                         <th style="text-align:center;" colspan="' . count($permit_types) . '">Permit</th>
@@ -145,7 +146,7 @@ class Attandance_summary extends CI_Controller
                 $html .= '</tr>';
                 //Ambil Employee berdasarkan departement dan divisionnnya
                 $this->db->select("
-                    a.id as employee_id, 
+                    a.id AS employee_id, 
                     a.division_id,
                     a.departement_id,
                     a.departement_sub_id,
@@ -154,16 +155,18 @@ class Attandance_summary extends CI_Controller
                     a.division_id, 
                     a.departement_id, 
                     a.departement_sub_id, 
-                    e.name as departement_sub_name, 
-                    g.name as shift_name,
+                    e.name AS departement_sub_name, 
+                    g.name AS shift_name,
                     h.days,
-                    i.name as group_name");
+                    i.name AS group_name,
+                    j.name AS position_name");
                 $this->db->from('employees a');
                 $this->db->join('departement_subs e', 'a.departement_sub_id = e.id');
                 $this->db->join('shift_employees f', 'a.id = f.employee_id');
                 $this->db->join('shifts g', 'f.shift_id = g.id');
                 $this->db->join('shift_details h', 'h.shift_id = g.id');
                 $this->db->join('groups i', 'a.group_id = i.id', 'left');
+                $this->db->join('positions j', 'a.position_id = j.id', 'left');
                 $this->db->where('a.status', '0');
                 $this->db->like('a.division_id', $filter_division);
                 $this->db->like('a.departement_id', $filter_departement);
@@ -250,7 +253,7 @@ class Attandance_summary extends CI_Controller
                     $this->db->where("trans_date between '$filter_from' and '$filter_to'");
                     $this->db->where('description !=', "Weekend");
                     if ($data['days'] == "6" && count($weekend_day) > 0) {
-                        $this->db->where_not_in('trans_date', $weekend2);
+                        $this->db->where_not_in('trans_date', $weekend_day);
                     }
                     $calendar = $this->db->get()->result_array();
                     // if ($data['number'] == '22070011210433') { die($this->db->last_query()); }
@@ -379,6 +382,7 @@ class Attandance_summary extends CI_Controller
                                 <td>' . $data['departement_sub_name'] . '</td>
                                 <td style="mso-number-format:\@;">' . $data['number'] . '</td>
                                 <td>' . $data['name'] . '</td>
+                                <td>' . $data['position_name'] . '</td>
                                 <td>' . $data['group_name'] . '</td>
                                 <td>' . $data['shift_name'] . '</td>';
                     $total_permit = 0;
