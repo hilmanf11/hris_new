@@ -60,10 +60,10 @@ class Employees extends CI_Controller
 
     {
 
-        $querys = $this->crud->query("SELECT b.name, COUNT(a.number) AS total
-        FROM departements b LEFT JOIN employees a ON a.departement_id = b.id
-        WHERE a.status = 0
-        GROUP BY b.name");
+        $querys = $this->crud->query("SELECT a.name, COUNT(b.number) AS total FROM departements a
+        LEFT JOIN employees b ON b.departement_id = a.id
+        LEFT JOIN resignations c ON b.id = c.employee_id
+        WHERE b.status = 0 AND c.resign_date IS NULL AND b.contract_id NOT IN ('20221119000003', '20250704000001') AND b.group_id != '20221119000002' GROUP BY a.name");
 
         $name = array();
 
@@ -97,10 +97,10 @@ class Employees extends CI_Controller
 
     {
 
-        $querys = $this->crud->query("SELECT b.name, COUNT(a.number) as total
-        FROM groups b LEFT JOIN employees a ON a.group_id = b.id
-        WHERE a.status = 0
-        GROUP BY b.name");
+        $querys = $this->crud->query("SELECT a.name, COUNT(b.number) as total FROM groups a
+        LEFT JOIN employees b ON b.group_id = a.id
+        LEFT JOIN resignations c ON b.id = c.employee_id
+        WHERE b.status = 0 AND c.resign_date IS NULL AND b.contract_id NOT IN ('20221119000003', '20250704000001') AND b.group_id != '20221119000002' GROUP BY a.name");
 
         $name = array();
 
@@ -135,16 +135,17 @@ class Employees extends CI_Controller
     {
 
         $query = $this->crud->query("SELECT
-            SUM(CASE WHEN (a.usia >= 15) and (a.usia <= 18) THEN 1 ELSE 0 END) as satu,
-            SUM(CASE WHEN (a.usia >= 19) and (a.usia <= 25) THEN 1 ELSE 0 END) as dua,
-            SUM(CASE WHEN (a.usia >= 26) and (a.usia <= 35) THEN 1 ELSE 0 END) as tiga,
-            SUM(CASE WHEN (a.usia >= 36) and (a.usia <= 45) THEN 1 ELSE 0 END) as empat,
-            SUM(CASE WHEN (a.usia >= 46) and (a.usia <= 55) THEN 1 ELSE 0 END) as lima,
-            SUM(CASE WHEN (a.usia > 55) THEN 1 ELSE 0 END) as enam
+            SUM(CASE WHEN (usia >= 15) and (usia <= 18) THEN 1 ELSE 0 END) as satu,
+            SUM(CASE WHEN (usia >= 19) and (usia <= 25) THEN 1 ELSE 0 END) as dua,
+            SUM(CASE WHEN (usia >= 26) and (usia <= 35) THEN 1 ELSE 0 END) as tiga,
+            SUM(CASE WHEN (usia >= 36) and (usia <= 45) THEN 1 ELSE 0 END) as empat,
+            SUM(CASE WHEN (usia >= 46) and (usia <= 55) THEN 1 ELSE 0 END) as lima,
+            SUM(CASE WHEN (usia > 55) THEN 1 ELSE 0 END) as enam
         FROM (
-            SELECT TIMESTAMPDIFF(YEAR, birthday, CURDATE()) AS usia FROM employees
-            WHERE status = 0
-        ) a");
+            SELECT TIMESTAMPDIFF(YEAR, a.birthday, CURDATE()) AS usia
+            FROM employees a LEFT JOIN resignations b ON a.id = b.employee_id
+            WHERE a.status = 0 AND b.resign_date IS NULL AND a.contract_id NOT IN ('20221119000003', '20250704000001') AND a.group_id != '20221119000002'
+        ) z");
 
         
 
@@ -191,9 +192,9 @@ class Employees extends CI_Controller
     {
 
         $querys = $this->crud->query(
-            "SELECT CASE WHEN gender = '' THEN 'EMPTY' ELSE gender END AS gender, COUNT(number) AS total FROM employees
-            WHERE status = 0
-            GROUP BY gender"
+            "SELECT CASE WHEN a.gender = '' THEN 'EMPTY' ELSE a.gender END AS gender, COUNT(a.number) AS total
+            FROM employees a LEFT JOIN resignations b ON a.id = b.employee_id
+            WHERE a.status = 0 AND b.resign_date IS NULL AND a.contract_id NOT IN ('20221119000003', '20250704000001') AND a.group_id != '20221119000002' GROUP BY a.gender"
         );
 
         $name = array();
@@ -221,10 +222,11 @@ class Employees extends CI_Controller
         // Ambil semua status marital
         $maritals = $this->crud->query("SELECT id, name FROM maritals WHERE deleted = 0 ORDER BY name ASC");
         // Hitung jumlah karyawan per status marital
-        $data = $this->crud->query("SELECT b.id, b.name, COUNT(a.number) as total
-        FROM maritals b LEFT JOIN employees a ON a.marital_id = b.id
-        WHERE a.status = 0
-        GROUP BY b.id, b.name ORDER BY b.name ASC");
+        $data = $this->crud->query("SELECT a.id, a.name, COUNT(b.number) as total FROM maritals a
+            LEFT JOIN employees b ON b.marital_id = a.id
+            LEFT JOIN resignations c ON b.id = c.employee_id
+        WHERE b.status = 0 AND c.resign_date IS NULL AND b.contract_id NOT IN ('20221119000003', '20250704000001') AND b.group_id != '20221119000002'
+        GROUP BY a.id, a.name ORDER BY name ASC");
         $categories = array();
         $values = array();
         $total = 0;
@@ -255,10 +257,10 @@ class Employees extends CI_Controller
     {
 
         $querys = $this->crud->query("SELECT
-            SUM(CASE WHEN address LIKE '%purwakarta%' THEN 1 ELSE 0 END) as purwakarta,
-            SUM(CASE WHEN address NOT LIKE '%purwakarta%' THEN 1 ELSE 0 END) as not_purwakarta
-        FROM employees
-        WHERE status = 0");
+            SUM(CASE WHEN a.address LIKE '%purwakarta%' THEN 1 ELSE 0 END) as purwakarta,
+            SUM(CASE WHEN a.address NOT LIKE '%purwakarta%' THEN 1 ELSE 0 END) as not_purwakarta
+        FROM employees a LEFT JOIN resignations b ON a.id = b.employee_id
+        WHERE a.status = 0 AND b.resign_date IS NULL AND a.contract_id NOT IN ('20221119000003', '20250704000001') AND a.group_id != '20221119000002'");
 
         $name = array();
 
@@ -284,10 +286,10 @@ class Employees extends CI_Controller
 
     {
 
-        $querys = $this->crud->query("SELECT b.level, COUNT(a.number) as number
-        FROM employees a JOIN (select number, level from employee_educations GROUP by number) b ON a.number = b.number
-        WHERE a.status = 0
-        GROUP BY b.level");
+        $querys = $this->crud->query("SELECT b.level, COUNT(a.number) as number FROM employees a
+        JOIN (select number, level from employee_educations GROUP by number) b ON a.number = b.number
+        LEFT JOIN resignations c ON a.id = c.employee_id
+        WHERE a.status = 0 AND c.resign_date IS NULL AND a.contract_id NOT IN ('20221119000003', '20250704000001') AND a.group_id != '20221119000002' GROUP BY b.level");
 
         $name = array();
 

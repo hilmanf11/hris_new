@@ -61,9 +61,10 @@ class Employees_hl extends CI_Controller
     {
 
         $querys = $this->crud->query("SELECT b.name, COUNT(a.number) AS total
-        FROM departements b LEFT JOIN employees a ON a.departement_id = b.id
-        WHERE a.status = 0 AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id = '20221119000002'
-        GROUP BY b.name");
+        FROM departements b
+        LEFT JOIN employees a ON a.departement_id = b.id
+        LEFT JOIN resignations c ON a.id = c.employee_id
+        WHERE a.status = 0 AND c.resign_date IS NULL AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id IN ('20221119000002', '20251124000001') GROUP BY b.name");
 
         $name = array();
 
@@ -98,9 +99,10 @@ class Employees_hl extends CI_Controller
     {
 
         $querys = $this->crud->query("SELECT b.name, COUNT(a.number) as total
-        FROM groups b LEFT JOIN employees a ON a.group_id = b.id
-        WHERE a.status = 0 AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id = '20221119000002'
-        GROUP BY b.name");
+        FROM groups b
+        LEFT JOIN employees a ON a.group_id = b.id
+        LEFT JOIN resignations c ON a.id = c.employee_id
+        WHERE a.status = 0 AND c.resign_date IS NULL AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id IN ('20221119000002', '20251124000001') GROUP BY b.name");
 
         $name = array();
 
@@ -142,11 +144,12 @@ class Employees_hl extends CI_Controller
             SUM(CASE WHEN (a.usia >= 46) and (a.usia <= 55) THEN 1 ELSE 0 END) as lima,
             SUM(CASE WHEN (a.usia > 55) THEN 1 ELSE 0 END) as enam
         FROM (
-            SELECT TIMESTAMPDIFF(YEAR, birthday, CURDATE()) AS usia FROM employees
-            WHERE status = 0 AND contract_id IN ('20221119000003', '20250704000001') AND group_id = '20221119000002'
+            SELECT TIMESTAMPDIFF(YEAR, a.birthday, CURDATE()) AS usia FROM employees a
+            LEFT JOIN resignations b ON a.id = b.employee_id
+            WHERE a.status = 0 AND b.resign_date IS NULL AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id IN ('20221119000002', '20251124000001')
         ) a");
 
-        die(var_dump($query));
+        
 
         $name = array();
 
@@ -191,8 +194,9 @@ class Employees_hl extends CI_Controller
     {
 
         $querys = $this->crud->query(
-            "SELECT CASE WHEN gender = '' THEN 'EMPTY' ELSE gender END AS gender, COUNT(number) AS total FROM employees
-            WHERE status = 0 AND contract_id IN ('20221119000003', '20250704000001') AND group_id = '20221119000002'
+            "SELECT CASE WHEN gender = '' THEN 'EMPTY' ELSE gender END AS gender, COUNT(number) AS total FROM employees a
+            LEFT JOIN resignations b ON a.id = b.employee_id
+            WHERE a.status = 0 AND b.resign_date IS NULL AND contract_id IN ('20221119000003', '20250704000001') AND group_id IN ('20221119000002', '20251124000001')
             GROUP BY gender"
         );
 
@@ -222,9 +226,10 @@ class Employees_hl extends CI_Controller
         $maritals = $this->crud->query("SELECT id, name FROM maritals WHERE deleted = 0 ORDER BY name ASC");
         // Hitung jumlah karyawan per status marital
         $data = $this->crud->query("SELECT b.id, b.name, COUNT(a.number) as total
-        FROM maritals b LEFT JOIN employees a ON a.marital_id = b.id
-        WHERE a.status = 0 AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id = '20221119000002'
-        GROUP BY b.id, b.name ORDER BY b.name ASC");
+        FROM maritals b
+        LEFT JOIN employees a ON a.marital_id = b.id
+        LEFT JOIN resignations c ON a.id = c.employee_id
+        WHERE a.status = 0 AND c.resign_date AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id IN ('20221119000002', '20251124000001') GROUP BY b.id, b.name ORDER BY b.name ASC");
         $categories = array();
         $values = array();
         $total = 0;
@@ -255,10 +260,10 @@ class Employees_hl extends CI_Controller
     {
 
         $querys = $this->crud->query("SELECT
-            SUM(CASE WHEN address LIKE '%purwakarta%' THEN 1 ELSE 0 END) as purwakarta,
-            SUM(CASE WHEN address NOT LIKE '%purwakarta%' THEN 1 ELSE 0 END) as not_purwakarta
-        FROM employees
-        WHERE status = 0 AND contract_id IN ('20221119000003', '20250704000001') AND group_id = '20221119000002'");
+            SUM(CASE WHEN a.address LIKE '%purwakarta%' THEN 1 ELSE 0 END) as purwakarta,
+            SUM(CASE WHEN a.address NOT LIKE '%purwakarta%' THEN 1 ELSE 0 END) as not_purwakarta
+        FROM employees a LEFT JOIN resignations c ON a.id = c.employee_id
+        WHERE a.status = 0 AND c.resign_date IS NULL AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id IN ('20221119000002', '20251124000001')");
 
         $name = array();
 
@@ -285,9 +290,10 @@ class Employees_hl extends CI_Controller
     {
 
         $querys = $this->crud->query("SELECT b.level, COUNT(a.number) as number
-        FROM employees a JOIN (select number, level from employee_educations GROUP by number) b ON a.number = b.number
-        WHERE a.status = 0 AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id = '20221119000002'
-        GROUP BY b.level");
+        FROM employees a
+        JOIN (select number, level from employee_educations GROUP by number) b ON a.number = b.number
+        LEFT JOIN resignations c ON a.id = c.employee_id
+        WHERE a.status = 0 AND c.resign_date IS NULL AND a.contract_id IN ('20221119000003', '20250704000001') AND a.group_id IN ('20221119000002', '20251124000001') GROUP BY b.level");
 
         $name = array();
 
