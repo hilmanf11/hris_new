@@ -422,7 +422,7 @@ class Attandance_summary extends CI_Controller
                 GROUP BY a.id ORDER BY a.name ASC");
                 $rt_permit_mp = $q_permit_mp->result_array();
                 //Grand Total Permit
-                $html .= '  <tr><th colspan="6" style="text-align:right;">Grand Total Permit</th>';
+                $html .= '  <tr><th colspan="7" style="text-align:right;">Grand Total Permit</th>';
                 foreach ($rt_permit as $row) {
                     $html .= '<td style="text-align:center;">' . $row['permit'] . '</td>';
                 }
@@ -432,7 +432,7 @@ class Attandance_summary extends CI_Controller
                             <th style="text-align:center;">' . $attandance_total . '</th>
                         </tr>';
                 //Grand Total MP
-                $html .= '  <tr><th colspan="6" style="text-align:right;">Grand Total MP</th>';
+                $html .= '  <tr><th colspan="7" style="text-align:right;">Grand Total MP</th>';
                 foreach ($rt_permit_mp as $row_mp) {
                     $html .= '<td style="text-align:center;">' . $row_mp['employee'] . '</td>';
                 }
