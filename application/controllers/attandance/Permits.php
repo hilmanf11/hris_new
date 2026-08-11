@@ -92,12 +92,12 @@ class Permits extends CI_Controller
 
     public function getDays()
     {
-        $date_from = $this->input->post('date_from');
-        $date_to = $this->input->post('date_to');
+        $employee_id = $this->input->post('employee_id');
+        $permit_type_id = $this->input->post('permit_type_id');
         $working_day = $this->input->post('working_day');
-
-        $date_from = strtotime($date_from);
-        $date_to = strtotime($date_to);
+        $date_from = strtotime($this->input->post('date_from'));
+        $date_to = strtotime($this->input->post('date_to'));
+        $year = date("Y", $date_from);
 
         for ($i = $date_from; $i <= $date_to; $i += (60 * 60 * 24)) {
             if ($working_day == "6") {
@@ -114,9 +114,19 @@ class Permits extends CI_Controller
                 }
             }
         }
-
         $total_days = @count($weekdays);
-        echo $total_days;
+
+        $calendar = $this->crud->reads("calendars", ["trans_date" => $year], ["permit" => 1]);
+
+        $permitType = $this->crud->read('permit_types', [], ["id" => $permit_type_id, "cutoff" => "YES"]);
+        $permits = $this->crud->reads('permits', [
+            "employee_id" => $employee_id,
+            "DATE_FORMAT(permit_date, '%Y')" => $year
+        ], ["permit_type_id" => @$permitType->id]);
+        $totalPermit = 0;
+        foreach ($permits as $permit) { $totalPermit += $permit->duration; }
+
+        echo json_encode(['days' => $total_days, 'total' => 12 - $totalPermit - count($calendar)]);
     }
 
 
@@ -365,7 +375,7 @@ class Permits extends CI_Controller
                     if (!empty($reason)) {
                         $send = "";
 
-                        $year = date("Y");
+                        $year = date("Y", strtotime($date_from));
 
                         $calendar = $this->crud->reads("calendars", ["trans_date" => $year], ["permit" => 1]);
                         $permitTypeCutoff = $this->crud->read('permit_types', ["id" => $permittype->id, "cutoff" => "YES"]);

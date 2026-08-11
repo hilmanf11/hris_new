@@ -169,22 +169,28 @@
         url_save = '<?= base_url('attandance/permits/create') ?>';
         $('#frm_insert').form('clear');
         $('#employee_id').combogrid('enable');
-        $('#permit_date').datebox('enable');
+        $('#permit_type_id').combobox('enable');
+        $('#reason_id').combobox('enable');
+        $('#date_from').datebox('enable');
+        $('#date_to').datebox('enable');
         $("#trans_date").datebox('setValue', "<?= date("Y-m-d") ?>");
     }
 
     //EDIT DATA
     function update() {
-        var row = $('#dg').datagrid('getSelected');
-        if (row) {
+        var row = $('#dg').datagrid('getSelections');
+        if (row.length == 1) {
+            var get = row[0];
             $('#dlg_insert').dialog('open');
+            $('#frm_insert').form('load', get);
             $('#employee_id').combogrid('disable');
-            $('#permit_date').datebox('disable');
-            $('#frm_insert').form('load', row);
-            url_save = '<?= base_url('attandance/permits/update') ?>?id=' + btoa(row.id);
-        } else {
-            toastr.warning("Please select one of the data in the table first!", "Information");
-        }
+            $('#permit_type_id').combobox('disable');
+            $('#reason_id').combobox('disable');
+            $('#date_from').datebox('setValue', get.permit_date).datebox('disable');
+            $('#date_to').datebox('setValue', get.permit_date).datebox('disable');
+            selectWorking(get.employee_id);
+            url_save = '<?= base_url('attandance/permits/update') ?>?id=' + btoa(get.id);
+        } else { toastr.warning("Please select one of the data in the table first!", "Information"); }
     }
 
     //DELETE DATA
@@ -574,19 +580,7 @@
                 $("#permit_type_id").combobox('clear');
                 $("#reason_id").combobox('clear');
 
-                $.ajax({
-                    url: '<?= base_url('attandance/permits/readShifts') ?>',
-                    type: 'post',
-                    data: 'employee_id=' + employee.id,
-                    success: function(row) {
-                        var result = eval('(' + row + ')');
-                        if (row == "null") {
-                            $("#working_day").numberbox('clear');
-                        } else {
-                            $("#working_day").numberbox('setValue', result.days);
-                        }
-                    }
-                });
+                selectWorking(employee.id);
             }
         });
 
@@ -597,25 +591,28 @@
             prompt: "Choose Permit Type",
             onSelect: function(permit) {
                 var employee_id = $('#employee_id').combogrid('getValue');
-                $.ajax({
-                    url: '<?= base_url('attandance/permits/readLeave') ?>',
-                    type: 'post',
-                    data: 'employee_id=' + employee_id + '&permit_type_id=' + permit.id,
-                    success: function(row) {
-                        var result = eval('(' + row + ')');
-                        if (result.total == 0) {
-                            $("#leave").numberbox('clear');
-                        } else {
-                            if (permit.cutoff == "YES") {
-                                $("#duration").numberbox('setValue', 1);
-                                $("#leave").numberbox('setValue', (result.total));
-                            } else {
-                                $("#duration").numberbox('setValue', 0);
-                                $("#leave").numberbox('setValue', (result.total));
-                            }
-                        }
-                    }
-                });
+
+                // $.ajax({
+                //     url: '<?= base_url('attandance/permits/readLeave') ?>',
+                //     type: 'post',
+                //     data: 'employee_id=' + employee_id + '&permit_type_id=' + permit.id,
+                //     success: function(row) {
+                //         var result = eval('(' + row + ')');
+                //         if (result.total == 0) {
+                //             $("#leave").numberbox('clear');
+                //         } else {
+                //             if (permit.cutoff == "YES") {
+                //                 $("#duration").numberbox('setValue', 1);
+                //                 $("#leave").numberbox('setValue', (result.total));
+                //             } else {
+                //                 $("#duration").numberbox('setValue', 0);
+                //                 $("#leave").numberbox('setValue', (result.total));
+                //             }
+                //         }
+                //     }
+                // });
+
+                $("#duration").numberbox('setValue', (permit.cutoff == "YES") ? 1 : 0);
 
                 $("#reason_id").combobox({
                     url: '<?= base_url('attandance/reasons/reads') ?>?permit_type_id=' + permit.id,
@@ -629,22 +626,26 @@
                         var date_to = $("#date_to").datebox('getValue');
                         var working_day = $("#working_day").numberbox('getValue');
 
-                        if (date_from == "" || date_from > index) {
-                            toastr.warning("Please Select Permit Date From < Date To");
-                        } else {
-                            $.ajax({
-                                url: '<?= base_url('attandance/permits/getDays') ?>',
-                                type: 'post',
-                                data: 'date_from=' + index + '&date_to=' + date_to + '&working_day=' + working_day,
-                                success: function(days) {
-                                    var leave = $("#leave").numberbox('getValue');
+                        if (index != '' && date_to != '') {
+                            if (index > date_to) { toastr.warning("Please Select Permit Date From < Date To"); }
+                            else {
+                                $.ajax({
+                                    url: '<?= base_url('attandance/permits/getDays') ?>',
+                                    type: 'post',
+                                    data: 'date_from=' + index + '&date_to=' + date_to + '&working_day=' + working_day + '&employee_id=' + employee_id + '&permit_type_id=' + permit.id,
+                                    success: function(result) {
+                                        var result = eval("("+result+")");
+                                        var total = parseInt(result.total);
 
-                                    if (parseInt(leave - days) < 0) {
-                                        toastr.error("the Leave is over", "Leave 0");
-                                        $("#date_from").datebox('clear');
+                                        if ((total - parseInt(result.days)) < 0) {
+                                            toastr.error("the Leave is over", "Leave 0");
+                                            $("#date_from").datebox('clear');
+                                            $("#date_to").datebox('clear');
+                                            $("#leave").numberbox('clear')
+                                        } else { $("#leave").numberbox('setValue', total); }
                                     }
-                                }
-                            });
+                                });
+                            }
                         }
                     }
                 });
@@ -653,29 +654,48 @@
                     onChange: function(index) {
                         var date_from = $("#date_from").datebox('getValue');
                         var working_day = $("#working_day").numberbox('getValue');
+                        if (date_from != '' && index != '') {
+                            if (date_from > index) { toastr.warning("Please Select Permit Date From < Date To"); }
+                            else {
+                                $.ajax({
+                                    url: '<?= base_url('attandance/permits/getDays') ?>',
+                                    type: 'post',
+                                    data: 'date_from=' + date_from + '&date_to=' + index + '&working_day=' + working_day + working_day + '&employee_id=' + employee_id + '&permit_type_id=' + permit.id,
+                                    success: function(result) {
+                                        var result = eval("("+result+")");
+                                        var total = parseInt(result.total);
 
-                        if (date_from == "" || date_from > index) {
-                            toastr.warning("Please Select Permit Date From < Date To");
-                        } else {
-                            $.ajax({
-                                url: '<?= base_url('attandance/permits/getDays') ?>',
-                                type: 'post',
-                                data: 'date_from=' + date_from + '&date_to=' + index + '&working_day=' + working_day,
-                                success: function(days) {
-                                    var leave = $("#leave").numberbox('getValue');
-
-                                    if (parseInt(leave - days) < 0) {
-                                        toastr.error("the Leave is over", "Leave 0");
-                                        $("#date_to").datebox('clear');
+                                        if ((total - parseInt(result.days)) < 0) {
+                                            toastr.error("the Leave is over", "Leave 0");
+                                            $("#date_from").datebox('clear');
+                                            $("#date_to").datebox('clear');
+                                            $("#leave").numberbox('clear')
+                                        } else { $("#leave").numberbox('setValue', total); }
                                     }
-                                }
-                            });
+                                });
+                            }
                         }
                     }
                 });
             }
         });
     });
+
+    function selectWorking(employee) {
+        $.ajax({
+            url: '<?= base_url('attandance/permits/readShifts') ?>',
+            type: 'post',
+            data: 'employee_id=' + employee,
+            success: function(row) {
+                var result = eval('(' + row + ')');
+                if (row == "null") {
+                    $("#working_day").numberbox('clear');
+                } else {
+                    $("#working_day").numberbox('setValue', result.days);
+                }
+            }
+        });
+    }
 
     //CELLSTYLE STATUS
     function statusStyler(value, row, index) {
