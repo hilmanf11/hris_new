@@ -2,6 +2,11 @@
 date_default_timezone_set("Asia/Bangkok");
 defined('BASEPATH') or exit('No direct script access allowed');
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+
 class Agreements extends CI_Controller
 {
     public function __construct()
@@ -10,6 +15,7 @@ class Agreements extends CI_Controller
         $this->load->helper('url');
         $this->load->helper(array('form', 'url'));
         $this->load->library('form_validation');
+        $this->load->library('spreadsheet_lib');
         $this->load->library('session');
         $this->load->model('crud');
 
@@ -373,5 +379,518 @@ class Agreements extends CI_Controller
 
         $html .= '</table></body></html>';
         echo $html;
+    }
+
+    public function template()
+    {
+        $sheet = 0;
+        $excel = $this->spreadsheet_lib->newSpreadsheet();
+        $spreadsheet = $excel->getActiveSheet($sheet);
+        $excel->getProperties()->setCreator('Pixelphy')
+            ->setLastModifiedBy('Pixelphy')
+            ->setTitle('Office 2007 XLSX Test Document')
+            ->setSubject('Office 2007 XLSX Test Document')
+            ->setDescription('Test document for Office 2007 XLSX, generated using PHP classes.')
+            ->setKeywords('office 2007 openxml php')
+            ->setCategory('PT ASKARA TEHNO INDONESIA');
+
+        $style_row = [
+            'alignment' => ['horizontal' => 'left', 'vertical' => 'center'],
+            'borders' => [
+                'top' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN],
+                'left' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN],
+                'right' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN],
+                'bottom' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]
+            ]
+        ];
+        $style_center = ['alignment' => ['horizontal' => 'center', 'vertical' => 'center']];
+        $style_right = ['alignment' => ['horizontal' => 'right', 'vertical' => 'center']];
+        $style_row_center = array_merge($style_row, $style_center);
+        $style_row_right = array_merge($style_row, $style_right);
+
+        $style_col = array_merge($style_row, [
+            'font' => ['bold' => true],
+            'alignment' => ['horizontal' => 'center', 'vertical' => 'center']
+        ]);
+
+        // $drawing = new Drawing();
+        // $drawing->setName('Logo');
+        // $drawing->setDescription('Company Logo');
+        // $drawing->setPath(FCPATH.'assets/image/config/logo/1741863196.png');
+        // $drawing->setWidth(50);
+        // $drawing->setHeight(50);
+        // $drawing->setCoordinates('A1');
+        // $drawing->setWorksheet($spreadsheet);
+
+        //SHEET 1 ------------------------------------------------------------------------------------------------------------
+        //Coloumn
+        $columns = ['No', 'Employee ID', 'Employee Name', 'Division ID', 'Department ID', 'Department Sub ID', 'Process', 'Employee Type ID', 'Position ID', 'Group ID', 'Date Sign Contract', 'Date Expired', 'Note'];
+
+        $alfa = 'A';
+        $row_no = 1;
+        foreach ($columns as $key => $value) {
+            $spreadsheet->setCellValue($alfa.$row_no, $value);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_col);
+
+            if (in_array($key, [10,11])) {
+                $msg = "";
+
+                // if ($key == 0) { $msg = ""; }
+                $msg = 'Format Date "YYYY-MM-DD"';
+
+                $spreadsheet->getComment($alfa.$row_no)
+                    ->getText()
+                    ->createTextRun($msg);
+            }
+
+            $alfa++;
+        }
+
+        for ($i='A'; $i < $alfa; $i++) {
+            $spreadsheet->getColumnDimension($i)->setAutoSize(true);
+        }
+
+        // Rename worksheet
+        $spreadsheet->setTitle('template');
+
+        $sheet++;
+        $spreadsheet = $excel->createSheet();
+        $excel->setActiveSheetIndex($sheet);
+        $spreadsheet->setTitle('Data Employee');
+
+        $columns = ['No', 'Employee ID', 'Employee Name'];
+
+        $alfa = 'A';
+        $row_no = 1;
+        foreach ($columns as $key => $value) {
+            $spreadsheet->setCellValue($alfa.$row_no, $value);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_col);
+
+            $alfa++;
+        }
+
+        $datas = $this->db->distinct()->select("number, name")->from("employees")->order_by("name")->get()->result();
+
+        $row_no++;
+        foreach ($datas as $index => $row) {
+            $no = $index + 1;
+            $alfa = 'A';
+
+            $spreadsheet->setCellValue($alfa.$row_no, $no);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_row_center);
+
+            foreach ($row as $key => $value) {
+                $alfa++;
+
+                $style = $style_row;
+                if (in_array($key, [''])) { $style = $style_row_center; }
+                if (in_array($key, [''])) { $style = $style_row_right; }
+
+                if (in_array($key, ['number']))
+                    { $spreadsheet->setCellValueExplicit($alfa.$row_no, $value, DataType::TYPE_STRING); }
+                else { $spreadsheet->setCellValue($alfa.$row_no, $value); }
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+                $spreadsheet->getColumnDimension($alfa)->setAutoSize(true);
+            }
+
+            $row_no++;
+        }
+
+        $sheet++;
+        $spreadsheet = $excel->createSheet();
+        $excel->setActiveSheetIndex($sheet);
+        $spreadsheet->setTitle('Data Division');
+
+        $columns = ['No', 'Division ID', 'Division Name', 'Department ID', 'Department Name', 'Department Sub ID', 'Department Sub Name'];
+
+        $alfa = 'A';
+        $row_no = 1;
+        foreach ($columns as $key => $value) {
+            $spreadsheet->setCellValue($alfa.$row_no, $value);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_col);
+
+            $alfa++;
+        }
+
+        $this->db->distinct()->select(
+            "a.number AS div_id,".
+            "a.name AS div_name,".
+            "b.number AS dept_id,".
+            "b.name AS dept_name,".
+            "c.number AS sub_id,".
+            "c.name AS sub_name"
+        )->from("divisions a")
+            ->join("departements b", "a.id = b.division_id")
+            ->join("departement_subs c", "a.id = c.division_id AND b.id = c.departement_id")
+        ->order_by("div_name, dept_name, sub_name");
+        $datas = []; $merges = []; $no = 2;
+        foreach ($this->db->get()->result() as $index => $row) {
+            array_push($datas, $row);
+
+            if (!isset($merges[$row->div_id])) { $merges[$row->div_id] = [$no]; }
+            else { $merges[$row->div_id][1] = $no; }
+            if (!isset($merges[$row->dept_id])) { $merges[$row->dept_id] = [$no]; }
+            else { $merges[$row->dept_id][1] = $no; }
+
+            $no++;
+        }
+        // die(json_encode($merges));
+
+        $row_no++;
+        foreach ($datas as $index => $row) {
+            $no = $index + 1;
+            $alfa = 'A';
+
+            $spreadsheet->setCellValue($alfa.$row_no, $no);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_row_center);
+
+            foreach ($row as $key => $value) {
+                $alfa++;
+
+                $style = $style_row;
+                if (in_array($key, [''])) { $style = $style_row_center; }
+                if (in_array($key, [''])) { $style = $style_row_right; }
+
+                if (in_array($key, ['div_id', 'dept_id', 'sub_id']))
+                    { $spreadsheet->setCellValueExplicit($alfa.$row_no, $value, DataType::TYPE_STRING); }
+                else { $spreadsheet->setCellValue($alfa.$row_no, $value); }
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+                $spreadsheet->getColumnDimension($alfa)->setAutoSize(true);
+
+                if (isset($merges[$value]) && count($merges[$value]) > 1) {
+                    $next_alfa = $alfa;
+                    $next_alfa++;
+                    $spreadsheet->mergeCells($alfa.$merges[$value][0].':'.$alfa.$merges[$value][1]);
+                    $spreadsheet->mergeCells($next_alfa.$merges[$value][0].':'.$next_alfa.$merges[$value][1]);
+                }
+            }
+
+            $row_no++;
+        }
+
+        $sheet++;
+        $spreadsheet = $excel->createSheet();
+        $excel->setActiveSheetIndex($sheet);
+        $spreadsheet->setTitle('Data Employee Type');
+
+        $columns = ['No', 'Employee Type ID', 'Employee Type Name'];
+
+        $alfa = 'A';
+        $row_no = 1;
+        foreach ($columns as $key => $value) {
+            $spreadsheet->setCellValue($alfa.$row_no, $value);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_col);
+
+            $alfa++;
+        }
+
+        $datas = $this->db->distinct()->select("number, name")->from("contracts")->order_by("name")->get()->result();
+
+        $row_no++;
+        foreach ($datas as $index => $row) {
+            $no = $index + 1;
+            $alfa = 'A';
+
+            $spreadsheet->setCellValue($alfa.$row_no, $no);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_row_center);
+
+            foreach ($row as $key => $value) {
+                $alfa++;
+
+                $style = $style_row;
+                if (in_array($key, [''])) { $style = $style_row_center; }
+                if (in_array($key, [''])) { $style = $style_row_right; }
+
+                if (in_array($key, ['number']))
+                    { $spreadsheet->setCellValueExplicit($alfa.$row_no, $value, DataType::TYPE_STRING); }
+                else { $spreadsheet->setCellValue($alfa.$row_no, $value); }
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+                $spreadsheet->getColumnDimension($alfa)->setAutoSize(true);
+            }
+
+            $row_no++;
+        }
+
+        $sheet++;
+        $spreadsheet = $excel->createSheet();
+        $excel->setActiveSheetIndex($sheet);
+        $spreadsheet->setTitle('Data Position');
+
+        $columns = ['No', 'Position ID', 'Position Name'];
+
+        $alfa = 'A';
+        $row_no = 1;
+        foreach ($columns as $key => $value) {
+            $spreadsheet->setCellValue($alfa.$row_no, $value);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_col);
+
+            $alfa++;
+        }
+
+        $datas = $this->db->distinct()->select("number, name")->from("positions")->order_by("name")->get()->result();
+
+        $row_no++;
+        foreach ($datas as $index => $row) {
+            $no = $index + 1;
+            $alfa = 'A';
+
+            $spreadsheet->setCellValue($alfa.$row_no, $no);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_row_center);
+
+            foreach ($row as $key => $value) {
+                $alfa++;
+
+                $style = $style_row;
+                if (in_array($key, [''])) { $style = $style_row_center; }
+                if (in_array($key, [''])) { $style = $style_row_right; }
+
+                if (in_array($key, ['number']))
+                    { $spreadsheet->setCellValueExplicit($alfa.$row_no, $value, DataType::TYPE_STRING); }
+                else { $spreadsheet->setCellValue($alfa.$row_no, $value); }
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+                $spreadsheet->getColumnDimension($alfa)->setAutoSize(true);
+            }
+
+            $row_no++;
+        }
+
+        $sheet++;
+        $spreadsheet = $excel->createSheet();
+        $excel->setActiveSheetIndex($sheet);
+        $spreadsheet->setTitle('Data Group');
+
+        $columns = ['No', 'Group ID', 'Group Name'];
+
+        $alfa = 'A';
+        $row_no = 1;
+        foreach ($columns as $key => $value) {
+            $spreadsheet->setCellValue($alfa.$row_no, $value);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_col);
+
+            $alfa++;
+        }
+
+        $datas = $this->db->distinct()->select("number, name")->from("groups")->order_by("name")->get()->result();
+
+        $row_no++;
+        foreach ($datas as $index => $row) {
+            $no = $index + 1;
+            $alfa = 'A';
+
+            $spreadsheet->setCellValue($alfa.$row_no, $no);
+            $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style_row_center);
+
+            foreach ($row as $key => $value) {
+                $alfa++;
+
+                $style = $style_row;
+                if (in_array($key, [''])) { $style = $style_row_center; }
+                if (in_array($key, [''])) { $style = $style_row_right; }
+
+                if (in_array($key, ['number']))
+                    { $spreadsheet->setCellValueExplicit($alfa.$row_no, $value, DataType::TYPE_STRING); }
+                else { $spreadsheet->setCellValue($alfa.$row_no, $value); }
+                $spreadsheet->getStyle($alfa.$row_no)->applyFromArray($style);
+                $spreadsheet->getColumnDimension($alfa)->setAutoSize(true);
+            }
+
+            $row_no++;
+        }
+
+        $excel->setActiveSheetIndex(0);
+        // die(json_encode($excel->getActiveSheet()->toArray()));
+
+        if (ob_get_length()) { ob_end_clean(); }
+
+        // Redirect output to a client’s web browser (Xlsx)
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="Template Upload  '.date('(Y-m-d)').'.xlsx"');
+        header('Cache-Control: max-age=0');
+        header('Cache-Control: max-age=1');
+
+        // If you're serving to IE over SSL, then the following may be needed
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        header('Cache-Control: cache, must-revalidate');
+        header('Pragma: public');
+
+        $writer = IOFactory::createWriter($excel, 'Xlsx');
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function uploadTemplate()
+    {
+        $result = ['stat' => '', 'data' => []];
+
+        try {
+            $spreadsheet = IOFactory::load($_FILES['file_upload']['tmp_name']);
+            $sheetData = $spreadsheet->getActiveSheet(0)->toArray(null, true, true, true);
+            $head_col = $sheetData[1];
+
+            $stat_format = false;
+            $alfa = 'B';
+            $columns = [
+                'number' => 'Employee ID',
+                'employee_name' => 'Employee Name',
+                'division_id' => 'Division ID',
+                'departement_id' => 'Department ID',
+                'departement_sub_id' => 'Department Sub ID',
+                'process' => 'Process',
+                'contract_id' => 'Employee Type ID',
+                'position_id' => 'Position ID',
+                'group_id' => 'Group ID',
+                'date_sign' => 'Date Sign Contract',
+                'date_expired' => 'Date Expired',
+                'note' => 'Note'
+            ];
+            foreach ($columns as $key => $value) {
+                if (!$stat_format && $value != $head_col[$alfa])
+                    { $stat_format = true; }
+                $alfa++;
+            }
+
+            if ($stat_format) { $result['stat'] = 'The template format does not match!'; }
+            elseif ((count($sheetData) - 1) == 0) { $result['stat'] = 'No data!'; }
+            else {
+                unset($sheetData[1]);
+                foreach ($sheetData as $index => $cell) {
+                    $alfa = 'B';
+                    $arr = [];
+
+                    foreach ($columns as $key => $value) {
+                        $arr[$key] = base64_encode($cell[$alfa]);
+                        $alfa++;
+                    }
+
+                    array_push($result['data'], $arr);
+                }
+            }
+        } catch (Exception $e) { echo json_encode(['stat' => $e->getMessage()]); }
+
+        echo json_encode($result);
+    }
+
+    public function templateProcess()
+    {
+        $post = $this->input->post();
+        $result = ["theme" => "success", "title" => "", "message" => ""];
+        // $customer = base64_decode($post["customer"]);
+        $number = base64_decode($post["number"]);
+        $employee_name = base64_decode($post["employee_name"]);
+        $division_id = base64_decode($post["division_id"]);
+        $departement_id = base64_decode($post["departement_id"]);
+        $departement_sub_id = base64_decode($post["departement_sub_id"]);
+        $process = base64_decode($post["process"]);
+        $contract_id = base64_decode($post["contract_id"]);
+        $position_id = base64_decode($post["position_id"]);
+        $group_id = base64_decode($post["group_id"]);
+        $date_sign = base64_decode($post["date_sign"]);
+        $date_expired = base64_decode($post["date_expired"]);
+        $note = base64_decode($post["note"]);
+
+        $division = $this->crud->read("divisions", [], ["number" => $division_id]);
+        $departement = $this->crud->read("departements", [], ["number" => $departement_id]);
+        $departement_sub = $this->crud->read("departement_subs", [], ["number" => $departement_sub_id]);
+        $contract = $this->crud->read("contracts", [], ["number" => $contract_id]);
+        $position = $this->crud->read("positions", [], ["number" => $position_id]);
+        $group = $this->crud->read("groups", [], ["number" => $group_id]);
+
+        if (empty(count($this->crud->reads("employees", [], ["number" => $number]))))
+            { $result["message"] = "Employee ID $number not found"; }
+        if (empty($result["message"]) && empty($employee_name))
+            { $result["message"] = "Employee Name cannot be empty!"; }
+        if (empty($result["message"]) && !isset($division->id))
+            { $result["message"] = "Division ID $division_id not found"; }
+        if (empty($result["message"]) && !isset($departement->id))
+            { $result["message"] = "Department ID $departement_id not found"; }
+        if (empty($result["message"]) && !isset($departement_sub->id))
+            { $result["message"] = "Department Sub ID $departement_sub_id not found"; }
+        if (empty($result["message"]) && empty(count($this->crud->reads("departement_subs", [], [
+            "division_id" => $division->id,
+            "departement_id" => $departement->id
+        ])))) { $result["message"] = "Department Sub ID $departement_sub_id not found"; }
+        if (empty($result["message"]) && empty($process))
+            { $result["message"] = "Process cannot be empty!"; }
+        if (empty($result["message"]) && !isset($contract->id))
+            { $result["message"] = "Employee Type ID $contract_id not found"; }
+        if (empty($result["message"]) && !isset($position->id))
+            { $result["message"] = "Position ID $position_id not found"; }
+        if (empty($result["message"]) && !isset($group->id))
+            { $result["message"] = "Group ID $group_id not found"; }
+        if (empty($result["message"]) && empty($date_sign))
+            { $result["message"] = "Date Sign Contract cannot be empty!"; }
+        if (empty($result["message"]) && empty($date_expired))
+            { $result["message"] = "Date Expired cannot be empty!"; }
+        if (empty($result["message"]) && $date_expired < $date_sign)
+            { $result["message"] = "Date Expired < Date Sign Contract!"; }
+
+        if (empty($result["message"])) {
+            $data = [
+                "number" => $number,
+                "process" => $process,
+                "contract_id" => $contract->id,
+                "position_id" => $position->id,
+                "group_id" => $group->id,
+                "date_sign" => $date_sign,
+                "date_expired" => $date_expired,
+                "note" => $note,
+                "trans_date" => date("Y-m-d"),
+                "duration" => $this->calculateDuration($date_sign, $date_expired)["text"]
+            ];
+            $dataEmployee = [
+                "name" => $employee_name,
+                "division_id" => $division->id,
+                "departement_id" => $departement->id,
+                "departement_sub_id" => $departement_sub->id,
+                "contract_id" => $contract->id,
+                "position_id" => $position->id,
+                "group_id" => $group_id,
+                "date_contract" => $date_sign,
+                "date_expired" => $date_expired
+            ];
+
+            $send = $this->crud->update('agreements', ["number" => $number], ["status" => 1]);
+            if (!empty($send)) { $send = $this->crud->create('agreements', $data); }
+            if (!empty($send) && empty(count($this->crud->reads('approvals', [], ["table_name" => "agreements"]))))
+                { $send = $this->crud->update('employees', ["number" => $number], $dataEmployee); }
+
+            if (empty($send)) {
+                $result = [
+                    "theme" => "failed",
+                    "title" => "Not Good",
+                    "message" => "Data Saved unsuccessfully"
+                ];
+            } else { $result = json_decode($send); }
+        } else { $result = array_merge($result, ["theme" => "failed", "title" => "Please Revise"]); }
+
+        echo json_encode($result);
+    }
+
+    function calculateDuration($sign, $expired) {
+        $text = '';
+        $time = 0;
+
+        $start = new DateTime($sign);
+        $end   = new DateTime($expired);
+
+        if ($start < $end) {
+            // Mengambil selisih antara dua tanggal
+            $interval = $start->diff($end);
+
+            $year  = $interval->y;
+            $month = $interval->m;
+            $day   = $interval->d;
+            
+            // Total selisih dalam hitungan hari
+            $time  = $interval->days; 
+
+            $text  = "{$year} year {$month} month {$day} day";
+        }
+
+        return [
+            'text' => $text,
+            'time' => $time
+        ];
     }
 }
