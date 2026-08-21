@@ -1654,7 +1654,7 @@
 
 
 	function approvalDetail(table = "", approved_to = "", approved_by = "") {
-
+		if (table == "cash_carries_harian_lepas") { table = "cash_carries"; }
 		if (table == "" || approved_to == "") {
 
 			toastr.error("Notification Cannot get Data", "Error");
